@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\PosUnlockRequest;
 use App\Models\User;
+use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
 
@@ -30,5 +31,12 @@ class TenantPosAccessController extends Controller
         return $destination === 'store'
             ? redirect()->route('tenant.home', ['tenant' => tenant()->getTenantKey()])
             : redirect()->route('tenant.pos', ['tenant' => tenant()->getTenantKey()]);
+    }
+
+    public function logout(Request $request): RedirectResponse
+    {
+        $request->session()->forget(['pos_cashier_id', 'workspace_destination']);
+
+        return redirect()->route('tenant.pos', ['tenant' => tenant()->getTenantKey()]);
     }
 }
