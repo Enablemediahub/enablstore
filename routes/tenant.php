@@ -37,6 +37,9 @@ Route::middleware([
     Route::get('/client/{tenant}', [StorefrontController::class, 'index'])
         ->middleware(['feature:online_store'])
         ->name('tenant.home');
+    Route::get('/client/{tenant}/storefront', [StorefrontController::class, 'index'])
+        ->middleware(['feature:online_store'])
+        ->name('tenant.storefront');
 
     Route::get('/client/{tenant}/products', [TenantProductController::class, 'index'])
         ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])

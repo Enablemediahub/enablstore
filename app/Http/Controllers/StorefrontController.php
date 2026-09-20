@@ -16,11 +16,10 @@ class StorefrontController extends Controller
 {
     public function index(Request $request): Response|RedirectResponse
     {
-        if ($request->user()?->role === 'admin' && $request->user()->tenant_id === tenant()->getTenantKey()) {
-            return redirect()->route('tenant.pos', ['tenant' => tenant()->getTenantKey()]);
-        }
+        $admin = $request->user()?->role === 'admin'
+            && $request->user()->tenant_id === tenant()->getTenantKey();
 
-        if (! $request->session()->has('pos_cashier_id')) {
+        if (! $admin && ! $request->session()->has('pos_cashier_id')) {
             $request->session()->put('workspace_destination', 'store');
 
             return Inertia::render('Tenant/Pos/Unlock', [
