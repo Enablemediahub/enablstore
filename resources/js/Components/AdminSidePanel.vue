@@ -115,12 +115,13 @@ const groups = computed(() => [
             </Link>
             <button
                 type="button"
-                class="mt-4 flex items-center gap-3 text-sm font-medium text-red-100/75 transition hover:text-white"
-                title="Sign out"
+                class="mt-4 flex w-full items-center gap-3 rounded-md border border-white/15 px-3 py-2.5 text-sm font-semibold text-red-50/85 transition hover:border-white/30 hover:bg-white/10 hover:text-white lg:justify-center lg:group-hover/sidebar:justify-start"
+                title="Log out of admin center"
+                aria-label="Log out of admin center"
                 @click="logout"
             >
                 <LogOut class="size-5 shrink-0" aria-hidden="true" />
-                <span class="whitespace-nowrap lg:opacity-0 lg:transition-opacity lg:group-hover/sidebar:opacity-100">Sign out</span>
+                <span class="whitespace-nowrap lg:opacity-0 lg:transition-opacity lg:group-hover/sidebar:opacity-100">Log out</span>
             </button>
         </div>
     </aside>
