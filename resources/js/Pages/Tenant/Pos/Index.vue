@@ -8,7 +8,7 @@ import ProductArtwork from '@/Components/ProductArtwork.vue';
 import ReceiptPreview from '@/Components/ReceiptPreview.vue';
 import AdminSidePanel from '@/Components/AdminSidePanel.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { ChevronDown, LogOut, Menu, Pause, Play, Trash2 } from '@lucide/vue';
+import { ChevronDown, LayoutGrid, List, LogOut, Menu, Pause, Play, Rows3, Trash2 } from '@lucide/vue';
 import axios from 'axios';
 import {
     markOfflineSaleSynced,
@@ -16,7 +16,7 @@ import {
     pendingOfflineSales,
     queueOfflineSale,
 } from '@/lib/offlineDb';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 type Product = {
     id: number;
@@ -64,6 +64,8 @@ const syncInProgress = ref(false);
 const scannerOpen = ref(false);
 const receipt = ref<Receipt | null>(null);
 const heldSales = ref<HeldSale[]>([]);
+const displayMode = ref<'grid' | 'thumbnail' | 'list'>('grid');
+const productPage = ref(1);
 const logoutForm = useForm({});
 
 const logout = (): void => {
@@ -79,6 +81,18 @@ const filteredProducts = computed(() => {
             product.name.toLowerCase().includes(term) ||
             product.sku.toLowerCase().includes(term),
     );
+});
+
+const paginatedProducts = computed(() => {
+    const start = (productPage.value - 1) * 20;
+
+    return filteredProducts.value.slice(start, start + 20);
+});
+
+const productPageCount = computed(() => Math.max(1, Math.ceil(filteredProducts.value.length / 20)));
+
+watch(search, () => {
+    productPage.value = 1;
 });
 
 const totalMinor = computed(() =>
@@ -387,15 +401,21 @@ onUnmounted(() => {
                             </div>
                         </EnCard>
 
-                        <div
-                            v-if="filteredProducts.length"
-                            class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
-                        >
+                        <div v-if="filteredProducts.length" class="mt-6 flex flex-wrap items-center justify-between gap-3">
+                            <p class="text-sm text-neutral-500">Showing {{ (productPage - 1) * 20 + 1 }}-{{ Math.min(productPage * 20, filteredProducts.length) }} of {{ filteredProducts.length }} products</p>
+                            <div class="flex items-center gap-1 rounded-md border border-neutral-200 bg-white p-1">
+                                <button v-for="mode in [{ value: 'grid', label: 'Grid', icon: LayoutGrid }, { value: 'thumbnail', label: 'Thumbnail', icon: Rows3 }, { value: 'list', label: 'List', icon: List }]" :key="mode.value" type="button" class="rounded p-2" :class="displayMode === mode.value ? 'bg-red-50 text-red-700' : 'text-neutral-500 hover:bg-neutral-50'" :aria-label="`${mode.label} view`" @click="displayMode = mode.value as 'grid' | 'thumbnail' | 'list'">
+                                    <component :is="mode.icon" :size="16" aria-hidden="true" />
+                                </button>
+                            </div>
+                        </div>
+                        <div v-if="filteredProducts.length" class="mt-4" :class="displayMode === 'grid' ? 'grid gap-4 sm:grid-cols-2 xl:grid-cols-3' : displayMode === 'thumbnail' ? 'grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-5' : 'space-y-2'">
                             <button
-                                v-for="product in filteredProducts"
+                                v-for="product in paginatedProducts"
                                 :key="product.id"
                                 type="button"
                                 class="group hover:border-primary-300 rounded-lg border border-neutral-100 bg-white p-3 text-left shadow-sm transition hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
+                                :class="displayMode === 'list' ? 'flex items-center gap-4' : ''"
                                 :disabled="
                                     (product.inventory_stock?.quantity ?? 0) < 1
                                 "
@@ -405,8 +425,9 @@ onUnmounted(() => {
                                     :name="product.name"
                                     :sku="product.sku"
                                     :image-path="product.image_path"
+                                    :size="displayMode === 'grid' ? 'large' : 'compact'"
                                 />
-                                <div class="p-2">
+                                <div class="p-2" :class="displayMode === 'list' ? 'flex flex-1 items-center justify-between gap-4' : ''">
                                     <p class="font-semibold text-neutral-900">
                                         {{ product.name }}
                                     </p>
@@ -435,6 +456,11 @@ onUnmounted(() => {
                                 </div>
                             </button>
                         </div>
+                        <div v-if="filteredProducts.length > 20" class="mt-5 flex items-center justify-center gap-3">
+                            <button type="button" class="rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm disabled:opacity-40" :disabled="productPage === 1" @click="productPage--">Previous</button>
+                            <span class="text-sm text-neutral-500">Page {{ productPage }} of {{ productPageCount }}</span>
+                            <button type="button" class="rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm disabled:opacity-40" :disabled="productPage === productPageCount" @click="productPage++">Next</button>
+                        </div>
                         <EnCard v-else class="mt-6">
                             <EnEmptyState
                                 title="No matching products"
@@ -444,7 +470,7 @@ onUnmounted(() => {
                     </section>
 
                     <aside class="lg:sticky lg:top-6 lg:self-start">
-                        <EnCard class="border-red-900/20! bg-linear-to-br! from-[#3d0508]! via-[#b3131b]! to-[#ff4d55]! text-white">
+                        <EnCard class="border-red-900/20! bg-linear-to-br! from-[#3d0508]! via-[#b3131b]! to-[#ff4d55]! text-white [&_h2]:text-white [&_p]:text-white/75">
                             <div class="flex items-center justify-between">
                                 <h2
                                     class="text-xl font-semibold text-white"
@@ -528,8 +554,8 @@ onUnmounted(() => {
                                     <option value="card">Card</option>
                                 </select>
                                 <EnButton
-                                    class="mt-4 w-full"
-                                    variant="accent"
+                                    class="mt-4 w-full bg-blue-600! text-white! hover:bg-blue-700!"
+                                    variant="primary"
                                     :loading="checkoutForm.processing"
                                     :disabled="cart.length === 0"
                                     @click="checkout"
