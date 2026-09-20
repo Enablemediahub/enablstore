@@ -24,7 +24,7 @@
             <p>
                 Developed and designed by
                 @if ($isLoginPage)
-                    <a href="{{ route('super-admin.login') }}" class="inline-flex items-center rounded-md bg-[#e21b23] px-3 py-1.5 font-bold text-white transition hover:bg-[#c9151c]">DALE QUIST</a>
+                    <a href="{{ route('super-admin.login') }}" class="font-bold text-[#e21b23] underline-offset-4 transition hover:text-[#ff5a60] hover:underline">DALE QUIST</a>
                 @else
                     <span class="font-bold text-neutral-900">DALE QUIST</span>
                 @endif
