@@ -41,9 +41,9 @@ const logout = (): void => {
                 <div v-if="subscription" class="rounded-2xl border border-black/5 bg-white/80 px-5 py-4 shadow-sm backdrop-blur"><p class="text-xs font-bold tracking-widest text-[#777777] uppercase">Current plan</p><div class="mt-1 flex items-center gap-2"><strong class="text-lg">{{ subscription.plan }}</strong><span class="size-1.5 rounded-full bg-[#e21b23]" aria-hidden="true" /><span class="text-sm capitalize text-[#555555]">{{ subscription.status }}</span></div></div>
             </div>
             <div v-else class="relative max-w-3xl py-16 sm:py-24">
-                <p class="text-xs font-black tracking-[0.24em] text-[#e21b23] uppercase">Retail workspace</p>
-                <h1 class="mt-4 text-4xl font-black tracking-[-0.03em] sm:text-6xl">Everything your shop needs, in one place.</h1>
-                <p class="mt-5 max-w-xl text-base leading-7 text-[#555555]">Use the Admin login button above to access your workspace dashboard.</p>
+                <p class="text-xs font-black tracking-[0.24em] text-[#e21b23] uppercase">Workspace launcher</p>
+                <h1 class="mt-4 text-4xl font-black tracking-[-0.03em] sm:text-6xl">Good to see you, Demo.</h1>
+                <p class="mt-5 max-w-xl text-base leading-7 text-[#555555]">Choose the workspace you need for Demo Market. Your superadmin has set the access available to you.</p>
             </div>
             <div v-if="user && tenant" class="relative mt-12 grid gap-6 lg:grid-cols-2">
                 <Link v-if="access.onlineStore" :href="route('tenant.home', { tenant: tenant.slug })" class="group relative min-h-[350px] overflow-hidden rounded-[2rem] border border-[#e21b23]/15 bg-white p-7 shadow-[0_20px_60px_rgba(23,23,23,0.08)] transition duration-300 hover:-translate-y-2 hover:shadow-[0_28px_70px_rgba(226,27,35,0.18)] sm:p-10">
