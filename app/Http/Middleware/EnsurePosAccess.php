@@ -12,7 +12,10 @@ class EnsurePosAccess
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! $request->session()->has('pos_cashier_id')) {
+        $admin = $request->user()?->role === 'admin'
+            && $request->user()->tenant_id === tenant()->getTenantKey();
+
+        if (! $admin && ! $request->session()->has('pos_cashier_id')) {
             return redirect()->route('tenant.pos', ['tenant' => tenant()->getTenantKey()]);
         }
 

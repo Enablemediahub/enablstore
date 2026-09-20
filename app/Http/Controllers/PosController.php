@@ -18,7 +18,10 @@ class PosController extends Controller
 {
     public function index(Request $request): Response|RedirectResponse
     {
-        if (! $request->session()->has('pos_cashier_id')) {
+        $admin = $request->user()?->role === 'admin'
+            && $request->user()->tenant_id === tenant()->getTenantKey();
+
+        if (! $admin && ! $request->session()->has('pos_cashier_id')) {
             $request->session()->put('workspace_destination', 'pos');
 
             return Inertia::render('Tenant/Pos/Unlock', [
@@ -27,7 +30,9 @@ class PosController extends Controller
             ]);
         }
 
-        $cashier = User::query()->find($request->session()->get('pos_cashier_id'));
+        $cashier = $admin
+            ? $request->user()
+            : User::query()->find($request->session()->get('pos_cashier_id'));
         if ($cashier === null) {
             $request->session()->forget('pos_cashier_id');
 
