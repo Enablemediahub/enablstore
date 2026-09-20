@@ -14,6 +14,19 @@ class WorkspaceDashboardController extends Controller
     public function __invoke(Request $request): Response
     {
         $user = $request->user();
+
+        if ($user === null) {
+            return Inertia::render('Dashboard', [
+                'user' => null,
+                'tenant' => null,
+                'subscription' => null,
+                'access' => [
+                    'onlineStore' => false,
+                    'pos' => false,
+                ],
+            ]);
+        }
+
         $tenant = $user->tenant ?? Tenant::query()->first();
         $subscription = $tenant?->subscriptions()->with('plan')->latest()->first();
         $features = $subscription?->plan?->features ?? [];

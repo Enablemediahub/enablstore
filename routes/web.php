@@ -15,15 +15,10 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
 Route::get('/', function (Request $request) {
-    if ($request->user()) {
-        return redirect()->route('dashboard');
-    }
-
-    return redirect()->route('login');
+    return redirect()->route('dashboard');
 });
 
 Route::get('/dashboard', WorkspaceDashboardController::class)
-    ->middleware('auth')
     ->name('dashboard');
 
 Route::get('/design-system', function () {
