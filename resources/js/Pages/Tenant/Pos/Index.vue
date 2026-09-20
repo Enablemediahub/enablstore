@@ -470,7 +470,7 @@ onUnmounted(() => {
                     </section>
 
                     <aside class="lg:sticky lg:top-6 lg:self-start">
-                        <EnCard class="border-red-900/20! bg-linear-to-br! from-[#3d0508]! via-[#b3131b]! to-[#ff4d55]! text-white [&_h2]:text-white [&_p]:text-white/75">
+                        <EnCard class="border-white/10! bg-[#202020]! text-white [&_h2]:text-white [&_p]:text-white/75">
                             <div class="flex items-center justify-between">
                                 <h2
                                     class="text-xl font-semibold text-white"
