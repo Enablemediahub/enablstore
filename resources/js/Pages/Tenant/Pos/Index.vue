@@ -292,7 +292,7 @@ onUnmounted(() => {
                     <Menu :size="20" aria-hidden="true" />
                     Menu
                 </button>
-                <div class="mb-6 overflow-hidden rounded-2xl bg-neutral-900 text-white shadow-lg">
+                <div class="mb-6 overflow-hidden rounded-2xl bg-linear-to-br from-[#8f1017] via-[#e21b23] to-[#ff6b72] text-white shadow-lg">
                     <div class="relative flex min-h-36 items-center justify-between gap-6 overflow-hidden px-6 py-6 sm:px-8">
                         <img src="/images/products/cart.svg" alt="" class="pointer-events-none absolute right-5 -bottom-18 w-48 opacity-15 brightness-0 invert" aria-hidden="true" />
                         <div class="relative">
@@ -402,14 +402,14 @@ onUnmounted(() => {
                     </section>
 
                     <aside class="lg:sticky lg:top-6 lg:self-start">
-                        <EnCard>
+                        <EnCard class="border-red-900/20! bg-linear-to-br! from-[#8f1017]! via-[#e21b23]! to-[#ff6b72]! text-white">
                             <div class="flex items-center justify-between">
                                 <h2
-                                    class="text-xl font-semibold text-neutral-900"
+                                    class="text-xl font-semibold text-white"
                                 >
                                     Current sale
                                 </h2>
-                                <span class="text-sm text-neutral-500"
+                                <span class="text-sm text-white/70"
                                     >{{ cart.length }} items</span
                                 >
                             </div>
@@ -420,16 +420,16 @@ onUnmounted(() => {
                                     class="flex justify-between gap-4"
                                 >
                                     <div>
-                                        <p class="font-medium text-neutral-900">
+                                        <p class="font-medium text-white">
                                             {{ item.name }}
                                         </p>
-                                        <p class="text-sm text-neutral-500">
+                                        <p class="text-sm text-white/70">
                                             {{ item.quantity }} x
                                             {{ formatPrice(item.price_minor) }}
                                         </p>
                                     </div>
                                     <p
-                                        class="font-mono text-sm text-neutral-700"
+                                        class="font-mono text-sm text-white/90"
                                     >
                                         {{
                                             formatPrice(
@@ -445,13 +445,13 @@ onUnmounted(() => {
                                 title="Cart is empty"
                                 description="Select a product to start the sale."
                             />
-                            <div class="mt-6 border-t border-neutral-100 pt-5">
-                                                <div class="flex justify-between text-sm text-neutral-500"><span>Subtotal</span><span>{{ formatPrice(subtotalMinor) }}</span></div>
+                            <div class="mt-6 border-t border-white/20 pt-5">
+                                                <div class="flex justify-between text-sm text-white/70"><span>Subtotal</span><span>{{ formatPrice(subtotalMinor) }}</span></div>
                                                 <div class="mt-3 grid grid-cols-[1fr_110px] gap-2"><select v-model="discountType" class="min-h-10 rounded-md border border-neutral-300 bg-white px-2 text-sm"><option value="">No discount</option><option value="fixed">Fixed discount</option><option value="percentage">Percentage discount</option></select><input v-model.number="discountValue" type="number" min="0" :max="discountType === 'percentage' ? 100 : undefined" step="0.01" placeholder="Amount" class="min-h-10 rounded-md border border-neutral-300 px-2 text-sm" /></div>
                                                 <input v-if="discountType" v-model="discountReason" type="text" maxlength="120" placeholder="Discount reason (optional)" class="mt-2 min-h-10 w-full rounded-md border border-neutral-300 px-3 text-sm" />
-                                                <div v-if="discountMinor > 0" class="mt-3 flex justify-between text-sm font-semibold text-red-700"><span>Discount</span><span>-{{ formatPrice(discountMinor) }}</span></div>
+                                                <div v-if="discountMinor > 0" class="mt-3 flex justify-between text-sm font-semibold text-white"><span>Discount</span><span>-{{ formatPrice(discountMinor) }}</span></div>
                                 <div
-                                    class="flex justify-between text-lg font-bold text-neutral-900"
+                                    class="flex justify-between text-lg font-bold text-white"
                                 >
                                     <span>Total</span>
                                     <span class="font-mono">{{
