@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Demo Store Owner',
                 'email' => 'admin@enablstore.test',
                 'tenant_id' => Tenant::query()->value('id'),
+                'role' => 'admin',
                 'password' => config('admin.password'),
             ],
         );
