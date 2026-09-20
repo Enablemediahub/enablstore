@@ -453,9 +453,9 @@ onUnmounted(() => {
                                 </h2>
                                 <div class="flex items-center gap-3">
                                     <span class="text-sm text-white/70">{{ cart.length }} items</span>
-                                    <button type="button" class="inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-1 text-xs font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40" title="Hold current sale" :disabled="cart.length === 0" @click="holdSale">
+                                    <button type="button" class="inline-flex items-center gap-1 rounded-md border border-white/35 bg-white/10 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-40" title="Hold current sale and start another" :disabled="cart.length === 0" @click="holdSale">
                                         <Pause :size="14" aria-hidden="true" />
-                                        Hold
+                                        Hold sale
                                     </button>
                                 </div>
                             </div>
@@ -503,7 +503,7 @@ onUnmounted(() => {
                                 title="Cart is empty"
                                 description="Select a product to start the sale."
                             />
-                            <div class="mt-6 border-t border-white/20 pt-5">
+                            <div class="mt-6 border-t border-white/20 pt-5 [&_input]:text-neutral-900 [&_select]:text-neutral-900">
                                                 <div class="flex justify-between text-sm text-white/70"><span>Subtotal</span><span>{{ formatPrice(subtotalMinor) }}</span></div>
                                                 <div class="mt-3 grid grid-cols-[1fr_110px] gap-2"><select v-model="discountType" class="min-h-10 rounded-md border border-neutral-300 bg-white px-2 text-sm"><option value="">No discount</option><option value="fixed">Fixed discount</option><option value="percentage">Percentage discount</option></select><input v-model.number="discountValue" type="number" min="0" :max="discountType === 'percentage' ? 100 : undefined" step="0.01" placeholder="Amount" class="min-h-10 rounded-md border border-neutral-300 px-2 text-sm" /></div>
                                                 <input v-if="discountType" v-model="discountReason" type="text" maxlength="120" placeholder="Discount reason (optional)" class="mt-2 min-h-10 w-full rounded-md border border-neutral-300 px-3 text-sm" />
