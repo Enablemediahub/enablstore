@@ -32,6 +32,8 @@ class UpdateProductRequest extends FormRequest
             'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'price_minor' => ['required', 'integer', 'min:0'],
             'cost_minor' => ['nullable', 'integer', 'min:0'],
+            'purchase_unit' => ['required', 'string', 'max:40'],
+            'units_per_purchase' => ['required', 'integer', 'min:1'],
             'initial_quantity' => ['required', 'integer', 'min:0'],
             'low_stock_threshold' => ['required', 'integer', 'min:0'],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],

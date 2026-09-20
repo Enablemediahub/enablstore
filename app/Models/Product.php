@@ -18,6 +18,8 @@ class Product extends Model
         'barcode',
         'price_minor',
         'cost_minor',
+        'purchase_unit',
+        'units_per_purchase',
         'currency',
         'description',
         'image_path',
@@ -30,6 +32,7 @@ class Product extends Model
     protected $casts = [
         'price_minor' => 'integer',
         'cost_minor' => 'integer',
+        'units_per_purchase' => 'integer',
         'is_active' => 'boolean',
         'available_in_pos' => 'boolean',
         'available_online' => 'boolean',

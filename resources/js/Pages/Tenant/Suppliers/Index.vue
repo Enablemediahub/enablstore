@@ -6,7 +6,7 @@ import { Head, useForm } from '@inertiajs/vue3';
 import { ref } from 'vue';
 
 type Supplier = { id: number; name: string; contact_name?: string; phone?: string; email?: string };
-type Product = { id: number; name: string; sku: string };
+type Product = { id: number; name: string; sku: string; purchase_unit?: string; units_per_purchase?: number };
 type Purchase = { id: number; quantity: number; unit_cost_minor: number; purchased_at: string; supplier: Supplier; product: Product; note?: string };
 const props = defineProps<{ suppliers: Supplier[]; products: Product[]; purchases: Purchase[] }>();
 const tenant = String(route().params.tenant);

@@ -19,6 +19,8 @@ type Product = {
     category_id?: number | null;
     image_path?: string | null;
     price_minor: number;
+    purchase_unit: string;
+    units_per_purchase: number;
     available_in_pos: boolean;
     available_online: boolean;
     inventory_stock?: { quantity: number; low_stock_threshold: number };
@@ -47,6 +49,8 @@ const form = useForm({
     available_online: true,
     price_cedis: 0,
     cost_cedis: 0,
+    purchase_unit: 'unit',
+    units_per_purchase: 1,
     initial_quantity: 0,
     low_stock_threshold: 5,
 });
@@ -76,6 +80,8 @@ const openEditModal = (product: Product): void => {
     form.available_online = product.available_online;
     form.price_cedis = product.price_minor / 100;
     form.cost_cedis = 0;
+    form.purchase_unit = product.purchase_unit;
+    form.units_per_purchase = product.units_per_purchase;
     form.initial_quantity = product.inventory_stock?.quantity ?? 0;
     form.low_stock_threshold = product.inventory_stock?.low_stock_threshold ?? 5;
     form.clearErrors();
@@ -144,6 +150,8 @@ const submit = (): void => {
         available_online: data.available_online,
         price_minor: Math.round(Number(data.price_cedis) * 100),
         cost_minor: Math.round(Number(data.cost_cedis) * 100),
+        purchase_unit: data.purchase_unit,
+        units_per_purchase: data.units_per_purchase,
         initial_quantity: data.initial_quantity,
         low_stock_threshold: data.low_stock_threshold,
         _method: editingProduct.value ? 'patch' : undefined,
@@ -235,6 +243,8 @@ const submit = (): void => {
                 <fieldset class="sm:col-span-2"><legend class="text-sm font-medium text-neutral-700">Sales channels</legend><div class="mt-2 flex flex-wrap gap-4 text-sm text-neutral-700"><label class="flex items-center gap-2"><input v-model="form.available_in_pos" type="checkbox" /> Point of Sale</label><label class="flex items-center gap-2"><input v-model="form.available_online" type="checkbox" /> Online Store</label></div></fieldset>
                 <label class="space-y-1.5 text-sm font-medium text-neutral-700">Selling price (cedis)<input v-model.number="form.price_cedis" type="number" min="0" step="0.01" required class="min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /></label>
                 <label class="space-y-1.5 text-sm font-medium text-neutral-700">Cost price (cedis)<input v-model.number="form.cost_cedis" type="number" min="0" step="0.01" class="min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /></label>
+                <label class="space-y-1.5 text-sm font-medium text-neutral-700">Purchase unit<input v-model="form.purchase_unit" type="text" placeholder="box" class="min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /><span class="block text-xs text-neutral-500">Use box, carton, case, or unit.</span></label>
+                <label class="space-y-1.5 text-sm font-medium text-neutral-700">Units inside purchase unit<input v-model.number="form.units_per_purchase" type="number" min="1" step="1" required class="min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /><span class="block text-xs text-neutral-500">Example: 12 bottles per box.</span></label>
                 <label class="space-y-1.5 text-sm font-medium text-neutral-700">Stock quantity<input v-model.number="form.initial_quantity" type="number" min="0" step="1" required class="min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /></label>
                 <label class="space-y-1.5 text-sm font-medium text-neutral-700">Low stock alert at<input v-model.number="form.low_stock_threshold" type="number" min="0" step="1" required class="min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /></label>
             </div>
