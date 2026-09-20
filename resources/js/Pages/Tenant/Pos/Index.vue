@@ -334,7 +334,7 @@ onUnmounted(() => {
                     <Menu :size="20" aria-hidden="true" />
                     Menu
                 </button>
-                <div class="mb-6 overflow-hidden rounded-2xl bg-linear-to-br from-[#090909] via-[#171717] to-[#e21b23] text-white shadow-lg">
+                <div class="mb-6 overflow-hidden rounded-2xl bg-linear-to-br from-[#3d0508] via-[#b3131b] to-[#ff4d55] text-white shadow-lg">
                     <div class="relative flex min-h-36 items-center justify-between gap-6 overflow-hidden px-6 py-6 sm:px-8">
                         <img src="/images/products/cart.svg" alt="" class="pointer-events-none absolute right-5 -bottom-18 w-48 opacity-15 brightness-0 invert" aria-hidden="true" />
                         <div class="relative">
@@ -444,7 +444,7 @@ onUnmounted(() => {
                     </section>
 
                     <aside class="lg:sticky lg:top-6 lg:self-start">
-                        <EnCard class="border-red-900/20! bg-linear-to-br! from-[#090909]! via-[#171717]! to-[#e21b23]! text-white">
+                        <EnCard class="border-red-900/20! bg-linear-to-br! from-[#3d0508]! via-[#b3131b]! to-[#ff4d55]! text-white">
                             <div class="flex items-center justify-between">
                                 <h2
                                     class="text-xl font-semibold text-white"

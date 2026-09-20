@@ -42,7 +42,7 @@ const source = computed(() => {
 
     const sku = props.sku.toLowerCase();
 
-    if (sku.startsWith('oil')) {
+    if (sku.startsWith('oil') || sku.startsWith('frytol')) {
         return '/images/products/cooking-oil.svg';
     }
 

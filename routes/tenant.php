@@ -63,7 +63,7 @@ Route::middleware([
     Route::patch('/client/{tenant}/team/{user}', [TenantTeamController::class, 'update'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.team.update');
     Route::get('/client/{tenant}/media/{path}', [TenantProductController::class, 'media'])
         ->where('path', '.*')
-        ->middleware(['auth', 'tenant.access'])
+        ->middleware([])
         ->name('tenant.media');
     Route::get('/client/{tenant}/products/barcode-lookup/{barcode}', [TenantProductController::class, 'barcodeLookup'])
         ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
