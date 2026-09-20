@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Tenant;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -29,6 +30,18 @@ class DatabaseSeeder extends Seeder
                 'email' => 'admin@enablstore.test',
                 'tenant_id' => Tenant::query()->value('id'),
                 'password' => config('admin.password'),
+            ],
+        );
+
+        User::query()->updateOrCreate(
+            ['username' => 'dale'],
+            [
+                'name' => 'dale',
+                'email' => 'dale@enablstore.test',
+                'tenant_id' => Tenant::query()->value('id'),
+                'role' => 'cashier',
+                'password' => 'password',
+                'pos_pin_hash' => Hash::make('1234'),
             ],
         );
     }
