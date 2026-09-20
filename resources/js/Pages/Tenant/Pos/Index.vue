@@ -8,7 +8,7 @@ import ProductArtwork from '@/Components/ProductArtwork.vue';
 import ReceiptPreview from '@/Components/ReceiptPreview.vue';
 import AdminSidePanel from '@/Components/AdminSidePanel.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { Menu } from '@lucide/vue';
+import { ChevronDown, LogOut, Menu } from '@lucide/vue';
 import axios from 'axios';
 import {
     markOfflineSaleSynced,
@@ -39,6 +39,7 @@ type Receipt = {
 const props = defineProps<{
     products: Product[];
     tenant: string;
+    cashierName: string;
 }>();
 
 const search = ref('');
@@ -54,6 +55,11 @@ const pendingCount = ref(0);
 const syncInProgress = ref(false);
 const scannerOpen = ref(false);
 const receipt = ref<Receipt | null>(null);
+const logoutForm = useForm({});
+
+const logout = (): void => {
+    logoutForm.post(route('tenant.pos.logout', { tenant }));
+};
 
 const filteredProducts = computed(() => {
     const term = search.value.toLowerCase().trim();
@@ -286,23 +292,32 @@ onUnmounted(() => {
                     <Menu :size="20" aria-hidden="true" />
                     Menu
                 </button>
+                <div class="mb-6 overflow-hidden rounded-2xl bg-neutral-900 text-white shadow-lg">
+                    <div class="relative flex min-h-36 items-center justify-between gap-6 overflow-hidden px-6 py-6 sm:px-8">
+                        <img src="/images/products/cart.svg" alt="" class="pointer-events-none absolute right-5 -bottom-18 w-48 opacity-15 brightness-0 invert" aria-hidden="true" />
+                        <div class="relative">
+                            <p class="text-xs font-bold tracking-[0.2em] text-emerald-400 uppercase">Enablstore POS</p>
+                            <h1 class="mt-2 text-2xl font-bold sm:text-3xl">Sell in-store</h1>
+                        </div>
+                        <details class="relative z-10 shrink-0">
+                            <summary class="flex cursor-pointer list-none items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold transition hover:bg-white/15">
+                                <span>{{ cashierName }}</span>
+                                <ChevronDown :size="16" aria-hidden="true" />
+                            </summary>
+                            <div class="absolute right-0 mt-2 w-40 rounded-lg border border-neutral-200 bg-white p-1 text-neutral-900 shadow-xl">
+                                <form @submit.prevent="logout">
+                                    <button type="submit" class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition hover:bg-red-50 hover:text-red-700" :disabled="logoutForm.processing">
+                                        <LogOut :size="16" aria-hidden="true" />
+                                        Log out
+                                    </button>
+                                </form>
+                            </div>
+                        </details>
+                    </div>
+                </div>
                 <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
                     <section class="min-w-0">
-                        <header
-                            class="mb-6 flex flex-wrap items-end justify-between gap-4"
-                        >
-                            <div>
-                                <p
-                                    class="text-primary-700 text-sm font-semibold"
-                                >
-                                    Enablstore POS
-                                </p>
-                                <h1
-                                    class="mt-1 text-3xl font-bold text-neutral-900"
-                                >
-                                    Sell in-store
-                                </h1>
-                            </div>
+                        <header class="mb-6 flex flex-wrap items-end justify-between gap-4">
                             <div class="flex items-center gap-2">
                                 <EnBadge
                                     :tone="isOnline ? 'success' : 'warning'"

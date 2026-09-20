@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CheckoutRequest;
 use App\Models\Product;
+use App\Models\User;
 use App\Services\CheckoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
@@ -15,7 +16,7 @@ use Inertia\Response;
 
 class PosController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(Request $request): Response|RedirectResponse
     {
         if (! $request->session()->has('pos_cashier_id')) {
             $request->session()->put('workspace_destination', 'pos');
@@ -26,8 +27,16 @@ class PosController extends Controller
             ]);
         }
 
+        $cashier = User::query()->find($request->session()->get('pos_cashier_id'));
+        if ($cashier === null) {
+            $request->session()->forget('pos_cashier_id');
+
+            return redirect()->route('tenant.pos', ['tenant' => tenant()->getTenantKey()]);
+        }
+
         return Inertia::render('Tenant/Pos/Index', [
             'tenant' => (string) tenant()->getTenantKey(),
+            'cashierName' => $cashier->name,
             'products' => Product::query()
                 ->with('inventoryStock')
                 ->where('is_active', true)

@@ -86,6 +86,9 @@ Route::middleware([
     Route::post('/client/{tenant}/pos/unlock', [TenantPosAccessController::class, 'unlock'])
         ->middleware([])
         ->name('tenant.pos.unlock');
+    Route::post('/client/{tenant}/pos/logout', [TenantPosAccessController::class, 'logout'])
+        ->middleware([])
+        ->name('tenant.pos.logout');
     Route::post('/client/{tenant}/pos/checkout', [PosController::class, 'checkout'])
         ->middleware(['feature:pos', \App\Http\Middleware\EnsurePosAccess::class])
         ->name('tenant.pos.checkout');
