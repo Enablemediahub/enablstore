@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title desc">
+  <title id="title">Bottled water product illustration</title>
+  <desc id="desc">A crisp blue water bottle on a soft red background.</desc>
+  <rect width="640" height="480" rx="32" fill="#fef2f2"/>
+  <circle cx="500" cy="102" r="72" fill="#fee2e2"/>
+  <path d="M268 73h104v54l25 27v223c0 18-15 33-33 33h-88c-18 0-33-15-33-33V154l25-27z" fill="#bfdbfe" opacity=".95"/>
+  <path d="M268 73h104v41H268z" fill="#2563eb"/>
+  <path d="M242 194h156v102H242z" fill="#2563eb" opacity=".9"/>
+  <path d="M270 220h100v14H270zm19 29h62v12h-62z" fill="#eff6ff"/>
+  <path d="M291 52h58v21h-58z" fill="#1e3a8a"/>
+</svg>

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title desc">
+  <title id="title">Enablstore catalogue illustration</title>
+  <desc id="desc">A red shopping bag with a white lightning mark.</desc>
+  <rect width="640" height="480" rx="32" fill="#fff7ed"/>
+  <path d="M189 156h262l28 229H161z" fill="#c91b13"/>
+  <path d="M248 160v-35c0-40 32-73 72-73s72 33 72 73v35h-25v-35c0-26-21-48-47-48s-47 22-47 48v35z" fill="#b91c1c"/>
+  <path d="m359 187-76 94h46l-23 69 78-104h-46z" fill="#fff"/>
+</svg>

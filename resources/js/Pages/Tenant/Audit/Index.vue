@@ -1,0 +1,9 @@
+<script setup lang="ts">
+import AdminSidePanel from '@/Components/AdminSidePanel.vue';
+import EnCard from '@/Components/EnCard.vue';
+import { Head } from '@inertiajs/vue3';
+import { ref } from 'vue';
+defineProps<{ logs: Array<{ id: number; action: string; auditable_type?: string; auditable_id?: string; metadata?: Record<string, unknown>; ip_address?: string; created_at: string }> }>();
+const tenant = String(route().params.tenant); const mobilePanelOpen = ref(false);
+</script>
+<template><Head title="Audit log" /><main class="min-h-screen bg-neutral-50"><div class="mx-auto flex min-h-screen max-w-[1600px]"><AdminSidePanel :tenant="tenant" current="audit" :mobile-open="mobilePanelOpen" @close="mobilePanelOpen = false" /><section class="min-w-0 flex-1 px-4 py-6 sm:px-8 sm:py-10"><div class="mx-auto max-w-7xl space-y-8"><header><p class="text-sm font-semibold text-red-700">Governance</p><h1 class="mt-1 text-3xl font-bold">Audit log</h1><p class="mt-2 text-sm text-neutral-500">Track sales, supplier, stock, and catalogue activity.</p></header><EnCard><div class="overflow-x-auto"><table class="w-full min-w-[720px] text-left text-sm"><thead class="border-b text-xs uppercase text-neutral-500"><tr><th class="px-3 py-3">Action</th><th class="px-3 py-3">Record</th><th class="px-3 py-3">IP address</th><th class="px-3 py-3">Time</th></tr></thead><tbody><tr v-for="log in logs" :key="log.id" class="border-b last:border-0"><td class="px-3 py-3 font-semibold">{{ log.action }}</td><td class="px-3 py-3 text-neutral-500">{{ log.auditable_type?.split('\\').pop() }} #{{ log.auditable_id }}</td><td class="px-3 py-3 font-mono text-xs">{{ log.ip_address || 'System' }}</td><td class="px-3 py-3 text-neutral-500">{{ log.created_at }}</td></tr></tbody></table><p v-if="!logs.length" class="py-6 text-sm text-neutral-500">No audit activity yet.</p></div></EnCard></div></section></div></main></template>

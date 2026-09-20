@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title desc">
+  <title id="title">Cooking oil product illustration</title>
+  <desc id="desc">A warm amber cooking oil bottle on a soft red background.</desc>
+  <rect width="640" height="480" rx="32" fill="#fff7ed"/>
+  <circle cx="510" cy="112" r="78" fill="#fee2e2"/>
+  <path d="M247 92h146v43c0 18 14 32 32 32h10v229c0 22-18 40-40 40H244c-22 0-40-18-40-40V167h10c18 0 33-14 33-32V92Z" fill="#f59e0b"/>
+  <path d="M247 92h146v38H247z" fill="#b45309"/>
+  <path d="M270 57h100v35H270z" fill="#7f1d1d"/>
+  <rect x="244" y="210" width="152" height="104" rx="14" fill="#fff7ed"/>
+  <path d="M285 234h70v12h-70zm-16 27h102v14H269z" fill="#b91c1c"/>
+  <path d="M278 289h84v10h-84z" fill="#374151"/>
+</svg>

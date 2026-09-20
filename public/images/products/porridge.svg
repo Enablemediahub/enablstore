@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title desc">
+  <title id="title">Millet porridge product illustration</title>
+  <desc id="desc">A golden millet porridge pouch on a soft red background.</desc>
+  <rect width="640" height="480" rx="32" fill="#fef2f2"/>
+  <circle cx="122" cy="104" r="70" fill="#ffedd5"/>
+  <path d="m216 76 211 0 28 38-18 288H211l-18-288z" fill="#dc2626"/>
+  <path d="m216 76 211 0 28 38H193z" fill="#7f1d1d"/>
+  <path d="M214 157h215v160H214z" fill="#fff7ed"/>
+  <circle cx="320" cy="214" r="38" fill="#f59e0b"/>
+  <path d="M279 270h82v12h-82zm-19 25h120v14H260z" fill="#b91c1c"/>
+  <path d="M238 116h167" stroke="#fca5a5" stroke-width="6" stroke-linecap="round"/>
+</svg>

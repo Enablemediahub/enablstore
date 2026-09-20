@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+
+@theme {
+    --font-sans: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    --color-primary-50: #fef2f2;
+    --color-primary-100: #fee2e2;
+    --color-primary-300: #fca5a5;
+    --color-primary-500: #dc2626;
+    --color-primary-600: #c91b13;
+    --color-primary-700: #b91c1c;
+    --color-primary-900: #7f1d1d;
+
+    --color-accent-50: #fff7ed;
+    --color-accent-100: #ffedd5;
+    --color-accent-300: #fdba74;
+    --color-accent-500: #f97316;
+    --color-accent-600: #ea580c;
+    --color-accent-700: #c2410c;
+
+    --color-neutral-0: #ffffff;
+    --color-neutral-50: #f9fafb;
+    --color-neutral-100: #f3f4f6;
+    --color-neutral-300: #d1d5db;
+    --color-neutral-500: #4b5563;
+    --color-neutral-700: #374151;
+    --color-neutral-900: #111827;
+
+    --color-success: #10b981;
+    --color-warning: #f59e0b;
+    --color-danger: #ef4444;
+    --color-info: #3b82f6;
+}
+
+@layer base {
+    :root {
+        font-family: var(--font-sans);
+        color: var(--color-neutral-900);
+        background: var(--color-neutral-50);
+        font-synthesis: none;
+        text-rendering: optimizeLegibility;
+    }
+
+    body {
+        min-width: 320px;
+        min-height: 100vh;
+        line-height: 1.5;
+    }
+
+    :focus-visible {
+        outline: 2px solid var(--color-primary-600);
+        outline-offset: 2px;
+    }
+}
