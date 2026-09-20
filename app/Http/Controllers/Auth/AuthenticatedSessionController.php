@@ -39,7 +39,7 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
         if ($user?->role === 'admin' && $user->tenant_id !== null) {
-            return redirect()->intended(route('tenant.products.index', ['tenant' => $user->tenant_id], absolute: false));
+            return redirect(route('tenant.products.index', ['tenant' => $user->tenant_id], absolute: false));
         }
 
         return redirect()->intended(route('dashboard', absolute: false));
