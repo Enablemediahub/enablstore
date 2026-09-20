@@ -23,12 +23,12 @@ class DatabaseSeeder extends Seeder
         // User::factory(10)->create();
 
         User::query()->updateOrCreate(
-            ['username' => 'admin'],
+            ['username' => config('admin.username')],
             [
                 'name' => 'Demo Store Owner',
                 'email' => 'admin@enablstore.test',
                 'tenant_id' => Tenant::query()->value('id'),
-                'password' => 'admin',
+                'password' => config('admin.password'),
             ],
         );
     }
