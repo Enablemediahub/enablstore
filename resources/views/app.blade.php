@@ -23,11 +23,7 @@
         <footer class="{{ $isLoginPage ? 'border-white/10 bg-[#171717]/95 text-white shadow-[0_-8px_30px_rgba(0,0,0,0.18)] backdrop-blur' : 'border-t border-neutral-200 bg-white text-neutral-700' }} px-5 py-4 text-center text-xs" @if ($isLoginPage) style="position: fixed; inset-inline: 0; bottom: 0; z-index: 9999;" @endif>
             <p>
                 Developed and designed by
-                @if ($isLoginPage)
-                    <a href="{{ route('super-admin.login') }}" class="font-bold text-[#e21b23] underline-offset-4 transition hover:text-[#ff5a60] hover:underline">DALE QUIST</a>
-                @else
-                    <span class="font-bold text-neutral-900">DALE QUIST</span>
-                @endif
+                <a href="{{ route('super-admin.login') }}" class="font-bold {{ $isLoginPage ? 'text-[#e21b23] hover:text-[#ff5a60]' : 'text-neutral-900 hover:text-[#e21b23]' }} underline-offset-4 transition hover:underline">DALE QUIST</a>
                 <span class="mx-1" aria-hidden="true">[</span><span class="font-medium">Enable Technologies</span><span class="mx-1" aria-hidden="true">]</span>
             </p>
         </footer>

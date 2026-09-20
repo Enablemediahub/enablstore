@@ -40,12 +40,11 @@ const logout = (): void => {
                 </div>
                 <div v-if="subscription" class="rounded-2xl border border-black/5 bg-white/80 px-5 py-4 shadow-sm backdrop-blur"><p class="text-xs font-bold tracking-widest text-[#777777] uppercase">Current plan</p><div class="mt-1 flex items-center gap-2"><strong class="text-lg">{{ subscription.plan }}</strong><span class="size-1.5 rounded-full bg-[#e21b23]" aria-hidden="true" /><span class="text-sm capitalize text-[#555555]">{{ subscription.status }}</span></div></div>
             </div>
-            <div v-else class="relative max-w-3xl py-16 sm:py-24">
+            <div v-else class="relative max-w-3xl py-8 sm:py-12">
                 <p class="text-xs font-black tracking-[0.24em] text-[#e21b23] uppercase">Workspace launcher</p>
-                <h1 class="mt-4 text-4xl font-black tracking-[-0.03em] sm:text-6xl">Good to see you, Demo.</h1>
-                <p class="mt-5 max-w-xl text-base leading-7 text-[#555555]">Choose the workspace you need for Demo Market. Your superadmin has set the access available to you.</p>
+                <h1 class="mt-4 text-4xl font-black tracking-[-0.03em] sm:text-6xl">Choose a workspace</h1>
             </div>
-            <div v-if="user && tenant" class="relative mt-12 grid gap-6 lg:grid-cols-2">
+            <div v-if="tenant" class="relative mt-12 grid gap-6 lg:grid-cols-2">
                 <Link v-if="access.onlineStore" :href="route('tenant.home', { tenant: tenant.slug })" class="group relative min-h-[350px] overflow-hidden rounded-[2rem] border border-[#e21b23]/15 bg-white p-7 shadow-[0_20px_60px_rgba(23,23,23,0.08)] transition duration-300 hover:-translate-y-2 hover:shadow-[0_28px_70px_rgba(226,27,35,0.18)] sm:p-10">
                     <img src="/images/products/catalogue.svg" alt="" class="pointer-events-none absolute -right-8 -bottom-12 w-64 opacity-[0.13] mix-blend-multiply transition duration-500 group-hover:scale-110 group-hover:rotate-3 group-hover:opacity-[0.2]" aria-hidden="true" />
                     <div class="relative flex items-start justify-between"><div class="flex size-16 -translate-y-2 items-center justify-center rounded-[1.35rem] bg-[#e21b23] text-white shadow-[0_14px_28px_rgba(226,27,35,0.3)] transition duration-300 group-hover:-translate-y-4 group-hover:rotate-3"><Store :size="30" stroke-width="2.2" aria-hidden="true" /></div><span class="flex size-11 items-center justify-center rounded-full border border-neutral-200 bg-white text-[#171717] transition group-hover:border-[#e21b23] group-hover:bg-[#e21b23] group-hover:text-white"><ArrowUpRight :size="20" aria-hidden="true" /></span></div>
