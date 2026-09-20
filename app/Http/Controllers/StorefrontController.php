@@ -7,13 +7,23 @@ namespace App\Http\Controllers;
 use App\Models\Product;
 use App\Models\TenantSetting;
 use App\Models\PlatformSetting;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class StorefrontController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        if (! $request->session()->has('pos_cashier_id')) {
+            $request->session()->put('workspace_destination', 'store');
+
+            return Inertia::render('Tenant/Pos/Unlock', [
+                'tenant' => (string) tenant()->getTenantKey(),
+                'workspace' => 'store',
+            ]);
+        }
+
         return Inertia::render('Storefront/Index', [
             'products' => Product::query()
                 ->with('inventoryStock')

@@ -25,6 +25,10 @@ class TenantPosAccessController extends Controller
 
         $request->session()->put('pos_cashier_id', $user->id);
 
-        return redirect()->route('tenant.pos', ['tenant' => tenant()->getTenantKey()]);
+        $destination = $request->session()->pull('workspace_destination', 'pos');
+
+        return $destination === 'store'
+            ? redirect()->route('tenant.home', ['tenant' => tenant()->getTenantKey()])
+            : redirect()->route('tenant.pos', ['tenant' => tenant()->getTenantKey()]);
     }
 }

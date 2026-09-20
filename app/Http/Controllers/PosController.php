@@ -18,8 +18,11 @@ class PosController extends Controller
     public function index(Request $request): Response
     {
         if (! $request->session()->has('pos_cashier_id')) {
+            $request->session()->put('workspace_destination', 'pos');
+
             return Inertia::render('Tenant/Pos/Unlock', [
                 'tenant' => (string) tenant()->getTenantKey(),
+                'workspace' => 'pos',
             ]);
         }
 

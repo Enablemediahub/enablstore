@@ -37,7 +37,7 @@ class DatabaseSeeder extends Seeder
         User::query()->updateOrCreate(
             ['username' => 'dale'],
             [
-                'name' => 'dale',
+                'name' => 'demo-dale',
                 'email' => 'dale@enablstore.test',
                 'tenant_id' => Tenant::query()->value('id'),
                 'role' => 'cashier',
