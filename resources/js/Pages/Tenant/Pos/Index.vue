@@ -270,6 +270,7 @@ onUnmounted(() => {
     <main class="min-h-screen bg-neutral-50">
         <div class="mx-auto flex min-h-screen max-w-[1600px]">
             <AdminSidePanel
+                v-if="$page.props.auth.user"
                 :tenant="tenant"
                 current="pos"
                 :mobile-open="mobilePanelOpen"

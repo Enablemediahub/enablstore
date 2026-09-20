@@ -35,7 +35,7 @@ Route::middleware([
     InitializeTenancyByPath::class,
 ])->group(function () {
     Route::get('/client/{tenant}', [StorefrontController::class, 'index'])
-        ->middleware(['auth', 'tenant.access', 'feature:online_store'])
+        ->middleware(['feature:online_store'])
         ->name('tenant.home');
 
     Route::get('/client/{tenant}/products', [TenantProductController::class, 'index'])
@@ -78,19 +78,19 @@ Route::middleware([
         ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
         ->name('tenant.products.destroy');
     Route::get('/client/{tenant}/pos', [PosController::class, 'index'])
-        ->middleware(['auth', 'tenant.access', 'feature:pos'])
+        ->middleware(['feature:pos'])
         ->name('tenant.pos');
     Route::get('/client/{tenant}/pos/manifest.json', [PosController::class, 'manifest'])
-        ->middleware(['auth', 'tenant.access', 'feature:pos'])
+        ->middleware(['feature:pos'])
         ->name('tenant.pos.manifest');
     Route::post('/client/{tenant}/pos/unlock', [TenantPosAccessController::class, 'unlock'])
-        ->middleware(['auth', 'tenant.access'])
+        ->middleware([])
         ->name('tenant.pos.unlock');
     Route::post('/client/{tenant}/pos/checkout', [PosController::class, 'checkout'])
-        ->middleware(['auth', 'tenant.access', 'feature:pos', \App\Http\Middleware\EnsurePosAccess::class])
+        ->middleware(['feature:pos', \App\Http\Middleware\EnsurePosAccess::class])
         ->name('tenant.pos.checkout');
     Route::post('/client/{tenant}/pos/sync', OfflineSalesSyncController::class)
-        ->middleware(['auth', 'tenant.access', 'feature:pos', \App\Http\Middleware\EnsurePosAccess::class])
+        ->middleware(['feature:pos', \App\Http\Middleware\EnsurePosAccess::class])
         ->name('tenant.pos.sync');
     Route::get('/client/{tenant}/analytics', TenantAnalyticsController::class)
         ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
