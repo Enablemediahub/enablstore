@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\CheckoutRequest;
 use App\Models\Product;
+use App\Models\PlatformSetting;
 use App\Models\User;
 use App\Services\CheckoutService;
 use Illuminate\Http\RedirectResponse;
@@ -27,6 +28,9 @@ class PosController extends Controller
             return Inertia::render('Tenant/Pos/Unlock', [
                 'tenant' => (string) tenant()->getTenantKey(),
                 'workspace' => 'pos',
+                'wallpaperUrl' => ($path = PlatformSetting::value('login_wallpaper'))
+                    ? $request->getSchemeAndHttpHost().'/storage/'.ltrim($path, '/')
+                    : null,
             ]);
         }
 

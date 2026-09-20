@@ -26,6 +26,9 @@ class StorefrontController extends Controller
             return Inertia::render('Tenant/Pos/Unlock', [
                 'tenant' => (string) tenant()->getTenantKey(),
                 'workspace' => 'store',
+                'wallpaperUrl' => ($path = PlatformSetting::value('login_wallpaper'))
+                    ? $request->getSchemeAndHttpHost().'/storage/'.ltrim($path, '/')
+                    : null,
             ]);
         }
 

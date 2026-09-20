@@ -3,7 +3,7 @@ import EnButton from '@/Components/EnButton.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { LockKeyhole, ShoppingCart } from '@lucide/vue';
 
-const props = defineProps<{ tenant: string; workspace: 'store' | 'pos' }>();
+const props = defineProps<{ tenant: string; workspace: 'store' | 'pos'; wallpaperUrl?: string | null }>();
 
 const form = useForm({ name: '', pin: '' });
 
@@ -14,8 +14,9 @@ const unlock = (): void => {
 
 <template>
     <Head :title="workspace === 'store' ? 'Unlock Online Store' : 'Unlock POS'" />
-    <main class="flex min-h-screen items-center justify-center bg-neutral-950 px-5 py-10 text-white">
-        <section class="w-full max-w-md rounded-3xl border border-white/10 bg-neutral-900 p-7 shadow-2xl sm:p-10">
+    <main class="relative flex min-h-screen items-center justify-center overflow-hidden bg-neutral-950 bg-cover bg-center px-5 py-10 text-white" :style="props.wallpaperUrl ? { backgroundImage: `url('${props.wallpaperUrl}')` } : undefined">
+        <div class="absolute inset-0 bg-neutral-950/75" aria-hidden="true" />
+        <section class="relative z-10 w-full max-w-md rounded-3xl border border-white/10 bg-neutral-900/90 p-7 shadow-2xl backdrop-blur-sm sm:p-10">
             <div class="flex size-14 items-center justify-center rounded-2xl bg-white text-neutral-950">
                 <ShoppingCart :size="28" aria-hidden="true" />
             </div>
