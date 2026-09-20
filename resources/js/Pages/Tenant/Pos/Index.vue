@@ -8,7 +8,7 @@ import ProductArtwork from '@/Components/ProductArtwork.vue';
 import ReceiptPreview from '@/Components/ReceiptPreview.vue';
 import AdminSidePanel from '@/Components/AdminSidePanel.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { ChevronDown, LogOut, Menu } from '@lucide/vue';
+import { ChevronDown, LogOut, Menu, Pause, Play, Trash2 } from '@lucide/vue';
 import axios from 'axios';
 import {
     markOfflineSaleSynced,
@@ -29,6 +29,14 @@ type Product = {
 };
 
 type CartItem = Product & { quantity: number };
+type HeldSale = {
+    id: string;
+    items: CartItem[];
+    paymentMethod: 'cash' | 'mobile_money' | 'card';
+    discountType: 'fixed' | 'percentage' | '';
+    discountValue: number;
+    discountReason: string;
+};
 type Receipt = {
     items: Array<{ name: string; quantity: number; priceMinor: number }>;
     totalMinor: number;
@@ -55,6 +63,7 @@ const pendingCount = ref(0);
 const syncInProgress = ref(false);
 const scannerOpen = ref(false);
 const receipt = ref<Receipt | null>(null);
+const heldSales = ref<HeldSale[]>([]);
 const logoutForm = useForm({});
 
 const logout = (): void => {
@@ -111,6 +120,47 @@ const addToCart = (product: Product): void => {
     cart.value.push({ ...product, quantity: 1 });
 };
 
+const removeFromCart = (productId: number): void => {
+    cart.value = cart.value.filter((item) => item.id !== productId);
+};
+
+const clearSale = (): void => {
+    cart.value = [];
+    paymentMethod.value = 'cash';
+    discountType.value = '';
+    discountValue.value = 0;
+    discountReason.value = '';
+};
+
+const holdSale = (): void => {
+    if (cart.value.length === 0) {
+        return;
+    }
+
+    heldSales.value.push({
+        id: crypto.randomUUID(),
+        items: cart.value.map((item) => ({ ...item })),
+        paymentMethod: paymentMethod.value,
+        discountType: discountType.value,
+        discountValue: discountValue.value,
+        discountReason: discountReason.value,
+    });
+    clearSale();
+};
+
+const resumeSale = (heldSale: HeldSale): void => {
+    if (cart.value.length > 0) {
+        holdSale();
+    }
+
+    cart.value = heldSale.items.map((item) => ({ ...item }));
+    paymentMethod.value = heldSale.paymentMethod;
+    discountType.value = heldSale.discountType;
+    discountValue.value = heldSale.discountValue;
+    discountReason.value = heldSale.discountReason;
+    heldSales.value = heldSales.value.filter((sale) => sale.id !== heldSale.id);
+};
+
 const handleBarcode = (code: string): void => {
     const normalizedCode = code.trim().toLowerCase();
     const product = props.products.find(
@@ -156,12 +206,6 @@ const checkout = (): void => {
         transactionUuid: checkoutForm.transaction_uuid,
     };
 
-    const clearDiscount = (): void => {
-        discountType.value = '';
-        discountValue.value = 0;
-        discountReason.value = '';
-    };
-
     if (!isOnline.value) {
         void queueOfflineSale({
             transactionUuid: checkoutForm.transaction_uuid,
@@ -181,8 +225,7 @@ const checkout = (): void => {
         }).then(async () => {
             pendingCount.value = await pendingOfflineSaleCount();
             receipt.value = completedReceipt;
-            cart.value = [];
-            clearDiscount();
+            clearSale();
             checkoutForm.transaction_uuid = crypto.randomUUID();
         });
 
@@ -194,8 +237,7 @@ const checkout = (): void => {
         {
             onSuccess: () => {
                 receipt.value = completedReceipt;
-                cart.value = [];
-                clearDiscount();
+                clearSale();
                 checkoutForm.transaction_uuid = crypto.randomUUID();
             },
         },
@@ -409,9 +451,22 @@ onUnmounted(() => {
                                 >
                                     Current sale
                                 </h2>
-                                <span class="text-sm text-white/70"
-                                    >{{ cart.length }} items</span
-                                >
+                                <div class="flex items-center gap-3">
+                                    <span class="text-sm text-white/70">{{ cart.length }} items</span>
+                                    <button type="button" class="inline-flex items-center gap-1 rounded-md border border-white/20 px-2 py-1 text-xs font-semibold text-white transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-40" title="Hold current sale" :disabled="cart.length === 0" @click="holdSale">
+                                        <Pause :size="14" aria-hidden="true" />
+                                        Hold
+                                    </button>
+                                </div>
+                            </div>
+                            <div v-if="heldSales.length" class="mt-4 rounded-lg border border-white/15 bg-black/15 p-3">
+                                <p class="text-xs font-bold tracking-wide text-white/70 uppercase">Held sales</p>
+                                <div class="mt-2 space-y-2">
+                                    <button v-for="(heldSale, index) in heldSales" :key="heldSale.id" type="button" class="flex w-full items-center justify-between rounded-md bg-white/10 px-3 py-2 text-left text-sm text-white transition hover:bg-white/20" @click="resumeSale(heldSale)">
+                                        <span>Sale {{ index + 1 }} · {{ heldSale.items.length }} items</span>
+                                        <Play :size="15" aria-hidden="true" />
+                                    </button>
+                                </div>
                             </div>
                             <div v-if="cart.length" class="mt-6 space-y-4">
                                 <div
@@ -438,6 +493,9 @@ onUnmounted(() => {
                                             )
                                         }}
                                     </p>
+                                    <button type="button" class="shrink-0 rounded-md p-1 text-white/60 transition hover:bg-white/10 hover:text-white" title="Remove item" aria-label="Remove item" @click="removeFromCart(item.id)">
+                                        <Trash2 :size="16" aria-hidden="true" />
+                                    </button>
                                 </div>
                             </div>
                             <EnEmptyState
@@ -460,7 +518,7 @@ onUnmounted(() => {
                                 </div>
                                 <select
                                     v-model="paymentMethod"
-                                    class="mt-4 min-h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm"
+                                    class="mt-4 min-h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm text-neutral-900"
                                     aria-label="Payment method"
                                 >
                                     <option value="cash">Cash</option>
