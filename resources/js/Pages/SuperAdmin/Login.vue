@@ -2,7 +2,7 @@
 import EnButton from '@/Components/EnButton.vue';
 import EnCard from '@/Components/EnCard.vue';
 import EnInput from '@/Components/EnInput.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 
 const form = useForm({
     username: '',
@@ -51,6 +51,12 @@ const submit = (): void => {
                 >
                     Sign in
                 </EnButton>
+                <Link
+                    href="/login"
+                    class="block w-full rounded-md border border-neutral-300 px-4 py-2 text-center text-sm font-semibold text-neutral-700 transition hover:bg-neutral-100"
+                >
+                    Admin login
+                </Link>
             </form>
         </EnCard>
     </main>
