@@ -35,8 +35,8 @@ const logout = (): void => {
             <div v-if="user" class="relative flex flex-wrap items-end justify-between gap-8">
                 <div class="max-w-2xl">
                     <p class="text-xs font-black tracking-[0.24em] text-[#e21b23] uppercase">Workspace launcher</p>
-                    <h1 class="mt-4 text-4xl font-black tracking-[-0.03em] sm:text-6xl">Good to see you, {{ user.name.split(' ')[0] }}.</h1>
-                    <p class="mt-5 max-w-xl text-base leading-7 text-[#555555]">Choose the workspace you need for {{ tenant?.name ?? 'your store' }}. Your superadmin has set the access available to you.</p>
+                    <h1 class="mt-4 text-4xl font-black tracking-[-0.03em] sm:text-6xl">Choose a workspace</h1>
+                    <p class="mt-5 max-w-xl text-base leading-7 text-[#555555]">Choose the workspace you need for {{ tenant?.name ?? 'your store' }}.</p>
                 </div>
                 <div v-if="subscription" class="rounded-2xl border border-black/5 bg-white/80 px-5 py-4 shadow-sm backdrop-blur"><p class="text-xs font-bold tracking-widest text-[#777777] uppercase">Current plan</p><div class="mt-1 flex items-center gap-2"><strong class="text-lg">{{ subscription.plan }}</strong><span class="size-1.5 rounded-full bg-[#e21b23]" aria-hidden="true" /><span class="text-sm capitalize text-[#555555]">{{ subscription.status }}</span></div></div>
             </div>
