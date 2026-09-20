@@ -28,7 +28,7 @@ class StorefrontController extends Controller
                 'workspace' => 'store',
                 'wallpaperUrl' => ($path = PlatformSetting::value('login_wallpaper'))
                     ? $request->getSchemeAndHttpHost().'/storage/'.ltrim($path, '/')
-                    : null,
+                    : $request->getSchemeAndHttpHost().'/images/products/cart.svg',
             ]);
         }
 

@@ -30,7 +30,7 @@ class PosController extends Controller
                 'workspace' => 'pos',
                 'wallpaperUrl' => ($path = PlatformSetting::value('login_wallpaper'))
                     ? $request->getSchemeAndHttpHost().'/storage/'.ltrim($path, '/')
-                    : null,
+                    : $request->getSchemeAndHttpHost().'/images/products/cart.svg',
             ]);
         }
 
