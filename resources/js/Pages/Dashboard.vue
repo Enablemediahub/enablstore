@@ -24,7 +24,7 @@ const logout = (): void => {
                 <Link href="/" class="text-xl font-black tracking-tight">enabl<span class="text-[#e21b23]">store</span></Link>
                 <div class="flex items-center gap-4 text-sm">
                     <span v-if="user" class="hidden text-white/65 sm:inline">{{ user.name }}</span>
-                    <Link href="/login" class="inline-flex items-center rounded-full bg-blue-600 px-4 py-2 font-semibold text-white transition hover:bg-blue-700">Admin login</Link>
+                    <Link href="/login" target="_blank" rel="noopener noreferrer" class="inline-flex items-center rounded-full bg-blue-600 px-4 py-2 font-semibold text-white transition hover:bg-blue-700">Admin login</Link>
                     <Link v-if="user && tenant && user.role === 'admin'" :href="route('tenant.products.index', { tenant: tenant.slug })" class="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-white/75 transition hover:border-white/40 hover:text-white"><LayoutDashboard :size="16" aria-hidden="true" /> Admin center</Link>
                     <button v-if="user" type="button" class="inline-flex items-center gap-2 rounded-full border border-white/15 px-4 py-2 text-white/75 transition hover:border-white/40 hover:text-white" @click="logout"><LogOut :size="16" aria-hidden="true" /> Sign out</button>
                 </div>
