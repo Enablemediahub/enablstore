@@ -51,7 +51,7 @@ const submit = () => {
                 <form class="mt-7" @submit.prevent="submit">
                     <div><InputLabel for="username" value="Username" /><TextInput id="username" v-model="form.username" type="text" class="mt-1 block w-full" required autofocus autocomplete="username" /><InputError class="mt-2" :message="form.errors.username" /></div>
                     <div class="mt-4"><InputLabel for="password" value="Password" /><div class="relative"><TextInput id="password" v-model="form.password" :type="passwordRevealed ? 'text' : 'password'" class="mt-1 block w-full pr-12" required autocomplete="current-password" /><button type="button" class="absolute top-1/2 right-3 -translate-y-1/2 text-neutral-500" :aria-label="passwordRevealed ? 'Hide password' : 'Show password'" @click="passwordRevealed = !passwordRevealed"><EyeOff v-if="passwordRevealed" :size="18" /><Eye v-else :size="18" /></button></div><InputError class="mt-2" :message="form.errors.password" /></div>
-                    <p class="mt-4 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">Demo access: <strong>username</strong> / <strong>password</strong></p>
+                    <p class="mt-4 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">Demo access: <strong>admin</strong> / <strong>admin</strong></p>
                     <div class="mt-5 flex items-center justify-between gap-4"><Link v-if="canResetPassword" :href="route('password.request')" class="text-sm text-gray-600 underline">Forgot password?</Link><EnButton type="submit" class="ml-auto" :loading="form.processing">Log in</EnButton></div>
                 </form>
             </section>
