@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\Category;
 use App\Models\Product;
-use App\Models\TenantSetting;
 use App\Models\PlatformSetting;
+use App\Models\TenantSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -31,15 +32,36 @@ class StorefrontController extends Controller
             ]);
         }
 
+        $catalogueMode = TenantSetting::query()->where('key', 'catalogue_mode')->value('value')
+            ?? PlatformSetting::value('catalogue_mode_default', 'shared');
+
         return Inertia::render('Storefront/Index', [
+            'hero' => TenantSettingsController::heroSettingsForStorefront($request),
+            'storefront' => TenantSettingsController::storefrontConfigForStorefront($request),
+            'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
             'products' => Product::query()
-                ->with('inventoryStock')
+                ->with(['category:id,name', 'inventoryStock'])
+                ->withSum('saleItems as total_sold', 'quantity')
                 ->where('is_active', true)
                 ->where('available_online', true)
-                ->when((TenantSetting::query()->where('key', 'catalogue_mode')->value('value') ?? PlatformSetting::value('catalogue_mode_default', 'shared')) === 'separate_online', static fn ($query) => $query->where('available_in_pos', false))
+                ->when($catalogueMode === 'separate_online', static fn ($query) => $query->where('available_in_pos', false))
                 ->whereHas('inventoryStock', static fn ($query) => $query->where('quantity', '>', 0))
                 ->orderBy('name')
-                ->get(),
+                ->get()
+                ->map(static fn (Product $product): array => [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'price_minor' => $product->price_minor,
+                    'compare_at_price_minor' => $product->compare_at_price_minor,
+                    'is_online_deal' => $product->is_online_deal,
+                    'category_id' => $product->category_id,
+                    'category_name' => $product->category?->name,
+                    'total_sold' => (int) ($product->total_sold ?? 0),
+                    'created_at' => $product->created_at?->toIso8601String(),
+                    'image_path' => $product->image_path,
+                    'image_gallery' => $product->image_gallery,
+                ]),
         ]);
     }
 }

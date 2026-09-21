@@ -46,6 +46,10 @@ class ProductService
                 'is_active' => true,
                 'available_in_pos' => $request->boolean('available_in_pos'),
                 'available_online' => $request->boolean('available_online'),
+                'is_online_deal' => $request->boolean('is_online_deal'),
+                'compare_at_price_minor' => $request->filled('compare_at_price_minor')
+                    ? $request->integer('compare_at_price_minor')
+                    : null,
             ]);
 
             InventoryStock::query()->create([
@@ -94,6 +98,10 @@ class ProductService
                 'category_id' => $request->input('category_id'),
                 'available_in_pos' => $request->boolean('available_in_pos'),
                 'available_online' => $request->boolean('available_online'),
+                'is_online_deal' => $request->boolean('is_online_deal'),
+                'compare_at_price_minor' => $request->filled('compare_at_price_minor')
+                    ? $request->integer('compare_at_price_minor')
+                    : null,
             ]);
 
             $product->inventoryStock()->updateOrCreate(

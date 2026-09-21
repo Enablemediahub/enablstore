@@ -56,6 +56,12 @@ Route::middleware([
     Route::patch('/client/{tenant}/settings', [TenantSettingsController::class, 'update'])
         ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
         ->name('tenant.settings.update');
+    Route::post('/client/{tenant}/settings/hero-image', [TenantSettingsController::class, 'updateHeroImage'])
+        ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
+        ->name('tenant.settings.hero-image');
+    Route::delete('/client/{tenant}/settings/hero-image', [TenantSettingsController::class, 'destroyHeroImage'])
+        ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
+        ->name('tenant.settings.hero-image.destroy');
     Route::get('/client/{tenant}/suppliers', [TenantSupplierController::class, 'index'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.suppliers.index');
     Route::post('/client/{tenant}/suppliers', [TenantSupplierController::class, 'store'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.suppliers.store');
     Route::post('/client/{tenant}/suppliers/receive', [TenantSupplierController::class, 'receive'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.suppliers.receive');

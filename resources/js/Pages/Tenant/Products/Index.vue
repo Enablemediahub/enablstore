@@ -19,6 +19,8 @@ type Product = {
     category_id?: number | null;
     image_path?: string | null;
     price_minor: number;
+    compare_at_price_minor?: number | null;
+    is_online_deal?: boolean;
     purchase_unit: string;
     units_per_purchase: number;
     available_in_pos: boolean;
@@ -47,7 +49,9 @@ const form = useForm({
     category_id: null as number | null,
     available_in_pos: true,
     available_online: true,
+    is_online_deal: false,
     price_cedis: 0,
+    compare_at_price_cedis: 0,
     cost_cedis: 0,
     purchase_unit: 'unit',
     units_per_purchase: 1,
@@ -78,7 +82,9 @@ const openEditModal = (product: Product): void => {
     form.category_id = product.category_id ?? null;
     form.available_in_pos = product.available_in_pos;
     form.available_online = product.available_online;
+    form.is_online_deal = product.is_online_deal ?? false;
     form.price_cedis = product.price_minor / 100;
+    form.compare_at_price_cedis = (product.compare_at_price_minor ?? 0) / 100;
     form.cost_cedis = 0;
     form.purchase_unit = product.purchase_unit;
     form.units_per_purchase = product.units_per_purchase;
@@ -148,7 +154,11 @@ const submit = (): void => {
         category_id: data.category_id,
         available_in_pos: data.available_in_pos,
         available_online: data.available_online,
+        is_online_deal: data.is_online_deal,
         price_minor: Math.round(Number(data.price_cedis) * 100),
+        compare_at_price_minor: Number(data.compare_at_price_cedis) > 0
+            ? Math.round(Number(data.compare_at_price_cedis) * 100)
+            : null,
         cost_minor: Math.round(Number(data.cost_cedis) * 100),
         purchase_unit: data.purchase_unit,
         units_per_purchase: data.units_per_purchase,
@@ -240,8 +250,9 @@ const submit = (): void => {
                 <label class="space-y-1.5 text-sm font-medium text-neutral-700">Barcode<span class="flex gap-2"><input v-model="form.barcode" type="text" class="min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /><button type="button" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-neutral-300 px-3 text-sm font-semibold text-neutral-700 hover:border-red-300 hover:text-red-700" @click="scannerOpen = true"><ScanLine :size="17" aria-hidden="true" /> Scan</button></span><span v-if="barcodeLookingUp" class="block text-xs text-neutral-500">Looking up barcode…</span><span v-else-if="barcodeLookupMessage" class="block text-xs text-neutral-500">{{ barcodeLookupMessage }}</span><span v-if="form.errors.barcode" class="text-danger block text-sm">{{ form.errors.barcode }}</span></label>
                 <label class="space-y-1.5 text-sm font-medium text-neutral-700">Category<select v-model="form.category_id" class="min-h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm"><option :value="null">Uncategorised</option><option v-for="category in props.categories" :key="category.id" :value="category.id">{{ category.name }}</option></select></label>
                 <label class="space-y-1.5 text-sm font-medium text-neutral-700">Product images (optional)<input type="file" multiple accept="image/jpeg,image/png,image/webp" class="block min-h-11 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-md file:border-0 file:bg-red-50 file:px-3 file:py-1.5 file:font-semibold file:text-red-700" @change="handleImageChange" /><span v-if="form.image" class="block text-xs text-neutral-500">{{ [form.image, ...form.images].length }} image(s) selected</span><span v-if="form.errors.image" class="text-danger block text-sm">{{ form.errors.image }}</span></label>
-                <fieldset class="sm:col-span-2"><legend class="text-sm font-medium text-neutral-700">Sales channels</legend><div class="mt-2 flex flex-wrap gap-4 text-sm text-neutral-700"><label class="flex items-center gap-2"><input v-model="form.available_in_pos" type="checkbox" /> Point of Sale</label><label class="flex items-center gap-2"><input v-model="form.available_online" type="checkbox" /> Online Store</label></div></fieldset>
+                <fieldset class="sm:col-span-2"><legend class="text-sm font-medium text-neutral-700">Sales channels</legend><div class="mt-2 flex flex-wrap gap-4 text-sm text-neutral-700"><label class="flex items-center gap-2"><input v-model="form.available_in_pos" type="checkbox" /> Point of Sale</label><label class="flex items-center gap-2"><input v-model="form.available_online" type="checkbox" /> Online Store</label><label class="flex items-center gap-2"><input v-model="form.is_online_deal" type="checkbox" /> Today's deal (online store)</label></div></fieldset>
                 <label class="space-y-1.5 text-sm font-medium text-neutral-700">Selling price (cedis)<input v-model.number="form.price_cedis" type="number" min="0" step="0.01" required class="min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /></label>
+                <label class="space-y-1.5 text-sm font-medium text-neutral-700">Compare-at price (cedis)<input v-model.number="form.compare_at_price_cedis" type="number" min="0" step="0.01" class="min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /><span class="block text-xs text-neutral-500">Optional. Show as struck-through when higher than the selling price.</span></label>
                 <label class="space-y-1.5 text-sm font-medium text-neutral-700">Cost price (cedis)<input v-model.number="form.cost_cedis" type="number" min="0" step="0.01" class="min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /></label>
                 <label class="space-y-1.5 text-sm font-medium text-neutral-700">Purchase unit<select v-model="form.purchase_unit" class="min-h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm text-neutral-900"><option value="unit">Unit</option><option value="box">Box</option><option value="carton">Carton</option><option value="case">Case</option><option value="pack">Pack</option><option value="dozen">Dozen</option></select><span class="block text-xs text-neutral-500">Choose how the supplier packages this product.</span></label>
                 <label class="space-y-1.5 text-sm font-medium text-neutral-700">Units inside purchase unit<input v-model.number="form.units_per_purchase" type="number" min="1" step="1" required class="min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm" /><span class="block text-xs text-neutral-500">Example: 12 bottles per box.</span></label>

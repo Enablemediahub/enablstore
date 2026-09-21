@@ -35,6 +35,8 @@ class StoreProductRequest extends FormRequest
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'available_in_pos' => ['required', 'boolean'],
             'available_online' => ['required', 'boolean'],
+            'is_online_deal' => ['sometimes', 'boolean'],
+            'compare_at_price_minor' => ['nullable', 'integer', 'min:0'],
         ];
     }
 }
