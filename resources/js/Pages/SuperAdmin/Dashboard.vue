@@ -2,7 +2,7 @@
 import EnBadge from '@/Components/EnBadge.vue';
 import EnCard from '@/Components/EnCard.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowRight, Image, ShoppingCart, Store, ShieldCheck, Users } from '@lucide/vue';
+import { ArrowRight, Image, ShoppingCart, Store, ShieldCheck, Trash2, Users } from '@lucide/vue';
 import SuperAdminSidePanel from '@/Components/SuperAdminSidePanel.vue';
 
 const props = defineProps<{
@@ -20,12 +20,18 @@ const props = defineProps<{
         }>;
     };
     loginWallpaperUrl: string | null;
+    storefrontLogoUrl: string;
+    defaultStorefrontLogoUrl: string;
+    hasCustomStorefrontLogo: boolean;
     status?: string | null;
     catalogueModeDefault: 'shared' | 'separate_online';
 }>();
 
 const brandingForm = useForm<{ login_wallpaper: File | null }>({
     login_wallpaper: null,
+});
+const logoForm = useForm<{ storefront_logo: File | null }>({
+    storefront_logo: null,
 });
 const catalogueForm = useForm({ catalogue_mode: props.catalogueModeDefault });
 
@@ -34,6 +40,20 @@ const uploadWallpaper = (): void => {
         forceFormData: true,
         preserveScroll: true,
         onSuccess: () => brandingForm.reset('login_wallpaper'),
+    });
+};
+
+const uploadStorefrontLogo = (): void => {
+    logoForm.post(route('super-admin.branding.storefront-logo'), {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => logoForm.reset('storefront_logo'),
+    });
+};
+
+const resetStorefrontLogo = (): void => {
+    logoForm.delete(route('super-admin.branding.storefront-logo.destroy'), {
+        preserveScroll: true,
     });
 };
 
@@ -77,21 +97,65 @@ const formatGhs = (minor: number): string =>
                 </div>
             </section>
             <EnCard id="branding">
-                <div class="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-center">
-                    <div>
-                        <p class="text-primary-700 text-sm font-semibold">Branding</p>
-                        <h2 class="mt-1 text-xl font-bold text-neutral-900">Login wallpaper</h2>
-                        <p class="mt-2 max-w-xl text-sm text-neutral-500">Upload the background image customers see behind the Enablstore login screen. JPG, PNG, or WebP up to 5 MB.</p>
-                        <form class="mt-5 flex flex-wrap items-end gap-3" @submit.prevent="uploadWallpaper">
-                            <label class="block text-sm font-medium text-neutral-700">Choose image<input type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-sm text-neutral-600" @change="brandingForm.login_wallpaper = ($event.target as HTMLInputElement).files?.[0] ?? null" /></label>
-                            <button type="submit" class="min-h-10 rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60" :disabled="!brandingForm.login_wallpaper || brandingForm.processing">Save login wallpaper</button>
-                        </form>
-                        <p v-if="brandingForm.errors.login_wallpaper" class="mt-2 text-sm text-red-600">{{ brandingForm.errors.login_wallpaper }}</p>
-                        <p v-if="status" class="mt-2 text-sm text-green-600">{{ status }}</p>
+                <div class="space-y-10">
+                    <div class="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-center">
+                        <div>
+                            <p class="text-primary-700 text-sm font-semibold">Branding</p>
+                            <h2 class="mt-1 text-xl font-bold text-neutral-900">Storefront logo</h2>
+                            <p class="mt-2 max-w-xl text-sm text-neutral-500">
+                                Upload the logo shown in the header of every tenant online store. PNG, JPG, WebP, or SVG up to 5 MB.
+                            </p>
+                            <form class="mt-5 flex flex-wrap items-end gap-3" @submit.prevent="uploadStorefrontLogo">
+                                <label class="block text-sm font-medium text-neutral-700">
+                                    Choose logo
+                                    <input
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                                        class="mt-2 block w-full text-sm text-neutral-600"
+                                        @change="logoForm.storefront_logo = ($event.target as HTMLInputElement).files?.[0] ?? null"
+                                    />
+                                </label>
+                                <button
+                                    type="submit"
+                                    class="min-h-10 rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60"
+                                    :disabled="!logoForm.storefront_logo || logoForm.processing"
+                                >
+                                    Save storefront logo
+                                </button>
+                                <button
+                                    type="button"
+                                    class="inline-flex min-h-10 items-center gap-2 rounded-md border border-neutral-300 px-4 py-2 text-sm font-semibold text-neutral-700 hover:border-red-300 hover:text-red-700 disabled:opacity-60"
+                                    :disabled="!hasCustomStorefrontLogo || logoForm.processing"
+                                    @click="resetStorefrontLogo"
+                                >
+                                    <Trash2 :size="16" aria-hidden="true" />
+                                    Reset to default
+                                </button>
+                            </form>
+                            <p v-if="logoForm.errors.storefront_logo" class="mt-2 text-sm text-red-600">{{ logoForm.errors.storefront_logo }}</p>
+                        </div>
+                        <div class="flex min-h-[120px] items-center justify-center rounded-md border border-neutral-200 bg-[#171717] p-6">
+                            <img :src="storefrontLogoUrl" alt="Current storefront logo" class="max-h-16 w-auto object-contain" />
+                        </div>
                     </div>
-                    <div class="aspect-video overflow-hidden rounded-md bg-neutral-100">
-                        <img v-if="loginWallpaperUrl" :src="loginWallpaperUrl" alt="Current login wallpaper" class="h-full w-full object-cover" />
-                        <div v-else class="flex h-full items-center justify-center px-5 text-center text-sm text-neutral-500">No custom wallpaper uploaded yet.</div>
+
+                    <hr class="border-neutral-200" />
+
+                    <div class="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-center">
+                        <div>
+                            <h2 class="text-xl font-bold text-neutral-900">Login wallpaper</h2>
+                            <p class="mt-2 max-w-xl text-sm text-neutral-500">Upload the background image customers see behind the Enablstore login screen. JPG, PNG, or WebP up to 5 MB.</p>
+                            <form class="mt-5 flex flex-wrap items-end gap-3" @submit.prevent="uploadWallpaper">
+                                <label class="block text-sm font-medium text-neutral-700">Choose image<input type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-sm text-neutral-600" @change="brandingForm.login_wallpaper = ($event.target as HTMLInputElement).files?.[0] ?? null" /></label>
+                                <button type="submit" class="min-h-10 rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60" :disabled="!brandingForm.login_wallpaper || brandingForm.processing">Save login wallpaper</button>
+                            </form>
+                            <p v-if="brandingForm.errors.login_wallpaper" class="mt-2 text-sm text-red-600">{{ brandingForm.errors.login_wallpaper }}</p>
+                            <p v-if="status" class="mt-2 text-sm text-green-600">{{ status }}</p>
+                        </div>
+                        <div class="aspect-video overflow-hidden rounded-md bg-neutral-100">
+                            <img v-if="loginWallpaperUrl" :src="loginWallpaperUrl" alt="Current login wallpaper" class="h-full w-full object-cover" />
+                            <div v-else class="flex h-full items-center justify-center px-5 text-center text-sm text-neutral-500">No custom wallpaper uploaded yet.</div>
+                        </div>
                     </div>
                 </div>
             </EnCard>

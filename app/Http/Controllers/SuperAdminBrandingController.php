@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 
 class SuperAdminBrandingController extends Controller
 {
-    public function update(Request $request): RedirectResponse
+    public function updateLoginWallpaper(Request $request): RedirectResponse
     {
         $request->validate([
             'login_wallpaper' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
@@ -30,5 +30,39 @@ class SuperAdminBrandingController extends Controller
         }
 
         return back()->with('status', 'Login wallpaper updated.');
+    }
+
+    public function updateStorefrontLogo(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'storefront_logo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+        ]);
+
+        $previousPath = PlatformSetting::value('storefront_logo');
+        $path = $request->file('storefront_logo')->store('platform', 'public');
+
+        PlatformSetting::query()->updateOrCreate(
+            ['key' => 'storefront_logo'],
+            ['value' => $path],
+        );
+
+        if (is_string($previousPath) && $previousPath !== $path) {
+            Storage::disk('public')->delete($previousPath);
+        }
+
+        return back()->with('status', 'Storefront logo updated.');
+    }
+
+    public function destroyStorefrontLogo(): RedirectResponse
+    {
+        $previousPath = PlatformSetting::value('storefront_logo');
+
+        PlatformSetting::query()->where('key', 'storefront_logo')->delete();
+
+        if (is_string($previousPath) && $previousPath !== '') {
+            Storage::disk('public')->delete($previousPath);
+        }
+
+        return back()->with('status', 'Storefront logo reset to default.');
     }
 }

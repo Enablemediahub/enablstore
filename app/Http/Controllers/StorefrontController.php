@@ -37,6 +37,7 @@ class StorefrontController extends Controller
 
         return Inertia::render('Storefront/Index', [
             'hero' => TenantSettingsController::heroSettingsForStorefront($request),
+            'logoUrl' => PlatformSetting::storefrontLogoUrl($request),
             'storefront' => TenantSettingsController::storefrontConfigForStorefront($request),
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
             'products' => Product::query()

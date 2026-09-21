@@ -63,6 +63,7 @@ type NavFilter = 'all' | 'deals' | 'best_sellers' | 'new_arrivals';
 
 const props = defineProps<{
     hero: StorefrontHero;
+    logoUrl: string;
     storefront: StorefrontConfig;
     categories: Category[];
     products: Product[];
@@ -92,20 +93,6 @@ onMounted(() => {
     if (saved && props.storefront.deliveryLocations.includes(saved)) {
         deliveryLocation.value = saved;
     }
-});
-
-const storeNameParts = computed(() => {
-    const name = props.storefront.storeName.trim();
-    const lastSpace = name.lastIndexOf(' ');
-
-    if (lastSpace === -1) {
-        return { prefix: name, highlight: '' };
-    }
-
-    return {
-        prefix: name.slice(0, lastSpace + 1),
-        highlight: name.slice(lastSpace + 1),
-    };
 });
 
 const categoryOptions = computed(() => ['All', ...props.categories.map((category) => category.name)]);
@@ -277,9 +264,12 @@ const formatPrice = (minor: number): string =>
     <main class="min-h-screen bg-[#f4f4f2] text-[#171717]">
         <header class="bg-[#171717] text-white">
             <div class="mx-auto flex max-w-[1500px] items-center gap-5 px-4 py-3 sm:px-8">
-                <a :href="route('tenant.home', { tenant })" class="shrink-0 text-xl font-black tracking-tight">
-                    <span v-if="storeNameParts.highlight">{{ storeNameParts.prefix }}<span class="text-[#e21b23]">{{ storeNameParts.highlight }}</span></span>
-                    <span v-else>{{ storefront.storeName }}</span>
+                <a :href="route('tenant.home', { tenant })" class="shrink-0">
+                    <img
+                        :src="logoUrl"
+                        :alt="storefront.storeName"
+                        class="h-10 w-auto max-w-[180px] object-contain sm:h-11"
+                    />
                 </a>
                 <button
                     type="button"

@@ -8,7 +8,6 @@ use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\PlatformSetting;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -23,9 +22,10 @@ class SuperAdminDashboardController extends Controller
                 'paid_revenue_minor' => Payment::query()->where('status', 'paid')->sum('amount_minor'),
             ],
             'tenants' => Tenant::query()->with('subscriptions.plan')->latest()->paginate(20),
-            'loginWallpaperUrl' => ($path = PlatformSetting::value('login_wallpaper'))
-                ? request()->getSchemeAndHttpHost().'/storage/'.ltrim($path, '/')
-                : null,
+            'loginWallpaperUrl' => PlatformSetting::loginWallpaperUrl(request()),
+            'storefrontLogoUrl' => PlatformSetting::storefrontLogoUrl(request()),
+            'defaultStorefrontLogoUrl' => request()->getSchemeAndHttpHost().'/images/storefront/enablstore-logo.png',
+            'hasCustomStorefrontLogo' => filled(PlatformSetting::value('storefront_logo')),
             'status' => session('status'),
             'catalogueModeDefault' => PlatformSetting::value('catalogue_mode_default', 'shared'),
         ]);
