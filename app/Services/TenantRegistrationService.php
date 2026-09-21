@@ -20,8 +20,10 @@ class TenantRegistrationService
     public function register(RegisterTenantRequest $request): array
     {
         return DB::transaction(function () use ($request): array {
+            $nextCode = Tenant::query()->whereNotNull('subscriber_code')->get(['subscriber_code'])->map(fn (Tenant $tenant): int => (int) substr((string) $tenant->subscriber_code, 2))->max() + 1;
             $tenant = Tenant::create([
                 'id' => $request->string('slug')->toString(),
+                'subscriber_code' => 'ES'.str_pad((string) $nextCode, 3, '0', STR_PAD_LEFT),
                 'name' => $request->string('business_name')->toString(),
                 'slug' => $request->string('slug')->toString(),
                 'email' => $request->string('email')->toString(),

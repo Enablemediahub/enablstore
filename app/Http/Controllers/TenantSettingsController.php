@@ -276,7 +276,7 @@ class TenantSettingsController extends Controller
 
         $normalized = ltrim(str_replace('storage/', '', $imagePath), '/');
 
-        return $request->getSchemeAndHttpHost().'/client/'.tenant()->getTenantKey().'/media/'.$normalized;
+        return $request->getSchemeAndHttpHost().'/onlinestore/'.tenant()->getTenantKey().'/media/'.$normalized;
     }
 
     /**

@@ -34,10 +34,10 @@ Route::middleware([
     'web',
     InitializeTenancyByPath::class,
 ])->group(function () {
-    Route::get('/client/{tenant}', [StorefrontController::class, 'index'])
+    Route::get('/onlinestore/{tenant}', [StorefrontController::class, 'index'])
         ->middleware(['feature:online_store'])
         ->name('tenant.home');
-    Route::get('/client/{tenant}/storefront', [StorefrontController::class, 'index'])
+    Route::get('/onlinestore/{tenant}/storefront', [StorefrontController::class, 'index'])
         ->middleware(['feature:online_store'])
         ->name('tenant.storefront');
 
@@ -70,7 +70,7 @@ Route::middleware([
     Route::get('/client/{tenant}/team', [TenantTeamController::class, 'index'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.team.index');
     Route::post('/client/{tenant}/team', [TenantTeamController::class, 'store'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.team.store');
     Route::patch('/client/{tenant}/team/{user}', [TenantTeamController::class, 'update'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.team.update');
-    Route::get('/client/{tenant}/media/{path}', [TenantProductController::class, 'media'])
+    Route::get('/onlinestore/{tenant}/media/{path}', [TenantProductController::class, 'media'])
         ->where('path', '.*')
         ->middleware([])
         ->name('tenant.media');
@@ -86,25 +86,33 @@ Route::middleware([
     Route::delete('/client/{tenant}/products/{product}', [TenantProductController::class, 'destroy'])
         ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
         ->name('tenant.products.destroy');
-    Route::get('/client/{tenant}/pos', [PosController::class, 'index'])
+    Route::get('/pos/{tenant}', [PosController::class, 'index'])
         ->middleware(['feature:pos'])
         ->name('tenant.pos');
-    Route::get('/client/{tenant}/pos/manifest.json', [PosController::class, 'manifest'])
+    Route::get('/pos/{tenant}/manifest.json', [PosController::class, 'manifest'])
         ->middleware(['feature:pos'])
         ->name('tenant.pos.manifest');
-    Route::post('/client/{tenant}/pos/unlock', [TenantPosAccessController::class, 'unlock'])
+    Route::post('/pos/{tenant}/unlock', [TenantPosAccessController::class, 'unlock'])
         ->middleware([])
         ->name('tenant.pos.unlock');
-    Route::post('/client/{tenant}/pos/logout', [TenantPosAccessController::class, 'logout'])
+    Route::post('/pos/{tenant}/logout', [TenantPosAccessController::class, 'logout'])
         ->middleware([])
         ->name('tenant.pos.logout');
-    Route::post('/client/{tenant}/pos/checkout', [PosController::class, 'checkout'])
+    Route::post('/pos/{tenant}/checkout', [PosController::class, 'checkout'])
         ->middleware(['feature:pos', \App\Http\Middleware\EnsurePosAccess::class])
         ->name('tenant.pos.checkout');
-    Route::post('/client/{tenant}/pos/sync', OfflineSalesSyncController::class)
+    Route::post('/pos/{tenant}/sync', OfflineSalesSyncController::class)
         ->middleware(['feature:pos', \App\Http\Middleware\EnsurePosAccess::class])
         ->name('tenant.pos.sync');
     Route::get('/client/{tenant}/analytics', TenantAnalyticsController::class)
         ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
         ->name('tenant.analytics');
+
+    // Keep existing bookmarks working while all new links use the clean public URLs.
+    Route::get('/client/{tenant}', fn () => redirect()->route('tenant.home', ['tenant' => tenant()->getTenantKey()]));
+    Route::get('/client/{tenant}/storefront', fn () => redirect()->route('tenant.home', ['tenant' => tenant()->getTenantKey()]));
+    Route::get('/client/{tenant}/pos', fn () => redirect()->route('tenant.pos', ['tenant' => tenant()->getTenantKey()]));
+    Route::get('/client/{tenant}/pos/manifest.json', fn () => redirect()->route('tenant.pos.manifest', ['tenant' => tenant()->getTenantKey()]));
+    Route::get('/client/{tenant}/media/{path}', fn () => redirect()->route('tenant.media', ['tenant' => tenant()->getTenantKey(), 'path' => request()->route('path')]))
+        ->where('path', '.*');
 });

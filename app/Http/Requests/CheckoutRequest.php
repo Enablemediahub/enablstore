@@ -21,6 +21,8 @@ class CheckoutRequest extends FormRequest
         return [
             'transaction_uuid' => ['required', 'uuid'],
             'payment_method' => ['required', 'in:cash,mobile_money,card'],
+            'customer_name' => ['nullable', 'string', 'max:120'],
+            'customer_phone' => ['nullable', 'string', 'max:40'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],

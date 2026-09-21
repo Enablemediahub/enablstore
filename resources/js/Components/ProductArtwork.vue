@@ -27,6 +27,12 @@ const props = withDefaults(
     },
 );
 
+const applicationBasePath = typeof window === 'undefined'
+    ? ''
+    : window.location.pathname.replace(/\/(?:client|onlinestore|pos)\/.*$/, '');
+
+const assetUrl = (path: string): string => `${applicationBasePath}/${path.replace(/^\//, '')}`;
+
 const source = computed(() => {
     if (props.imagePath) {
         const path = props.imagePath.replace(/^\//, '');
@@ -34,27 +40,27 @@ const source = computed(() => {
         if (path.startsWith('storage/')) {
             const tenant = String(route().params.tenant ?? '');
 
-            return `/client/${tenant}/media/${path.replace(/^storage\//, '')}`;
+            return assetUrl(`onlinestore/${tenant}/media/${path.replace(/^storage\//, '')}`);
         }
 
-        return `/${path}`;
+        return assetUrl(path);
     }
 
     const sku = props.sku.toLowerCase();
 
     if (sku.startsWith('oil') || sku.startsWith('frytol')) {
-        return '/images/products/cooking-oil.svg';
+        return assetUrl('images/products/cooking-oil.svg');
     }
 
     if (sku.startsWith('mil')) {
-        return '/images/products/porridge.svg';
+        return assetUrl('images/products/porridge.svg');
     }
 
     if (sku.startsWith('wat')) {
-        return '/images/products/water.svg';
+        return assetUrl('images/products/water.svg');
     }
 
-    return '/images/products/catalogue.svg';
+    return assetUrl('images/products/catalogue.svg');
 });
 </script>
 

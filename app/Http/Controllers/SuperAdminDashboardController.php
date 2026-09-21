@@ -21,7 +21,19 @@ class SuperAdminDashboardController extends Controller
                 'active_subscriptions' => Subscription::query()->where('status', 'active')->count(),
                 'paid_revenue_minor' => Payment::query()->where('status', 'paid')->sum('amount_minor'),
             ],
-            'tenants' => Tenant::query()->with('subscriptions.plan')->latest()->paginate(20),
+            'tenants' => Tenant::query()->with('subscriptions.plan')->latest()->paginate(20)->through(function (Tenant $tenant): array {
+                $subscription = $tenant->subscriptions->sortByDesc('created_at')->first();
+
+                return [
+                    'id' => $tenant->id,
+                    'name' => $tenant->name,
+                    'email' => $tenant->email,
+                    'status' => $tenant->status,
+                    'subscription_plan' => $subscription?->plan?->name,
+                    'subscription_status' => $subscription?->status,
+                ];
+            }),
+            'dashboardWallpaperUrl' => PlatformSetting::dashboardWallpaperUrl(request()),
             'loginWallpaperUrl' => PlatformSetting::loginWallpaperUrl(request()),
             'storefrontLogoUrl' => PlatformSetting::storefrontLogoUrl(request()),
             'defaultStorefrontLogoUrl' => request()->getSchemeAndHttpHost().'/images/storefront/enablstore-logo.png',

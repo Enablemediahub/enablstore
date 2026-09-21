@@ -13,6 +13,7 @@ import {
     Plus,
     Search,
     ShoppingCart,
+    Trash2,
     UserRound,
 } from '@lucide/vue';
 import { computed, onMounted, ref } from 'vue';
@@ -242,14 +243,16 @@ const productImages = (product: Product): string[] => {
         (path): path is string => Boolean(path),
     );
 
+    const applicationBasePath = window.location.pathname.replace(/\/(?:client|onlinestore|pos)\/.*$/, '');
+
     return paths.map((path) => {
         const normalized = path.replace(/^\//, '');
 
         if (normalized.startsWith('storage/')) {
-            return `/client/${tenant}/media/${normalized.replace(/^storage\//, '')}`;
+            return `${applicationBasePath}/onlinestore/${tenant}/media/${normalized.replace(/^storage\//, '')}`;
         }
 
-        return `/${normalized}`;
+        return `${applicationBasePath}/${normalized}`;
     });
 };
 
@@ -270,6 +273,10 @@ const changeQuantity = (productId: number, amount: number): void => {
     if (item.quantity <= 0) {
         cart.value = cart.value.filter((cartItem) => cartItem.id !== productId);
     }
+};
+
+const removeFromCart = (productId: number): void => {
+    cart.value = cart.value.filter((item) => item.id !== productId);
 };
 
 const formatPrice = (minor: number): string =>
@@ -510,9 +517,9 @@ const formatPrice = (minor: number): string =>
                         <p v-if="deliveryLocation" class="mt-2 text-xs text-neutral-500">Delivering to {{ deliveryLocation }}</p>
                         <div v-if="cart.length" class="mt-5 space-y-4">
                             <div v-for="item in cart" :key="item.id" class="border-b border-neutral-100 pb-4">
-                                <div class="flex justify-between gap-3">
+                                <div class="flex items-start justify-between gap-3">
                                     <p class="text-sm font-semibold text-[#171717]">{{ item.name }}</p>
-                                    <span class="shrink-0 text-sm font-bold">{{ formatPrice(item.price_minor * item.quantity) }}</span>
+                                    <div class="flex shrink-0 items-center gap-1"><span class="text-sm font-bold">{{ formatPrice(item.price_minor * item.quantity) }}</span><button type="button" class="inline-flex size-9 items-center justify-center rounded-full text-red-700 hover:bg-red-50" :aria-label="`Remove ${item.name} from basket`" title="Remove item" @click="removeFromCart(item.id)"><Trash2 :size="17" aria-hidden="true" /></button></div>
                                 </div>
                                 <div class="mt-3 flex items-center justify-between">
                                     <div class="flex items-center rounded-full border border-neutral-300">

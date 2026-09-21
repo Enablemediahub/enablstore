@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
 class CheckoutService
 {
     /**
-     * @param array{transaction_uuid: string, payment_method: string, items: array<int, array{product_id: int, quantity: int}>, discount_type?: string|null, discount_value?: float|int|null, discount_reason?: string|null} $payload
+     * @param array{transaction_uuid: string, payment_method: string, customer_name?: string|null, customer_phone?: string|null, items: array<int, array{product_id: int, quantity: int}>, discount_type?: string|null, discount_value?: float|int|null, discount_reason?: string|null} $payload
      */
     public function checkout(array $payload): Sale
     {
@@ -68,6 +68,8 @@ class CheckoutService
 
             $sale = Sale::query()->create([
                 'transaction_uuid' => $payload['transaction_uuid'] ?: (string) Str::uuid(),
+                'customer_name' => filled($payload['customer_name'] ?? null) ? trim((string) $payload['customer_name']) : null,
+                'customer_phone' => filled($payload['customer_phone'] ?? null) ? trim((string) $payload['customer_phone']) : null,
                 'subtotal_minor' => $subtotalMinor,
                 'discount_minor' => $discountMinor,
                 'discount_type' => $payload['discount_type'] ?? null,

@@ -8,7 +8,7 @@ import Modal from '@/Components/Modal.vue';
 import ProductArtwork from '@/Components/ProductArtwork.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import axios from 'axios';
-import { Edit3, LayoutGrid, List, Plus, Rows3, ScanLine, Trash2 } from '@lucide/vue';
+import { Edit3, LayoutGrid, List, Plus, Rows3, ScanLine, Search, Trash2, X } from '@lucide/vue';
 import { ref } from 'vue';
 
 type Product = {
@@ -30,8 +30,9 @@ type Product = {
 
 type Category = { id: number; name: string };
 
-const props = defineProps<{ products: { data: Product[]; current_page: number; last_page: number; links: Array<{ url: string | null; label: string; active: boolean }> }; categories: Category[]; catalogueMode: 'shared' | 'separate_online' }>();
+const props = defineProps<{ products: { data: Product[]; current_page: number; last_page: number; links: Array<{ url: string | null; label: string; active: boolean }> }; categories: Category[]; catalogueMode: 'shared' | 'separate_online'; filters: { search: string } }>();
 const tenant = String(route().params.tenant);
+const search = ref(props.filters.search);
 const mobilePanelOpen = ref(false);
 const modalOpen = ref(false);
 const scannerOpen = ref(false);
@@ -144,6 +145,18 @@ const deleteProduct = (product: Product): void => {
     router.delete(route('tenant.products.destroy', { tenant, product: product.id }));
 };
 
+const submitSearch = (): void => {
+    router.get(route('tenant.products.index', { tenant }), { search: search.value.trim() || undefined }, {
+        preserveState: true,
+        replace: true,
+    });
+};
+
+const clearSearch = (): void => {
+    search.value = '';
+    submitSearch();
+};
+
 const submit = (): void => {
     form.transform((data) => ({
         name: data.name,
@@ -208,6 +221,15 @@ const submit = (): void => {
                     </header>
 
                     <EnCard>
+                        <form class="mb-6 flex flex-col gap-3 border-b border-neutral-100 pb-6 sm:flex-row" @submit.prevent="submitSearch">
+                            <label class="relative flex-1">
+                                <span class="sr-only">Search products</span>
+                                <Search :size="18" class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-neutral-400" aria-hidden="true" />
+                                <input v-model="search" type="search" class="min-h-11 w-full rounded-md border border-neutral-300 bg-white py-2 pr-10 pl-10 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-red-500 focus:ring-red-500" placeholder="Search by product name, SKU, or barcode" />
+                                <button v-if="search" type="button" class="absolute top-1/2 right-2 inline-flex -translate-y-1/2 rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700" aria-label="Clear search" @click="clearSearch"><X :size="17" aria-hidden="true" /></button>
+                            </label>
+                            <EnButton type="submit"><Search :size="17" aria-hidden="true" /> Search</EnButton>
+                        </form>
                         <div v-if="displayMode === 'list' && props.products.data.length" class="overflow-x-auto">
                             <table class="w-full min-w-170 text-left text-sm">
                                 <thead class="border-b border-neutral-100 text-xs text-neutral-500 uppercase">
@@ -231,7 +253,7 @@ const submit = (): void => {
                                 <div class="mt-3 flex gap-2"><button type="button" class="flex-1 rounded-md border border-neutral-200 px-2 py-1.5 text-xs font-semibold text-neutral-700" @click="openEditModal(product)"><Edit3 :size="14" class="mx-auto" aria-hidden="true" /></button><button type="button" class="rounded-md border border-red-200 px-2 py-1.5 text-red-700" @click="deleteProduct(product)"><Trash2 :size="14" aria-hidden="true" /></button></div>
                             </article>
                         </div>
-                        <EnEmptyState v-else title="No products yet" description="Create your first product to start managing stock and sales." />
+                        <EnEmptyState v-else :title="filters.search ? 'No matching products' : 'No products yet'" :description="filters.search ? 'Try a different product name, SKU, or barcode.' : 'Create your first product to start managing stock and sales.'" />
                         <div v-if="props.products.last_page > 1" class="mt-5 flex flex-wrap items-center justify-center gap-2 border-t border-neutral-100 pt-5">
                             <button v-for="link in props.products.links" :key="link.label" type="button" class="rounded-md border px-3 py-2 text-sm" :class="link.active ? 'border-red-600 bg-red-600 text-white' : 'border-neutral-200 text-neutral-700 hover:bg-neutral-50'" :disabled="!link.url" @click="link.url && router.visit(link.url)"><span v-html="link.label" /></button>
                         </div>

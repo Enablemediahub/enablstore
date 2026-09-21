@@ -22,6 +22,8 @@ class SyncOfflineSalesRequest extends FormRequest
             'sales' => ['required', 'array', 'max:100'],
             'sales.*.transaction_uuid' => ['required', 'uuid'],
             'sales.*.payment_method' => ['required', 'in:cash,mobile_money,card'],
+            'sales.*.customer_name' => ['nullable', 'string', 'max:120'],
+            'sales.*.customer_phone' => ['nullable', 'string', 'max:40'],
             'sales.*.items' => ['required', 'array', 'min:1'],
             'sales.*.items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'sales.*.items.*.quantity' => ['required', 'integer', 'min:1'],

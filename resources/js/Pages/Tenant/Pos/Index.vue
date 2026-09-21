@@ -36,12 +36,16 @@ type HeldSale = {
     discountType: 'fixed' | 'percentage' | '';
     discountValue: number;
     discountReason: string;
+    customerName: string;
+    customerPhone: string;
 };
 type Receipt = {
     items: Array<{ name: string; quantity: number; priceMinor: number }>;
     totalMinor: number;
     paymentMethod: string;
     transactionUuid: string;
+    customerName: string;
+    customerPhone: string;
 };
 
 const props = defineProps<{
@@ -56,6 +60,8 @@ const paymentMethod = ref<'cash' | 'mobile_money' | 'card'>('cash');
 const discountType = ref<'fixed' | 'percentage' | ''>('');
 const discountValue = ref(0);
 const discountReason = ref('');
+const customerName = ref('');
+const customerPhone = ref('');
 const mobilePanelOpen = ref(false);
 const tenant = props.tenant;
 const isOnline = ref(navigator.onLine);
@@ -120,6 +126,8 @@ const checkoutForm = useForm({
     discount_type: null as 'fixed' | 'percentage' | null,
     discount_value: 0,
     discount_reason: '',
+    customer_name: '',
+    customer_phone: '',
     items: [] as Array<{ product_id: number; quantity: number }>,
 });
 
@@ -144,6 +152,8 @@ const clearSale = (): void => {
     discountType.value = '';
     discountValue.value = 0;
     discountReason.value = '';
+    customerName.value = '';
+    customerPhone.value = '';
 };
 
 const holdSale = (): void => {
@@ -158,6 +168,8 @@ const holdSale = (): void => {
         discountType: discountType.value,
         discountValue: discountValue.value,
         discountReason: discountReason.value,
+        customerName: customerName.value,
+        customerPhone: customerPhone.value,
     });
     clearSale();
 };
@@ -172,6 +184,8 @@ const resumeSale = (heldSale: HeldSale): void => {
     discountType.value = heldSale.discountType;
     discountValue.value = heldSale.discountValue;
     discountReason.value = heldSale.discountReason;
+    customerName.value = heldSale.customerName;
+    customerPhone.value = heldSale.customerPhone;
     heldSales.value = heldSales.value.filter((sale) => sale.id !== heldSale.id);
 };
 
@@ -205,6 +219,8 @@ const checkout = (): void => {
     checkoutForm.discount_type = discountType.value || null;
     checkoutForm.discount_value = discountValue.value;
     checkoutForm.discount_reason = discountReason.value;
+    checkoutForm.customer_name = customerName.value;
+    checkoutForm.customer_phone = customerPhone.value;
     checkoutForm.items = cart.value.map((item) => ({
         product_id: item.id,
         quantity: item.quantity,
@@ -218,6 +234,8 @@ const checkout = (): void => {
         totalMinor: totalMinor.value,
         paymentMethod: paymentMethod.value,
         transactionUuid: checkoutForm.transaction_uuid,
+        customerName: customerName.value,
+        customerPhone: customerPhone.value,
     };
 
     if (!isOnline.value) {
@@ -234,6 +252,8 @@ const checkout = (): void => {
             discountValue: discountValue.value,
             discountReason: discountReason.value,
             paymentMethod: paymentMethod.value,
+            customerName: customerName.value,
+            customerPhone: customerPhone.value,
             createdAt: new Date().toISOString(),
             synced: false,
         }).then(async () => {
@@ -287,6 +307,8 @@ const syncOfflineSales = async (): Promise<void> => {
                 discount_type: sale.discountType,
                 discount_value: sale.discountValue,
                 discount_reason: sale.discountReason,
+                customer_name: sale.customerName,
+                customer_phone: sale.customerPhone,
             })),
         });
 
@@ -470,7 +492,8 @@ onUnmounted(() => {
                     </section>
 
                     <aside class="lg:sticky lg:top-6 lg:self-start">
-                        <EnCard class="border-white/10! bg-[#202020]! text-white [&_h2]:text-white [&_p]:text-white/75">
+                        <section class="overflow-hidden rounded-lg border border-white/10 bg-[#202020] text-white shadow-sm lg:flex lg:h-[calc(100dvh-3rem)] lg:min-h-0 lg:flex-col [&_h2]:text-white [&_p]:text-white/75">
+                            <div class="p-6 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
                             <div class="flex items-center justify-between">
                                 <h2
                                     class="text-xl font-semibold text-white"
@@ -494,7 +517,7 @@ onUnmounted(() => {
                                     </button>
                                 </div>
                             </div>
-                            <div v-if="cart.length" class="mt-6 space-y-4">
+                            <div v-if="cart.length" class="mt-6 space-y-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-2">
                                 <div
                                     v-for="item in cart"
                                     :key="item.id"
@@ -526,13 +549,19 @@ onUnmounted(() => {
                             </div>
                             <EnEmptyState
                                 v-else
+                                class="lg:min-h-0 lg:flex-1"
                                 title="Cart is empty"
                                 description="Select a product to start the sale."
                             />
-                            <div class="mt-6 border-t border-white/20 pt-5 [&_input]:text-white [&_input]:placeholder:text-white/60 [&_select]:text-neutral-900">
+                            <div class="mt-6 shrink-0 border-t border-white/20 pt-5 [&_input]:text-white [&_input]:placeholder:text-white/60 [&_select]:text-neutral-900">
                                                 <div class="flex justify-between text-sm text-white/70"><span>Subtotal</span><span>{{ formatPrice(subtotalMinor) }}</span></div>
                                                 <div class="mt-3 grid grid-cols-[1fr_110px] gap-2"><select v-model="discountType" class="min-h-10 rounded-md border border-neutral-300 bg-white px-2 text-sm"><option value="">No discount</option><option value="fixed">Fixed discount</option><option value="percentage">Percentage discount</option></select><input v-model.number="discountValue" type="number" min="0" :max="discountType === 'percentage' ? 100 : undefined" step="0.01" placeholder="Amount" class="min-h-10 rounded-md border border-neutral-300 px-2 text-sm" /></div>
                                                 <input v-if="discountType" v-model="discountReason" type="text" maxlength="120" placeholder="Discount reason (optional)" class="mt-2 min-h-10 w-full rounded-md border border-neutral-300 px-3 text-sm" />
+                                                <div class="mt-4 border-t border-white/15 pt-4">
+                                                    <p class="text-xs font-semibold tracking-wide text-white/80 uppercase">Customer details <span class="font-normal normal-case text-white/55">(optional)</span></p>
+                                                    <input v-model="customerName" type="text" maxlength="120" autocomplete="name" placeholder="Customer name" class="mt-2 min-h-10 w-full rounded-md border border-neutral-300 px-3 text-sm" />
+                                                    <input v-model="customerPhone" type="tel" maxlength="40" autocomplete="tel" placeholder="Phone number" class="mt-2 min-h-10 w-full rounded-md border border-neutral-300 px-3 text-sm" />
+                                                </div>
                                                 <div v-if="discountMinor > 0" class="mt-3 flex justify-between text-sm font-semibold text-white"><span>Discount</span><span>-{{ formatPrice(discountMinor) }}</span></div>
                                 <div
                                     class="flex justify-between text-lg font-bold text-white"
@@ -563,7 +592,8 @@ onUnmounted(() => {
                                     Complete sale
                                 </EnButton>
                             </div>
-                        </EnCard>
+                            </div>
+                        </section>
                     </aside>
                 </div>
             </div>
@@ -576,6 +606,8 @@ onUnmounted(() => {
             :total-minor="receipt.totalMinor"
             :payment-method="receipt.paymentMethod"
             :transaction-uuid="receipt.transactionUuid"
+            :customer-name="receipt.customerName"
+            :customer-phone="receipt.customerPhone"
             @close="receipt = null"
         />
         <BarcodeScanner :open="scannerOpen" @close="scannerOpen = false" @detected="handleBarcode" />

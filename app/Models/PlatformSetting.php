@@ -23,7 +23,17 @@ class PlatformSetting extends Model
 
     public static function loginWallpaperUrl(Request $request): ?string
     {
-        $path = static::value('login_wallpaper');
+        return static::wallpaperUrl($request, 'login_wallpaper');
+    }
+
+    public static function dashboardWallpaperUrl(Request $request): ?string
+    {
+        return static::wallpaperUrl($request, 'dashboard_wallpaper');
+    }
+
+    private static function wallpaperUrl(Request $request, string $key): ?string
+    {
+        $path = static::value($key);
 
         if (! is_string($path) || $path === '') {
             return null;

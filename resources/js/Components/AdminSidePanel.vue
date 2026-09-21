@@ -61,6 +61,12 @@ const groups = computed(() => [
 </script>
 
 <template>
+    <form class="fixed top-4 right-4 z-30" @submit.prevent="logout">
+        <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-red-300 hover:bg-red-50 hover:text-red-700" :disabled="logoutForm.processing">
+            <LogOut :size="18" aria-hidden="true" />
+            <span>Log out</span>
+        </button>
+    </form>
     <div
         v-if="mobileOpen"
         class="fixed inset-0 z-40 bg-[#171717]/40 lg:hidden"

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Models\PlatformSetting;
 use App\Models\Tenant;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -34,6 +35,7 @@ class WorkspaceDashboardController extends Controller
                     'onlineStore' => in_array('online_store', $features, true),
                     'pos' => in_array('pos', $features, true),
                 ],
+                'wallpaperUrl' => PlatformSetting::dashboardWallpaperUrl($request),
             ]);
         }
 
@@ -56,6 +58,7 @@ class WorkspaceDashboardController extends Controller
                 'onlineStore' => in_array('online_store', $features, true),
                 'pos' => in_array('pos', $features, true),
             ],
+            'wallpaperUrl' => PlatformSetting::dashboardWallpaperUrl($request),
         ]);
     }
 }

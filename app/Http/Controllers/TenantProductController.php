@@ -14,6 +14,7 @@ use App\Services\ProductService;
 use App\Services\BarcodeLookupService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -21,17 +22,28 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class TenantProductController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $search = trim((string) $request->query('search', ''));
+
         return Inertia::render('Tenant/Products/Index', [
             'products' => Product::query()
                 ->with(['category', 'inventoryStock'])
                 ->where('is_active', true)
+                ->when($search !== '', function ($query) use ($search): void {
+                    $query->where(function ($productQuery) use ($search): void {
+                        $productQuery
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('sku', 'like', "%{$search}%")
+                            ->orWhere('barcode', 'like', "%{$search}%");
+                    });
+                })
                 ->latest()
                 ->paginate(20)
                 ->withQueryString(),
             'categories' => Category::query()->orderBy('name')->get(['id', 'name']),
             'catalogueMode' => TenantSetting::query()->where('key', 'catalogue_mode')->value('value') ?? PlatformSetting::value('catalogue_mode_default', 'shared'),
+            'filters' => ['search' => $search],
         ]);
     }
 

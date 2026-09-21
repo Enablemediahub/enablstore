@@ -12,17 +12,24 @@ use App\Models\StockMovement;
 use App\Http\Requests\ReceiveStockRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class TenantSupplierController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
+        $search = trim((string) $request->query('search', ''));
+        $purchases = StockMovement::query()->with(['supplier:id,name', 'product:id,name,sku'])->where('type', 'purchase')
+            ->when($search !== '', fn ($query) => $query->where(fn ($purchaseQuery) => $purchaseQuery->whereHas('supplier', fn ($supplierQuery) => $supplierQuery->where('name', 'like', "%{$search}%"))->orWhereHas('product', fn ($productQuery) => $productQuery->where('name', 'like', "%{$search}%")->orWhere('sku', 'like', "%{$search}%"))->orWhere('note', 'like', "%{$search}%")));
+
         return Inertia::render('Tenant/Suppliers/Index', [
-            'suppliers' => Supplier::query()->where('is_active', true)->latest()->get(),
+            'suppliers' => Supplier::query()->where('is_active', true)->when($search !== '', fn ($query) => $query->where(fn ($supplierQuery) => $supplierQuery->where('name', 'like', "%{$search}%")->orWhere('contact_name', 'like', "%{$search}%")->orWhere('phone', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")))->latest()->get(),
             'products' => Product::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'sku', 'purchase_unit', 'units_per_purchase']),
-            'purchases' => StockMovement::query()->with(['supplier:id,name', 'product:id,name,sku'])->where('type', 'purchase')->latest('purchased_at')->limit(100)->get(),
+            'purchases' => (clone $purchases)->latest('purchased_at')->limit(100)->get(),
+            'metrics' => ['supplier_count' => Supplier::query()->where('is_active', true)->count(), 'receipts_count' => (clone $purchases)->count(), 'units_received' => (int) (clone $purchases)->sum('quantity'), 'spend_minor' => (int) (clone $purchases)->selectRaw('COALESCE(SUM(quantity * unit_cost_minor), 0) as total')->value('total')],
+            'filters' => ['search' => $search],
         ]);
     }
 

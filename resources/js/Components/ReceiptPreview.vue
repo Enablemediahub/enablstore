@@ -24,6 +24,8 @@ withDefaults(
         totalMinor: number;
         paymentMethod: string;
         transactionUuid: string;
+        customerName?: string;
+        customerPhone?: string;
     }>(),
     {
         open: false,
@@ -40,6 +42,14 @@ const formatPrice = (minor: number): string =>
         currency: 'GHS',
     }).format(minor / 100);
 
+const displayPaymentMethod = (method: string): string =>
+    method === 'mobile_money' ? 'Mobile Money' : method.charAt(0).toUpperCase() + method.slice(1);
+
+const issuedAt = new Intl.DateTimeFormat('en-GH', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+}).format(new Date());
+
 const printReceipt = (): void => {
     window.print();
 };
@@ -48,10 +58,10 @@ const printReceipt = (): void => {
 <template>
     <div
         v-if="open"
-        class="fixed inset-0 z-[70] flex items-center justify-center bg-neutral-900/60 p-4 print:static print:block print:bg-white print:p-0"
+        class="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-neutral-900/60 p-4 sm:items-center print:static print:block print:overflow-visible print:bg-white print:p-0"
     >
         <section
-            class="w-full max-w-sm rounded-lg bg-white p-6 shadow-lg print:max-w-none print:rounded-none print:p-0 print:shadow-none"
+            class="max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-xl bg-white p-5 shadow-lg sm:p-6 print:max-h-none print:max-w-none print:overflow-visible print:rounded-none print:p-0 print:shadow-none"
             role="dialog"
             aria-modal="true"
             aria-labelledby="receipt-title"
@@ -73,39 +83,41 @@ const printReceipt = (): void => {
                 </button>
             </div>
             <div
-                class="receipt-paper mt-5 font-mono text-sm text-neutral-900 print:mt-0"
+                class="receipt-print receipt-paper mt-5 font-mono text-sm text-neutral-900 print:mt-0"
             >
-                <div class="text-center">
-                    <p class="text-lg font-bold">Enablstore</p>
-                    <p class="text-xs text-neutral-500">{{ tenant }}</p>
-                    <p class="mt-3 text-xs text-neutral-500">
-                        {{ transactionUuid }}
-                    </p>
+                <div class="text-center leading-tight">
+                    <p class="text-xl font-black tracking-tight">enabl<span class="text-primary-600">store</span></p>
+                    <p class="mt-1 text-sm font-bold uppercase">{{ tenant }}</p>
+                    <p class="mt-1 text-[11px] text-neutral-500">Sales receipt</p>
                 </div>
-                <div class="my-4 border-t border-dashed border-neutral-300" />
-                <div class="space-y-3">
+                <div class="my-4 border-t border-dashed border-neutral-400" />
+                <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-neutral-600">
+                    <p><span class="text-neutral-500">Date:</span> {{ issuedAt }}</p>
+                    <p class="text-right"><span class="text-neutral-500">Receipt:</span> {{ transactionUuid.slice(0, 8).toUpperCase() }}</p>
+                    <p v-if="customerName" class="col-span-2"><span class="text-neutral-500">Customer:</span> {{ customerName }}</p>
+                    <p v-if="customerPhone" class="col-span-2"><span class="text-neutral-500">Phone:</span> {{ customerPhone }}</p>
+                </div>
+                <div class="my-4 border-t border-dashed border-neutral-400" />
+                <div class="grid grid-cols-[1fr_auto] gap-3 text-[11px] font-bold uppercase text-neutral-500"><span>Item</span><span>Amount</span></div>
+                <div class="mt-3 space-y-3">
                     <div
                         v-for="item in items"
                         :key="`${item.name}-${item.priceMinor}`"
-                        class="flex justify-between gap-4"
+                        class="grid grid-cols-[1fr_auto] gap-3"
                     >
-                        <span>{{ item.name }} x{{ item.quantity }}</span>
-                        <span>{{
-                            formatPrice(item.priceMinor * item.quantity)
-                        }}</span>
+                        <div class="min-w-0"><p class="break-words font-semibold leading-5">{{ item.name }}</p><p class="text-xs text-neutral-500">{{ item.quantity }} × {{ formatPrice(item.priceMinor) }}</p></div>
+                        <span class="self-start whitespace-nowrap font-semibold">{{ formatPrice(item.priceMinor * item.quantity) }}</span>
                     </div>
                 </div>
-                <div class="my-4 border-t border-dashed border-neutral-300" />
-                <div class="flex justify-between text-base font-bold">
-                    <span>Total</span>
-                    <span>{{ formatPrice(totalMinor) }}</span>
+                <div class="my-4 border-t border-dashed border-neutral-400" />
+                <div class="rounded-md bg-neutral-100 px-3 py-3">
+                    <div class="flex justify-between text-base font-black"><span>Total paid</span><span>{{ formatPrice(totalMinor) }}</span></div>
+                    <div class="mt-1 flex justify-between text-[11px] text-neutral-600"><span>Payment method</span><span class="font-semibold">{{ displayPaymentMethod(paymentMethod) }}</span></div>
                 </div>
-                <p class="mt-3 text-center text-xs text-neutral-500">
-                    Paid by {{ paymentMethod.replace('_', ' ') }}
-                </p>
-                <p class="mt-5 text-center text-xs text-neutral-500">
-                    Thank you for shopping with us.
-                </p>
+                <div class="my-4 border-t border-dashed border-neutral-400" />
+                <p class="text-center text-xs font-semibold">Thank you for shopping with us.</p>
+                <p class="mt-1 text-center text-[10px] text-neutral-500">Please retain this receipt for your records.</p>
+                <p class="mt-4 border-t border-dashed border-neutral-400 pt-3 text-center text-[10px] font-semibold tracking-wide text-neutral-600">Powered By Enable Technologies</p>
             </div>
             <button
                 type="button"
@@ -118,3 +130,23 @@ const printReceipt = (): void => {
         </section>
     </div>
 </template>
+
+<style>
+@media print {
+    @page { size: 80mm auto; margin: 0; }
+
+    body * { visibility: hidden; }
+
+    .receipt-print, .receipt-print * { visibility: visible; }
+
+    .receipt-print {
+        position: relative;
+        width: 72mm;
+        margin: 0 auto;
+        padding: 4mm;
+        color: #000;
+        font-size: 11px;
+        line-height: 1.3;
+    }
+}
+</style>

@@ -12,6 +12,6 @@ class PosUnlockRequest extends FormRequest
 
     public function rules(): array
     {
-        return ['name' => ['required', 'string', 'max:120'], 'pin' => ['required', 'digits_between:4,6']];
+        return ['username' => ['required', 'string', 'max:60'], 'pin' => ['required', 'digits_between:4,6']];
     }
 }

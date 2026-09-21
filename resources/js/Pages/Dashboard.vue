@@ -7,6 +7,7 @@ defineProps<{
     tenant: { id: string; name: string; slug: string } | null;
     subscription: { plan: string | null; status: string } | null;
     access: { onlineStore: boolean; pos: boolean };
+    wallpaperUrl: string | null;
 }>();
 
 const logoutForm = useForm({});
@@ -18,8 +19,10 @@ const logout = (): void => {
 
 <template>
     <Head title="Choose a workspace" />
-    <main class="min-h-screen overflow-hidden bg-[#f6f3ef] text-[#171717]">
-        <header class="border-b border-black/5 bg-[#171717] px-5 py-4 text-white sm:px-10">
+    <main class="relative min-h-screen overflow-hidden bg-[#f6f3ef] text-[#171717]">
+        <div v-if="wallpaperUrl" class="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat" :style="{ backgroundImage: `url('${wallpaperUrl}')` }" aria-hidden="true" />
+        <div v-if="wallpaperUrl" class="pointer-events-none absolute inset-0 bg-[#f6f3ef]/80 backdrop-blur-[2px]" aria-hidden="true" />
+        <header class="relative border-b border-black/5 bg-[#171717]/95 px-5 py-4 text-white backdrop-blur sm:px-10">
             <div class="mx-auto flex max-w-7xl items-center justify-between">
                 <Link href="/" class="text-xl font-black tracking-tight">enabl<span class="text-[#e21b23]">store</span></Link>
                 <div class="flex items-center gap-4 text-sm">

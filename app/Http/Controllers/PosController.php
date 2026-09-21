@@ -64,7 +64,7 @@ class PosController extends Controller
             'short_name' => 'POS',
             'description' => 'Enablstore point of sale',
             'start_url' => route('tenant.pos', ['tenant' => $tenant]),
-            'scope' => url('/client/'.$tenant.'/'),
+            'scope' => url('/pos/'.$tenant.'/'),
             'display' => 'standalone',
             'background_color' => '#f9fafb',
             'theme_color' => '#059669',

@@ -14,6 +14,8 @@ export type OfflineSale = {
     discountValue?: number;
     discountReason?: string;
     paymentMethod: 'cash' | 'mobile_money' | 'card';
+    customerName?: string;
+    customerPhone?: string;
     createdAt: string;
     synced: boolean;
 };

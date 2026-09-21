@@ -11,6 +11,8 @@ class Sale extends Model
 {
     protected $fillable = [
         'transaction_uuid',
+        'customer_name',
+        'customer_phone',
         'subtotal_minor',
         'discount_minor',
         'discount_type',

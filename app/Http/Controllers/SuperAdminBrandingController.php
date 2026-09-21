@@ -11,6 +11,27 @@ use Illuminate\Support\Facades\Storage;
 
 class SuperAdminBrandingController extends Controller
 {
+    public function updateDashboardWallpaper(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'dashboard_wallpaper' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $previousPath = PlatformSetting::value('dashboard_wallpaper');
+        $path = $request->file('dashboard_wallpaper')->store('platform', 'public');
+
+        PlatformSetting::query()->updateOrCreate(
+            ['key' => 'dashboard_wallpaper'],
+            ['value' => $path],
+        );
+
+        if (is_string($previousPath) && $previousPath !== $path) {
+            Storage::disk('public')->delete($previousPath);
+        }
+
+        return back()->with('status', 'Dashboard wallpaper updated.');
+    }
+
     public function updateLoginWallpaper(Request $request): RedirectResponse
     {
         $request->validate([

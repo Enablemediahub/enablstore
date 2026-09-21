@@ -2,7 +2,7 @@
 import EnBadge from '@/Components/EnBadge.vue';
 import EnCard from '@/Components/EnCard.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowRight, Image, ShoppingCart, Store, ShieldCheck, Trash2, Users } from '@lucide/vue';
+import { ArrowRight, Image, Settings, ShoppingCart, Store, ShieldCheck, Trash2, Users } from '@lucide/vue';
 import SuperAdminSidePanel from '@/Components/SuperAdminSidePanel.vue';
 
 const props = defineProps<{
@@ -17,8 +17,11 @@ const props = defineProps<{
             name: string;
             email: string;
             status: string;
+            subscription_plan: string | null;
+            subscription_status: string | null;
         }>;
     };
+    dashboardWallpaperUrl: string | null;
     loginWallpaperUrl: string | null;
     storefrontLogoUrl: string;
     defaultStorefrontLogoUrl: string;
@@ -34,6 +37,9 @@ const props = defineProps<{
 
 const brandingForm = useForm<{ login_wallpaper: File | null }>({
     login_wallpaper: null,
+});
+const dashboardWallpaperForm = useForm<{ dashboard_wallpaper: File | null }>({
+    dashboard_wallpaper: null,
 });
 const logoForm = useForm<{ storefront_logo: File | null }>({
     storefront_logo: null,
@@ -52,6 +58,14 @@ const uploadWallpaper = (): void => {
         forceFormData: true,
         preserveScroll: true,
         onSuccess: () => brandingForm.reset('login_wallpaper'),
+    });
+};
+
+const uploadDashboardWallpaper = (): void => {
+    dashboardWallpaperForm.post(route('super-admin.branding.dashboard-wallpaper'), {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => dashboardWallpaperForm.reset('dashboard_wallpaper'),
     });
 };
 
@@ -108,12 +122,19 @@ const formatGhs = (minor: number): string =>
                 </div>
                 <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
                     <a href="#branding" class="group flex items-center gap-3 border border-neutral-200 px-4 py-3 text-left text-sm font-bold hover:border-[#e21b23] hover:text-[#e21b23]"><Image :size="19" aria-hidden="true" /><span>Branding settings</span><ArrowRight :size="16" class="ml-auto transition group-hover:translate-x-1" aria-hidden="true" /></a>
-                    <Link :href="route('super-admin.users.index')" class="group flex items-center gap-3 border border-neutral-200 px-4 py-3 text-left text-sm font-bold hover:border-[#e21b23] hover:text-[#e21b23]"><Store :size="19" aria-hidden="true" /><span>Online Store access</span><ArrowRight :size="16" class="ml-auto transition group-hover:translate-x-1" aria-hidden="true" /></Link>
-                    <Link :href="route('super-admin.users.index')" class="group flex items-center gap-3 border border-neutral-200 px-4 py-3 text-left text-sm font-bold hover:border-[#e21b23] hover:text-[#e21b23]"><ShoppingCart :size="19" aria-hidden="true" /><span>POS access</span><ArrowRight :size="16" class="ml-auto transition group-hover:translate-x-1" aria-hidden="true" /></Link>
-                    <Link :href="route('super-admin.users.index')" class="group flex items-center gap-3 border border-neutral-200 px-4 py-3 text-left text-sm font-bold hover:border-[#e21b23] hover:text-[#e21b23]"><Users :size="19" aria-hidden="true" /><span>Manage users</span><ArrowRight :size="16" class="ml-auto transition group-hover:translate-x-1" aria-hidden="true" /></Link>
+                    <Link :href="route('super-admin.tenants.index', { feature: 'online_store' })" class="group flex items-center gap-3 border border-neutral-200 px-4 py-3 text-left text-sm font-bold hover:border-[#e21b23] hover:text-[#e21b23]"><Store :size="19" aria-hidden="true" /><span>Online Store access</span><ArrowRight :size="16" class="ml-auto transition group-hover:translate-x-1" aria-hidden="true" /></Link>
+                    <Link :href="route('super-admin.tenants.index', { feature: 'pos' })" class="group flex items-center gap-3 border border-neutral-200 px-4 py-3 text-left text-sm font-bold hover:border-[#e21b23] hover:text-[#e21b23]"><ShoppingCart :size="19" aria-hidden="true" /><span>POS access</span><ArrowRight :size="16" class="ml-auto transition group-hover:translate-x-1" aria-hidden="true" /></Link>
+                    <Link :href="route('super-admin.tenants.index')" class="group flex items-center gap-3 border border-neutral-200 px-4 py-3 text-left text-sm font-bold hover:border-[#e21b23] hover:text-[#e21b23]"><Users :size="19" aria-hidden="true" /><span>Subscribers & team</span><ArrowRight :size="16" class="ml-auto transition group-hover:translate-x-1" aria-hidden="true" /></Link>
                     <Link :href="route('super-admin.accounts.index')" class="group flex items-center gap-3 border border-neutral-200 px-4 py-3 text-left text-sm font-bold hover:border-[#e21b23] hover:text-[#e21b23]"><ShieldCheck :size="19" aria-hidden="true" /><span>Manage admins</span><ArrowRight :size="16" class="ml-auto transition group-hover:translate-x-1" aria-hidden="true" /></Link>
                 </div>
             </section>
+            <EnCard id="tenants">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div><p class="text-primary-700 text-sm font-semibold">Workspace administration</p><h2 class="mt-1 text-lg font-semibold text-neutral-900">Enrolled tenants</h2></div>
+                    <Link :href="route('super-admin.tenants.index')" class="text-sm font-semibold text-[#e21b23] hover:text-[#b9151b]">Open tenant directory</Link>
+                </div>
+                <div class="mt-5 overflow-x-auto"><table class="w-full text-left text-sm"><thead class="border-b border-neutral-100 text-xs text-neutral-500 uppercase"><tr><th class="px-3 py-3">Store</th><th class="px-3 py-3">Email</th><th class="px-3 py-3">Subscription</th><th class="px-3 py-3">Status</th><th class="px-3 py-3"><span class="sr-only">Manage</span></th></tr></thead><tbody><tr v-for="tenant in tenants.data" :key="tenant.id" class="border-b border-neutral-100 last:border-0"><td class="px-3 py-4 font-semibold">{{ tenant.name }}</td><td class="px-3 py-4">{{ tenant.email }}</td><td class="px-3 py-4"><p class="font-medium text-neutral-800">{{ tenant.subscription_plan ?? 'Not enrolled' }}</p><p v-if="tenant.subscription_status" class="mt-0.5 text-xs text-neutral-500">{{ tenant.subscription_status }}</p></td><td class="px-3 py-4"><EnBadge>{{ tenant.status }}</EnBadge></td><td class="px-3 py-4 text-right"><Link :href="route('super-admin.tenants.show', { tenant: tenant.id })" class="inline-flex items-center gap-2 font-semibold text-[#e21b23] hover:text-[#b9151b]"><Settings :size="16" aria-hidden="true" /> Manage</Link></td></tr></tbody></table></div>
+            </EnCard>
             <EnCard id="branding">
                 <div class="space-y-10">
                     <div class="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-center">
@@ -209,6 +230,24 @@ const formatGhs = (minor: number): string =>
 
                     <div class="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-center">
                         <div>
+                            <h2 class="text-xl font-bold text-neutral-900">Workspace dashboard wallpaper</h2>
+                            <p class="mt-2 max-w-xl text-sm text-neutral-500">Upload the background image displayed on the workspace launcher at <code>/dashboard</code>. JPG, PNG, or WebP up to 5 MB.</p>
+                            <form class="mt-5 flex flex-wrap items-end gap-3" @submit.prevent="uploadDashboardWallpaper">
+                                <label class="block text-sm font-medium text-neutral-700">Choose image<input type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-sm text-neutral-600" @change="dashboardWallpaperForm.dashboard_wallpaper = ($event.target as HTMLInputElement).files?.[0] ?? null" /></label>
+                                <button type="submit" class="min-h-10 rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60" :disabled="!dashboardWallpaperForm.dashboard_wallpaper || dashboardWallpaperForm.processing">Save dashboard wallpaper</button>
+                            </form>
+                            <p v-if="dashboardWallpaperForm.errors.dashboard_wallpaper" class="mt-2 text-sm text-red-600">{{ dashboardWallpaperForm.errors.dashboard_wallpaper }}</p>
+                        </div>
+                        <div class="aspect-video overflow-hidden rounded-md bg-neutral-100">
+                            <img v-if="dashboardWallpaperUrl" :src="dashboardWallpaperUrl" alt="Current dashboard wallpaper" class="h-full w-full object-cover" />
+                            <div v-else class="flex h-full items-center justify-center px-5 text-center text-sm text-neutral-500">No custom dashboard wallpaper uploaded yet.</div>
+                        </div>
+                    </div>
+
+                    <hr class="border-neutral-200" />
+
+                    <div class="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-center">
+                        <div>
                             <h2 class="text-xl font-bold text-neutral-900">Login wallpaper</h2>
                             <p class="mt-2 max-w-xl text-sm text-neutral-500">Upload the background image customers see behind the Enablstore login screen. JPG, PNG, or WebP up to 5 MB.</p>
                             <form class="mt-5 flex flex-wrap items-end gap-3" @submit.prevent="uploadWallpaper">
@@ -259,37 +298,6 @@ const formatGhs = (minor: number): string =>
                     </p></EnCard
                 >
             </div>
-            <EnCard>
-                <h2 class="text-lg font-semibold text-neutral-900">Tenants</h2>
-                <div class="mt-5 overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead
-                            class="border-b border-neutral-100 text-xs text-neutral-500 uppercase"
-                        >
-                            <tr>
-                                <th class="px-3 py-3">Store</th>
-                                <th class="px-3 py-3">Email</th>
-                                <th class="px-3 py-3">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr
-                                v-for="tenant in tenants.data"
-                                :key="tenant.id"
-                                class="border-b border-neutral-100 last:border-0"
-                            >
-                                <td class="px-3 py-4 font-semibold">
-                                    {{ tenant.name }}
-                                </td>
-                                <td class="px-3 py-4">{{ tenant.email }}</td>
-                                <td class="px-3 py-4">
-                                    <EnBadge>{{ tenant.status }}</EnBadge>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </EnCard>
             </div>
         </div>
     </main>
