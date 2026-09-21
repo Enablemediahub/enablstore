@@ -202,6 +202,7 @@ class TenantSettingsController extends Controller
         $tenantName = (string) (tenant()?->name ?? 'Store');
 
         return [
+            'subscribedTenantName' => $tenantName,
             'storeName' => filled($settings['store_name'] ?? null)
                 ? (string) $settings['store_name']
                 : $tenantName,

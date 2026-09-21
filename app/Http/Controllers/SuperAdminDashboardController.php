@@ -26,6 +26,7 @@ class SuperAdminDashboardController extends Controller
             'storefrontLogoUrl' => PlatformSetting::storefrontLogoUrl(request()),
             'defaultStorefrontLogoUrl' => request()->getSchemeAndHttpHost().'/images/storefront/enablstore-logo.png',
             'hasCustomStorefrontLogo' => filled(PlatformSetting::value('storefront_logo')),
+            'storefrontTenantDisplay' => PlatformSetting::storefrontTenantDisplaySettings(),
             'status' => session('status'),
             'catalogueModeDefault' => PlatformSetting::value('catalogue_mode_default', 'shared'),
         ]);

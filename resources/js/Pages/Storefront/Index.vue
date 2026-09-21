@@ -41,7 +41,14 @@ type StorefrontHero = {
     imageUrl: string;
 };
 
+type TenantDisplay = {
+    enabled: boolean;
+    placement: 'header' | 'hero' | 'both';
+    labelPrefix: string;
+};
+
 type StorefrontConfig = {
+    subscribedTenantName: string;
     storeName: string;
     deliveryLocations: string[];
     defaultDeliveryLocation: string;
@@ -64,6 +71,7 @@ type NavFilter = 'all' | 'deals' | 'best_sellers' | 'new_arrivals';
 const props = defineProps<{
     hero: StorefrontHero;
     logoUrl: string;
+    tenantDisplay: TenantDisplay;
     storefront: StorefrontConfig;
     categories: Category[];
     products: Product[];
@@ -96,6 +104,18 @@ onMounted(() => {
 });
 
 const categoryOptions = computed(() => ['All', ...props.categories.map((category) => category.name)]);
+
+const showTenantInHeader = computed(
+    () =>
+        props.tenantDisplay.enabled &&
+        (props.tenantDisplay.placement === 'header' || props.tenantDisplay.placement === 'both'),
+);
+
+const showTenantInHero = computed(
+    () =>
+        props.tenantDisplay.enabled &&
+        (props.tenantDisplay.placement === 'hero' || props.tenantDisplay.placement === 'both'),
+);
 
 const isDeal = (product: Product): boolean =>
     Boolean(product.is_online_deal) ||
@@ -264,13 +284,24 @@ const formatPrice = (minor: number): string =>
     <main class="min-h-screen bg-[#f4f4f2] text-[#171717]">
         <header class="bg-[#171717] text-white">
             <div class="mx-auto flex max-w-[1500px] items-center gap-5 px-4 py-3 sm:px-8">
-                <a :href="route('tenant.home', { tenant })" class="shrink-0">
-                    <img
-                        :src="logoUrl"
-                        :alt="storefront.storeName"
-                        class="h-10 w-auto max-w-[180px] object-contain sm:h-11"
-                    />
-                </a>
+                <div class="flex shrink-0 items-center gap-3">
+                    <a :href="route('tenant.home', { tenant })">
+                        <img
+                            :src="logoUrl"
+                            :alt="storefront.storeName"
+                            class="h-10 w-auto max-w-[180px] object-contain sm:h-11"
+                        />
+                    </a>
+                    <div
+                        v-if="showTenantInHeader"
+                        class="hidden border-l border-white/20 pl-3 leading-tight md:block"
+                    >
+                        <p class="text-[10px] font-semibold tracking-wide text-neutral-400 uppercase">
+                            {{ tenantDisplay.labelPrefix }}
+                        </p>
+                        <p class="text-sm font-bold text-white">{{ storefront.storeName }}</p>
+                    </div>
+                </div>
                 <button
                     type="button"
                     class="hidden items-center gap-2 text-left text-xs leading-tight transition hover:text-[#ff9696] md:flex"
@@ -374,6 +405,10 @@ const formatPrice = (minor: number): string =>
                     <span class="inline-flex w-fit items-center rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-bold tracking-wide text-white uppercase backdrop-blur-sm">
                         {{ hero.badge }}
                     </span>
+                    <p v-if="showTenantInHero" class="mt-3 text-sm font-medium text-white/85">
+                        {{ tenantDisplay.labelPrefix }}
+                        <span class="font-bold text-white">{{ storefront.storeName }}</span>
+                    </p>
                     <h1 class="mt-4 max-w-3xl text-3xl font-black tracking-tight text-white sm:text-5xl lg:text-6xl">
                         {{ hero.title }}
                     </h1>

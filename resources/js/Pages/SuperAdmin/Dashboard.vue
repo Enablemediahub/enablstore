@@ -23,6 +23,11 @@ const props = defineProps<{
     storefrontLogoUrl: string;
     defaultStorefrontLogoUrl: string;
     hasCustomStorefrontLogo: boolean;
+    storefrontTenantDisplay: {
+        enabled: boolean;
+        placement: 'header' | 'hero' | 'both';
+        label_prefix: string;
+    };
     status?: string | null;
     catalogueModeDefault: 'shared' | 'separate_online';
 }>();
@@ -33,7 +38,14 @@ const brandingForm = useForm<{ login_wallpaper: File | null }>({
 const logoForm = useForm<{ storefront_logo: File | null }>({
     storefront_logo: null,
 });
+const tenantDisplayForm = useForm({
+    enabled: props.storefrontTenantDisplay.enabled,
+    placement: props.storefrontTenantDisplay.placement,
+    label_prefix: props.storefrontTenantDisplay.label_prefix,
+});
 const catalogueForm = useForm({ catalogue_mode: props.catalogueModeDefault });
+
+const previewTenantName = props.tenants.data[0]?.name ?? 'Demo Store';
 
 const uploadWallpaper = (): void => {
     brandingForm.post(route('super-admin.branding.login-wallpaper'), {
@@ -58,6 +70,12 @@ const resetStorefrontLogo = (): void => {
 };
 
 const saveCatalogueMode = (): void => catalogueForm.patch(route('super-admin.catalogue-mode.update'));
+
+const saveTenantDisplay = (): void => {
+    tenantDisplayForm.patch(route('super-admin.branding.storefront-tenant-display'), {
+        preserveScroll: true,
+    });
+};
 
 const formatGhs = (minor: number): string =>
     new Intl.NumberFormat('en-GH', {
@@ -136,6 +154,54 @@ const formatGhs = (minor: number): string =>
                         </div>
                         <div class="flex min-h-[120px] items-center justify-center rounded-md border border-neutral-200 bg-[#171717] p-6">
                             <img :src="storefrontLogoUrl" alt="Current storefront logo" class="max-h-16 w-auto object-contain" />
+                        </div>
+                    </div>
+
+                    <hr class="border-neutral-200" />
+
+                    <div class="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-start">
+                        <div>
+                            <h2 class="text-xl font-bold text-neutral-900">Subscribed tenant display</h2>
+                            <p class="mt-2 max-w-xl text-sm text-neutral-500">
+                                Show each tenant's store name on their online storefront so shoppers know which subscribed workspace they are shopping with.
+                            </p>
+                            <form class="mt-5 space-y-4" @submit.prevent="saveTenantDisplay">
+                                <label class="flex items-center gap-2 text-sm font-medium text-neutral-800">
+                                    <input v-model="tenantDisplayForm.enabled" type="checkbox" class="rounded border-neutral-300" />
+                                    Show tenant name on storefront
+                                </label>
+                                <label class="block text-sm font-medium text-neutral-700">
+                                    Placement
+                                    <select v-model="tenantDisplayForm.placement" class="mt-1.5 min-h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm">
+                                        <option value="header">Header (beside logo)</option>
+                                        <option value="hero">Hero banner</option>
+                                        <option value="both">Header and hero</option>
+                                    </select>
+                                </label>
+                                <label class="block text-sm font-medium text-neutral-700">
+                                    Label prefix
+                                    <input v-model="tenantDisplayForm.label_prefix" type="text" maxlength="40" placeholder="Shopping at" class="mt-1.5 min-h-10 w-full rounded-md border border-neutral-300 px-3 text-sm" />
+                                </label>
+                                <button type="submit" class="min-h-10 rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60" :disabled="tenantDisplayForm.processing">
+                                    Save tenant display
+                                </button>
+                            </form>
+                        </div>
+                        <div class="rounded-md border border-neutral-200 bg-[#171717] p-5 text-white">
+                            <p class="text-[10px] font-bold tracking-widest text-neutral-400 uppercase">Preview</p>
+                            <div v-if="tenantDisplayForm.enabled" class="mt-4 space-y-4">
+                                <div v-if="tenantDisplayForm.placement === 'header' || tenantDisplayForm.placement === 'both'" class="flex items-center gap-3 border-b border-white/10 pb-4">
+                                    <img :src="storefrontLogoUrl" alt="" class="h-8 w-auto object-contain" />
+                                    <div class="border-l border-white/20 pl-3">
+                                        <p class="text-[10px] uppercase tracking-wide text-neutral-400">{{ tenantDisplayForm.label_prefix || 'Shopping at' }}</p>
+                                        <p class="text-sm font-bold">{{ previewTenantName }}</p>
+                                    </div>
+                                </div>
+                                <div v-if="tenantDisplayForm.placement === 'hero' || tenantDisplayForm.placement === 'both'" class="rounded-lg bg-white/5 px-3 py-2 text-sm text-white/85">
+                                    {{ tenantDisplayForm.label_prefix || 'Shopping at' }} <strong class="text-white">{{ previewTenantName }}</strong>
+                                </div>
+                            </div>
+                            <p v-else class="mt-4 text-sm text-neutral-400">Tenant name hidden on storefront.</p>
                         </div>
                     </div>
 

@@ -65,4 +65,26 @@ class SuperAdminBrandingController extends Controller
 
         return back()->with('status', 'Storefront logo reset to default.');
     }
+
+    public function updateStorefrontTenantDisplay(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'enabled' => ['required', 'boolean'],
+            'placement' => ['required', 'in:header,hero,both'],
+            'label_prefix' => ['nullable', 'string', 'max:40'],
+        ]);
+
+        PlatformSetting::query()->updateOrCreate(
+            ['key' => 'storefront_tenant_display'],
+            ['value' => json_encode([
+                'enabled' => $validated['enabled'],
+                'placement' => $validated['placement'],
+                'label_prefix' => filled($validated['label_prefix'] ?? null)
+                    ? trim((string) $validated['label_prefix'])
+                    : 'Shopping at',
+            ], JSON_THROW_ON_ERROR)],
+        );
+
+        return back()->with('status', 'Storefront tenant display updated.');
+    }
 }

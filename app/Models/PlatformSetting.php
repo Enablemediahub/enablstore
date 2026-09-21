@@ -42,4 +42,64 @@ class PlatformSetting extends Model
 
         return $request->getSchemeAndHttpHost().'/images/storefront/enablstore-logo.png';
     }
+
+    /**
+     * @return array{enabled: bool, placement: string, label_prefix: string}
+     */
+    public static function storefrontTenantDisplaySettings(): array
+    {
+        $stored = static::value('storefront_tenant_display');
+        $defaults = static::defaultStorefrontTenantDisplay();
+
+        if (is_string($stored) && $stored !== '') {
+            $decoded = json_decode($stored, true);
+            $stored = is_array($decoded) ? $decoded : null;
+        }
+
+        if (! is_array($stored)) {
+            return $defaults;
+        }
+
+        $placement = (string) ($stored['placement'] ?? $defaults['placement']);
+
+        if (! in_array($placement, ['header', 'hero', 'both'], true)) {
+            $placement = $defaults['placement'];
+        }
+
+        return [
+            'enabled' => array_key_exists('enabled', $stored)
+                ? (bool) $stored['enabled']
+                : $defaults['enabled'],
+            'placement' => $placement,
+            'label_prefix' => filled($stored['label_prefix'] ?? null)
+                ? trim((string) $stored['label_prefix'])
+                : $defaults['label_prefix'],
+        ];
+    }
+
+    /**
+     * @return array{enabled: bool, placement: string, labelPrefix: string}
+     */
+    public static function storefrontTenantDisplayForStorefront(): array
+    {
+        $settings = static::storefrontTenantDisplaySettings();
+
+        return [
+            'enabled' => $settings['enabled'],
+            'placement' => $settings['placement'],
+            'labelPrefix' => $settings['label_prefix'],
+        ];
+    }
+
+    /**
+     * @return array{enabled: bool, placement: string, label_prefix: string}
+     */
+    private static function defaultStorefrontTenantDisplay(): array
+    {
+        return [
+            'enabled' => true,
+            'placement' => 'header',
+            'label_prefix' => 'Shopping at',
+        ];
+    }
 }

@@ -48,6 +48,7 @@ Route::middleware('auth:super_admin')->prefix('super-admin')->name('super-admin.
     Route::post('/branding/login-wallpaper', [SuperAdminBrandingController::class, 'updateLoginWallpaper'])->name('branding.login-wallpaper');
     Route::post('/branding/storefront-logo', [SuperAdminBrandingController::class, 'updateStorefrontLogo'])->name('branding.storefront-logo');
     Route::delete('/branding/storefront-logo', [SuperAdminBrandingController::class, 'destroyStorefrontLogo'])->name('branding.storefront-logo.destroy');
+    Route::patch('/branding/storefront-tenant-display', [SuperAdminBrandingController::class, 'updateStorefrontTenantDisplay'])->name('branding.storefront-tenant-display');
     Route::patch('/catalogue-mode', [SuperAdminCatalogueController::class, 'update'])->name('catalogue-mode.update');
     Route::post('/logout', [SuperAdminAuthController::class, 'destroy'])->name('logout');
 });
