@@ -10,22 +10,9 @@ Slots:
 - none
 -->
 <script setup lang="ts">
+import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser';
 import { Camera, CameraOff, ScanLine, X } from '@lucide/vue';
-import { onMounted, onUnmounted, ref, watch } from 'vue';
-
-type BarcodeDetectorLike = {
-    detect: (source: HTMLVideoElement) => Promise<Array<{ rawValue: string }>>;
-};
-
-type BarcodeDetectorConstructor = new (options?: {
-    formats?: string[];
-}) => BarcodeDetectorLike;
-
-declare global {
-    interface Window {
-        BarcodeDetector?: BarcodeDetectorConstructor;
-    }
-}
+import { nextTick, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = withDefaults(
     defineProps<{
@@ -41,78 +28,67 @@ const emit = defineEmits<{
     detected: [code: string];
 }>();
 
+const scannerDialog = ref<HTMLDialogElement | null>(null);
 const video = ref<HTMLVideoElement | null>(null);
-const stream = ref<MediaStream | null>(null);
 const cameraError = ref('');
 const cameraActive = ref(false);
-let scanTimer: number | undefined;
+let scannerControls: IScannerControls | null = null;
 let hidBuffer = '';
 let hidTimer: number | undefined;
 
 const stopCamera = (): void => {
-    if (scanTimer !== undefined) {
-        window.clearInterval(scanTimer);
-        scanTimer = undefined;
-    }
+    scannerControls?.stop();
+    scannerControls = null;
 
-    stream.value?.getTracks().forEach((track) => track.stop());
-    stream.value = null;
+    if (video.value) {
+        video.value.srcObject = null;
+    }
     cameraActive.value = false;
 };
 
 const startCamera = async (): Promise<void> => {
     cameraError.value = '';
+    stopCamera();
 
-    if (!window.BarcodeDetector) {
-        cameraError.value =
-            'Camera scanning is not supported in this browser. Use a USB scanner or type the SKU.';
+    if (!navigator.mediaDevices?.getUserMedia) {
+        cameraError.value = 'Camera scanning is not available in this browser. Use a USB scanner instead.';
         return;
     }
 
     try {
-        stream.value = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode: { ideal: 'environment' } },
-            audio: false,
-        });
-        cameraActive.value = true;
+        await nextTick();
+        if (!video.value) return;
 
-        if (video.value) {
-            video.value.srcObject = stream.value;
-            await video.value.play();
-        }
+        const reader = new BrowserMultiFormatReader();
+        scannerControls = await reader.decodeFromConstraints(
+            {
+                video: {
+                    facingMode: { ideal: 'environment' },
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                },
+                audio: false,
+            },
+            video.value,
+            (result) => {
+                const code = result?.getText().trim();
+                if (!code) return;
 
-        const detector = new window.BarcodeDetector({
-            formats: [
-                'ean_13',
-                'ean_8',
-                'code_128',
-                'code_39',
-                'upc_a',
-                'upc_e',
-            ],
-        });
-
-        scanTimer = window.setInterval(async () => {
-            if (!video.value || video.value.readyState < 2) {
-                return;
-            }
-
-            const results = await detector.detect(video.value);
-            const code = results[0]?.rawValue?.trim();
-
-            if (code) {
                 emit('detected', code);
                 stopCamera();
-            }
-        }, 250);
+            },
+        );
+        cameraActive.value = true;
     } catch {
         cameraError.value =
-            'Camera access was unavailable. Check browser permissions or use a USB scanner.';
+            'Camera access was unavailable. Allow camera access, then try again, or use a USB scanner.';
         stopCamera();
     }
 };
 
 const handleHidKeydown = (event: KeyboardEvent): void => {
+    if (!props.open) return;
+
     if (event.key === 'Enter') {
         if (hidBuffer.length >= 3) {
             emit('detected', hidBuffer);
@@ -138,10 +114,17 @@ const handleHidKeydown = (event: KeyboardEvent): void => {
 
 watch(
     () => props.open,
-    (isOpen) => {
+    async (isOpen) => {
         if (!isOpen) {
             stopCamera();
+            hidBuffer = '';
+            if (scannerDialog.value?.open) scannerDialog.value.close();
+            return;
         }
+
+        await nextTick();
+        if (!scannerDialog.value?.open) scannerDialog.value?.showModal();
+        await startCamera();
     },
 );
 
@@ -151,15 +134,19 @@ onMounted(() => {
 
 onUnmounted(() => {
     stopCamera();
+    if (scannerDialog.value?.open) scannerDialog.value.close();
     window.removeEventListener('keydown', handleHidKeydown);
 });
 </script>
 
 <template>
-    <div
-        v-if="open"
-        class="fixed inset-0 z-[60] flex items-center justify-center bg-neutral-900/60 p-4"
+    <dialog
+        ref="scannerDialog"
+        class="m-0 h-dvh w-screen max-w-none bg-transparent p-0 backdrop:bg-neutral-900/60"
+        aria-labelledby="scanner-title"
+        @cancel.prevent="emit('close')"
     >
+        <div class="fixed inset-0 flex items-center justify-center p-4">
         <section
             class="w-full max-w-lg rounded-lg bg-white p-5 shadow-lg"
             role="dialog"
@@ -203,7 +190,7 @@ onUnmounted(() => {
                 {{ cameraError }}
             </p>
             <p v-else class="mt-3 text-sm text-neutral-500">
-                Use the camera or scan with a connected USB barcode reader.
+                Point the camera at a barcode. A connected USB barcode scanner also works while this panel is open.
             </p>
 
             <div class="mt-5 flex flex-wrap justify-end gap-3">
@@ -235,5 +222,6 @@ onUnmounted(() => {
                 </button>
             </div>
         </section>
-    </div>
+        </div>
+    </dialog>
 </template>

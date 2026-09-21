@@ -38,6 +38,7 @@ type HeldSale = {
     discountReason: string;
     customerName: string;
     customerPhone: string;
+    cashReceived: number | null;
 };
 type Receipt = {
     items: Array<{ name: string; quantity: number; priceMinor: number }>;
@@ -46,6 +47,8 @@ type Receipt = {
     transactionUuid: string;
     customerName: string;
     customerPhone: string;
+    cashReceivedMinor: number | null;
+    changeMinor: number | null;
 };
 
 const props = defineProps<{
@@ -62,6 +65,7 @@ const discountValue = ref(0);
 const discountReason = ref('');
 const customerName = ref('');
 const customerPhone = ref('');
+const cashReceived = ref<number | null>(null);
 const mobilePanelOpen = ref(false);
 const tenant = props.tenant;
 const isOnline = ref(navigator.onLine);
@@ -120,6 +124,28 @@ const discountMinor = computed(() => {
     return Math.min(subtotalMinor.value, Math.round(discountValue.value * 100));
 });
 
+const cashReceivedMinor = computed(() => {
+    const amount = Number(cashReceived.value);
+
+    return Number.isFinite(amount) && amount >= 0 ? Math.round(amount * 100) : 0;
+});
+
+const cashShortfallMinor = computed(() =>
+    Math.max(0, totalMinor.value - cashReceivedMinor.value),
+);
+
+const changeMinor = computed(() =>
+    Math.max(0, cashReceivedMinor.value - totalMinor.value),
+);
+
+const canCompleteSale = computed(() =>
+    cart.value.length > 0 && (
+        paymentMethod.value !== 'cash' || (
+            cashReceived.value !== null && cashReceivedMinor.value >= totalMinor.value
+        )
+    ),
+);
+
 const checkoutForm = useForm({
     transaction_uuid: crypto.randomUUID(),
     payment_method: paymentMethod.value,
@@ -154,6 +180,7 @@ const clearSale = (): void => {
     discountReason.value = '';
     customerName.value = '';
     customerPhone.value = '';
+    cashReceived.value = null;
 };
 
 const holdSale = (): void => {
@@ -170,6 +197,7 @@ const holdSale = (): void => {
         discountReason: discountReason.value,
         customerName: customerName.value,
         customerPhone: customerPhone.value,
+        cashReceived: cashReceived.value,
     });
     clearSale();
 };
@@ -186,6 +214,7 @@ const resumeSale = (heldSale: HeldSale): void => {
     discountReason.value = heldSale.discountReason;
     customerName.value = heldSale.customerName;
     customerPhone.value = heldSale.customerPhone;
+    cashReceived.value = heldSale.cashReceived;
     heldSales.value = heldSales.value.filter((sale) => sale.id !== heldSale.id);
 };
 
@@ -215,6 +244,8 @@ const formatPrice = (minor: number): string =>
     }).format(minor / 100);
 
 const checkout = (): void => {
+    if (!canCompleteSale.value) return;
+
     checkoutForm.payment_method = paymentMethod.value;
     checkoutForm.discount_type = discountType.value || null;
     checkoutForm.discount_value = discountValue.value;
@@ -236,6 +267,8 @@ const checkout = (): void => {
         transactionUuid: checkoutForm.transaction_uuid,
         customerName: customerName.value,
         customerPhone: customerPhone.value,
+        cashReceivedMinor: paymentMethod.value === 'cash' ? cashReceivedMinor.value : null,
+        changeMinor: paymentMethod.value === 'cash' ? changeMinor.value : null,
     };
 
     if (!isOnline.value) {
@@ -277,6 +310,10 @@ const checkout = (): void => {
         },
     );
 };
+
+watch(paymentMethod, (method) => {
+    if (method !== 'cash') cashReceived.value = null;
+});
 
 const refreshPendingCount = async (): Promise<void> => {
     pendingCount.value = await pendingOfflineSaleCount();
@@ -582,11 +619,21 @@ onUnmounted(() => {
                                     </option>
                                     <option value="card">Card</option>
                                 </select>
+                                <div v-if="paymentMethod === 'cash'" class="mt-3 rounded-lg border border-white/15 bg-white/5 p-3">
+                                    <label for="cash-received" class="block text-xs font-bold tracking-wide text-white/80 uppercase">Cash received</label>
+                                    <div class="mt-2 flex items-center rounded-md border border-white/20 bg-white px-3 text-neutral-900 focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-300/40">
+                                        <span class="mr-2 text-sm font-semibold text-neutral-500">GHS</span>
+                                        <input id="cash-received" v-model.number="cashReceived" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" class="min-h-11 w-full border-0 bg-transparent px-0 text-right font-mono text-base font-bold text-neutral-900 focus:ring-0" />
+                                    </div>
+                                    <p v-if="cashReceived === null" class="mt-2 text-xs text-white/65">Enter the amount received to calculate change.</p>
+                                    <div v-else-if="cashShortfallMinor > 0" class="mt-3 flex justify-between gap-3 text-sm font-semibold text-amber-300"><span>Amount still due</span><span class="font-mono">{{ formatPrice(cashShortfallMinor) }}</span></div>
+                                    <div v-else class="mt-3 flex justify-between gap-3 rounded-md bg-emerald-400/15 px-3 py-2 text-sm font-bold text-emerald-200"><span>Change due</span><span class="font-mono text-base">{{ formatPrice(changeMinor) }}</span></div>
+                                </div>
                                 <EnButton
                                     class="mt-4 w-full bg-blue-600! text-white! hover:bg-blue-700!"
                                     variant="primary"
                                     :loading="checkoutForm.processing"
-                                    :disabled="cart.length === 0"
+                                    :disabled="!canCompleteSale"
                                     @click="checkout"
                                 >
                                     Complete sale
@@ -608,6 +655,8 @@ onUnmounted(() => {
             :transaction-uuid="receipt.transactionUuid"
             :customer-name="receipt.customerName"
             :customer-phone="receipt.customerPhone"
+            :cash-received-minor="receipt.cashReceivedMinor"
+            :change-minor="receipt.changeMinor"
             @close="receipt = null"
         />
         <BarcodeScanner :open="scannerOpen" @close="scannerOpen = false" @detected="handleBarcode" />

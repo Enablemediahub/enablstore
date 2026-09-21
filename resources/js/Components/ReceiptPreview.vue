@@ -26,9 +26,15 @@ withDefaults(
         transactionUuid: string;
         customerName?: string;
         customerPhone?: string;
+        cashReceivedMinor?: number | null;
+        changeMinor?: number | null;
     }>(),
     {
         open: false,
+        customerName: '',
+        customerPhone: '',
+        cashReceivedMinor: null,
+        changeMinor: null,
     },
 );
 
@@ -113,6 +119,10 @@ const printReceipt = (): void => {
                 <div class="rounded-md bg-neutral-100 px-3 py-3">
                     <div class="flex justify-between text-base font-black"><span>Total paid</span><span>{{ formatPrice(totalMinor) }}</span></div>
                     <div class="mt-1 flex justify-between text-[11px] text-neutral-600"><span>Payment method</span><span class="font-semibold">{{ displayPaymentMethod(paymentMethod) }}</span></div>
+                    <template v-if="paymentMethod === 'cash' && cashReceivedMinor !== null && cashReceivedMinor !== undefined">
+                        <div class="mt-1 flex justify-between text-[11px] text-neutral-600"><span>Cash received</span><span class="font-semibold">{{ formatPrice(cashReceivedMinor) }}</span></div>
+                        <div class="mt-1 flex justify-between text-[11px] text-neutral-600"><span>Change given</span><span class="font-semibold">{{ formatPrice(changeMinor ?? 0) }}</span></div>
+                    </template>
                 </div>
                 <div class="my-4 border-t border-dashed border-neutral-400" />
                 <p class="text-center text-xs font-semibold">Thank you for shopping with us.</p>
