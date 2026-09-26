@@ -21,7 +21,7 @@ const logout = (): void => {
     <Head title="Choose a workspace" />
     <main class="relative min-h-screen overflow-hidden bg-[#f6f3ef] text-[#171717]">
         <div v-if="wallpaperUrl" class="pointer-events-none absolute inset-0 bg-cover bg-center bg-no-repeat" :style="{ backgroundImage: `url('${wallpaperUrl}')` }" aria-hidden="true" />
-        <div v-if="wallpaperUrl" class="pointer-events-none absolute inset-0 bg-[#f6f3ef]/80 backdrop-blur-[2px]" aria-hidden="true" />
+        <div v-if="wallpaperUrl" class="pointer-events-none absolute inset-0 bg-[#171717]/60 backdrop-blur-[1px]" aria-hidden="true" />
         <header class="relative border-b border-black/5 bg-[#171717]/95 px-5 py-4 text-white backdrop-blur sm:px-10">
             <div class="mx-auto flex max-w-7xl items-center justify-between">
                 <Link href="/" class="text-xl font-black tracking-tight">enabl<span class="text-[#e21b23]">store</span></Link>
@@ -37,15 +37,15 @@ const logout = (): void => {
             <div class="pointer-events-none absolute -top-20 right-0 size-80 rounded-full bg-[#e21b23]/8 blur-3xl" aria-hidden="true" />
             <div v-if="user" class="relative flex flex-wrap items-end justify-between gap-8">
                 <div class="max-w-2xl">
-                    <p class="text-xs font-black tracking-[0.24em] text-[#e21b23] uppercase">Workspace launcher</p>
-                    <h1 class="mt-4 text-4xl font-black tracking-[-0.03em] sm:text-6xl">Choose a workspace</h1>
-                    <p class="mt-5 max-w-xl text-base leading-7 text-[#555555]">Choose the workspace you need for {{ tenant?.name ?? 'your store' }}.</p>
+                    <p class="text-xs font-black tracking-[0.24em] uppercase" :class="wallpaperUrl ? 'text-[#ff8b8f]' : 'text-[#e21b23]'">Workspace launcher</p>
+                    <h1 class="mt-4 text-4xl font-black tracking-[-0.03em] sm:text-6xl" :class="wallpaperUrl ? 'text-white' : 'text-[#171717]'">Choose a workspace</h1>
+                    <p class="mt-5 max-w-xl text-base leading-7" :class="wallpaperUrl ? 'text-white/80' : 'text-[#555555]'">Choose the workspace you need for {{ tenant?.name ?? 'your store' }}.</p>
                 </div>
                 <div v-if="subscription" class="rounded-2xl border border-black/5 bg-white/80 px-5 py-4 shadow-sm backdrop-blur"><p class="text-xs font-bold tracking-widest text-[#777777] uppercase">Current plan</p><div class="mt-1 flex items-center gap-2"><strong class="text-lg">{{ subscription.plan }}</strong><span class="size-1.5 rounded-full bg-[#e21b23]" aria-hidden="true" /><span class="text-sm capitalize text-[#555555]">{{ subscription.status }}</span></div></div>
             </div>
             <div v-else class="relative max-w-3xl py-8 sm:py-12">
-                <p class="text-xs font-black tracking-[0.24em] text-[#e21b23] uppercase">Workspace launcher</p>
-                <h1 class="mt-4 text-4xl font-black tracking-[-0.03em] sm:text-6xl">Choose a workspace</h1>
+                <p class="text-xs font-black tracking-[0.24em] uppercase" :class="wallpaperUrl ? 'text-[#ff8b8f]' : 'text-[#e21b23]'">Workspace launcher</p>
+                <h1 class="mt-4 text-4xl font-black tracking-[-0.03em] sm:text-6xl" :class="wallpaperUrl ? 'text-white' : 'text-[#171717]'">Choose a workspace</h1>
             </div>
             <div v-if="tenant" class="relative mt-12 grid gap-6 lg:grid-cols-2">
                 <Link v-if="access.onlineStore" :href="route('tenant.home', { tenant: tenant.slug })" class="group relative min-h-[350px] overflow-hidden rounded-[2rem] border border-[#e21b23]/15 bg-white p-7 shadow-[0_20px_60px_rgba(23,23,23,0.08)] transition duration-300 hover:-translate-y-2 hover:shadow-[0_28px_70px_rgba(226,27,35,0.18)] sm:p-10">

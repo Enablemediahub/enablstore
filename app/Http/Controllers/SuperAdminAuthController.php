@@ -19,7 +19,12 @@ class SuperAdminAuthController extends Controller
 
     public function store(SuperAdminLoginRequest $request): RedirectResponse
     {
-        $credentials = $request->only('username', 'password');
+        $identifier = trim($request->string('username')->toString());
+        $credentialField = filter_var($identifier, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+        $credentials = [
+            $credentialField => $credentialField === 'email' ? strtolower($identifier) : $identifier,
+            'password' => $request->string('password')->toString(),
+        ];
 
         if (! Auth::guard('super_admin')->attempt($credentials, $request->boolean('remember'))) {
             return back()->withErrors(['username' => 'These credentials do not match our records.']);

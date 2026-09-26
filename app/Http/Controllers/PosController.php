@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\CheckoutRequest;
 use App\Models\Product;
 use App\Models\PlatformSetting;
+use App\Models\Sale;
 use App\Models\User;
-use App\Services\CheckoutService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -43,9 +42,36 @@ class PosController extends Controller
             return redirect()->route('tenant.pos', ['tenant' => tenant()->getTenantKey()]);
         }
 
+        $completedSaleId = $request->session()->pull('pos_completed_sale_id');
+        $completedSale = $completedSaleId
+            ? Sale::query()->with(['items.product', 'payments'])->find($completedSaleId)
+            : null;
+
         return Inertia::render('Tenant/Pos/Index', [
             'tenant' => (string) tenant()->getTenantKey(),
             'cashierName' => $cashier->name,
+            'heroImageUrl' => PlatformSetting::posHeroImageUrl($request),
+            'completedReceipt' => $completedSale === null ? null : [
+                'items' => $completedSale->items->map(static fn ($item): array => [
+                    'name' => $item->product?->name ?? 'Product',
+                    'quantity' => $item->quantity,
+                    'priceMinor' => $item->unit_price_minor,
+                ])->values(),
+                'totalMinor' => $completedSale->total_minor,
+                'paymentMethod' => $completedSale->payment_method,
+                'tenders' => $completedSale->payments->map(static fn ($payment): array => [
+                    'method' => $payment->method,
+                    'amountMinor' => $payment->amount_minor,
+                ])->values(),
+                'transactionUuid' => $completedSale->transaction_uuid,
+                'cashierName' => $completedSale->cashier_name ?? $cashier->name,
+                'customerName' => $completedSale->customer_name ?? '',
+                'customerPhone' => $completedSale->customer_phone ?? '',
+                'cashReceivedMinor' => $completedSale->payments->where('method', 'cash')->isEmpty()
+                    ? null
+                    : $completedSale->payments->sum('cash_received_minor'),
+                'changeMinor' => max(0, $completedSale->payments->sum('cash_received_minor') - $completedSale->payments->where('method', 'cash')->sum('amount_minor')),
+            ],
             'products' => Product::query()
                 ->with('inventoryStock')
                 ->where('is_active', true)
@@ -78,12 +104,4 @@ class PosController extends Controller
         ])->header('Cache-Control', 'no-store');
     }
 
-    public function checkout(
-        CheckoutRequest $request,
-        CheckoutService $checkoutService,
-    ): RedirectResponse {
-        $checkoutService->checkout($request->validated());
-
-        return back()->with('success', 'Sale completed successfully.');
-    }
 }

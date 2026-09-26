@@ -45,11 +45,13 @@ Route::middleware('auth:super_admin')->prefix('super-admin')->name('super-admin.
     Route::patch('/users/{user}', [SuperAdminUserController::class, 'update'])->name('users.update');
     Route::patch('/users/{user}/reset-access', [SuperAdminUserController::class, 'resetAccess'])->name('users.reset-access');
     Route::delete('/users/{user}', [SuperAdminUserController::class, 'destroy'])->name('users.destroy');
+    Route::post('/tenants/{tenant}/storefront-logo', [SuperAdminBrandingController::class, 'updateTenantStorefrontLogo'])->name('tenants.storefront-logo');
     Route::get('/accounts', [SuperAdminAccountController::class, 'index'])->name('accounts.index');
     Route::post('/accounts', [SuperAdminAccountController::class, 'store'])->name('accounts.store');
     Route::patch('/accounts/{superAdmin}', [SuperAdminAccountController::class, 'update'])->name('accounts.update');
     Route::post('/branding/dashboard-wallpaper', [SuperAdminBrandingController::class, 'updateDashboardWallpaper'])->name('branding.dashboard-wallpaper');
     Route::post('/branding/login-wallpaper', [SuperAdminBrandingController::class, 'updateLoginWallpaper'])->name('branding.login-wallpaper');
+    Route::post('/branding/pos-hero-image', [SuperAdminBrandingController::class, 'updatePosHeroImage'])->name('branding.pos-hero-image');
     Route::post('/branding/storefront-logo', [SuperAdminBrandingController::class, 'updateStorefrontLogo'])->name('branding.storefront-logo');
     Route::delete('/branding/storefront-logo', [SuperAdminBrandingController::class, 'destroyStorefrontLogo'])->name('branding.storefront-logo.destroy');
     Route::patch('/branding/storefront-tenant-display', [SuperAdminBrandingController::class, 'updateStorefrontTenantDisplay'])->name('branding.storefront-tenant-display');
@@ -57,6 +59,7 @@ Route::middleware('auth:super_admin')->prefix('super-admin')->name('super-admin.
     Route::get('/tenants', [SuperAdminTenantController::class, 'index'])->name('tenants.index');
     Route::get('/tenants/{tenant}', [SuperAdminTenantController::class, 'show'])->name('tenants.show');
     Route::patch('/tenants/{tenant}', [SuperAdminTenantController::class, 'update'])->name('tenants.update');
+    Route::patch('/tenants/{tenant}/paystack', [SuperAdminTenantController::class, 'updatePaystackSettings'])->name('tenants.paystack.update');
     Route::post('/logout', [SuperAdminAuthController::class, 'destroy'])->name('logout');
 });
 

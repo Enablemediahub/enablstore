@@ -13,7 +13,8 @@ export type OfflineSale = {
     discountType?: 'fixed' | 'percentage' | null;
     discountValue?: number;
     discountReason?: string;
-    paymentMethod: 'cash' | 'mobile_money' | 'card';
+    paymentMethod: 'cash' | 'mobile_money' | 'card' | 'split';
+    tenders?: Array<{ method: 'cash' | 'mobile_money' | 'card'; amount_minor: number; cash_received_minor: number | null; externally_confirmed: boolean }>;
     customerName?: string;
     customerPhone?: string;
     createdAt: string;

@@ -11,8 +11,10 @@ class Sale extends Model
 {
     protected $fillable = [
         'transaction_uuid',
+        'cashier_name',
         'customer_name',
         'customer_phone',
+        'customer_email',
         'subtotal_minor',
         'discount_minor',
         'discount_type',
@@ -20,6 +22,8 @@ class Sale extends Model
         'total_minor',
         'currency',
         'payment_method',
+        'source',
+        'delivery_location',
         'status',
         'completed_at',
     ];
@@ -37,5 +41,13 @@ class Sale extends Model
     public function items(): HasMany
     {
         return $this->hasMany(SaleItem::class);
+    }
+
+    /**
+     * @return HasMany<SalePayment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(SalePayment::class);
     }
 }

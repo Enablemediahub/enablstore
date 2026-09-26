@@ -43,6 +43,16 @@ const props = defineProps<{
     storefrontSettings: StorefrontSettings;
     team: TeamMember[];
     status?: string | null;
+    storefrontLogoUrl: string;
+    hasCustomStorefrontLogo: boolean;
+    paystackSettings: {
+        mode: 'test' | 'live';
+        enabled: boolean;
+        live_public_key: string | null;
+        live_configured: boolean;
+        test_public_key: string | null;
+        test_configured: boolean;
+    };
 }>();
 
 const form = useForm({
@@ -54,8 +64,30 @@ const form = useForm({
     subscription_status: props.subscription?.status ?? '',
     ...props.storefrontSettings,
 });
+const logoForm = useForm<{ storefront_logo: File | null }>({ storefront_logo: null });
+const paystackForm = useForm({
+    mode: props.paystackSettings.mode,
+    live_public_key: props.paystackSettings.live_public_key ?? '',
+    live_secret_key: '',
+    test_public_key: props.paystackSettings.test_public_key ?? '',
+    test_secret_key: '',
+    enabled: props.paystackSettings.enabled,
+});
 
 const submit = (): void => form.patch(route('super-admin.tenants.update', { tenant: props.tenant.id }));
+const uploadLogo = (): void => {
+    logoForm.post(route('super-admin.tenants.storefront-logo', { tenant: props.tenant.id }), {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => logoForm.reset('storefront_logo'),
+    });
+};
+const savePaystackSettings = (): void => {
+    paystackForm.patch(route('super-admin.tenants.paystack.update', { tenant: props.tenant.id }), {
+        preserveScroll: true,
+        onSuccess: () => paystackForm.reset('live_secret_key', 'test_secret_key'),
+    });
+};
 
 const editingMember = ref<TeamMember | null>(null);
 const resettingMember = ref<TeamMember | null>(null);
@@ -142,6 +174,54 @@ const deleteMember = (member: TeamMember): void => {
                             <EnInput id="support-phone" v-model="form.storefront_customer_service_phone" label="Customer service phone" />
                             <EnInput id="support-email" v-model="form.storefront_customer_service_email" type="email" label="Customer service email" />
                         </div>
+                    </EnCard>
+
+                    <EnCard>
+                        <h2 class="text-lg font-bold">Subscriber storefront logo</h2>
+                        <p class="mt-1 text-sm text-neutral-500">This logo is used for {{ tenant.name }}'s online store and installable app icon.</p>
+                        <div class="mt-6 grid gap-6 sm:grid-cols-[1fr_180px] sm:items-center">
+                            <form v-if="!hasCustomStorefrontLogo" class="flex flex-wrap items-end gap-3" @submit.prevent="uploadLogo">
+                                <label class="block text-sm font-medium text-neutral-700">Choose logo<input type="file" accept="image/jpeg,image/png,image/webp,image/svg+xml" class="mt-2 block w-full text-sm text-neutral-600" @change="logoForm.storefront_logo = ($event.target as HTMLInputElement).files?.[0] ?? null" /></label>
+                                <button type="submit" class="min-h-10 rounded-md bg-[#e21b23] px-4 py-2 text-sm font-bold text-white hover:bg-[#b9151b] disabled:opacity-60" :disabled="!logoForm.storefront_logo || logoForm.processing">Save permanent logo</button>
+                                <p v-if="logoForm.errors.storefront_logo" class="basis-full text-sm text-red-600">{{ logoForm.errors.storefront_logo }}</p>
+                            </form>
+                            <p v-else class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800">This subscriber logo is permanent and cannot be changed.</p>
+                            <div class="flex min-h-[120px] items-center justify-center rounded-md border border-neutral-200 bg-[#171717] p-5"><img :src="storefrontLogoUrl" :alt="`${tenant.name} logo`" class="max-h-20 w-auto object-contain" /></div>
+                        </div>
+                    </EnCard>
+
+                    <EnCard>
+                        <h2 class="text-lg font-bold">Storefront Paystack settings</h2>
+                        <p class="mt-1 text-sm text-neutral-500">Paystack is used for Online Store checkout. POS card and Mobile Money tenders are collected on external devices and recorded by the salesperson.</p>
+                        <form class="mt-6 space-y-4" @submit.prevent="savePaystackSettings">
+                            <fieldset>
+                                <legend class="mb-2 text-sm font-semibold text-neutral-700">Storefront payment mode</legend>
+                                <div class="inline-flex rounded-md border border-neutral-300 bg-neutral-100 p-1">
+                                    <label class="cursor-pointer rounded px-4 py-2 text-sm font-semibold" :class="paystackForm.mode === 'test' ? 'bg-white text-[#171717] shadow-sm' : 'text-neutral-600'"><input v-model="paystackForm.mode" type="radio" value="test" class="sr-only" />Test</label>
+                                    <label class="cursor-pointer rounded px-4 py-2 text-sm font-semibold" :class="paystackForm.mode === 'live' ? 'bg-white text-[#171717] shadow-sm' : 'text-neutral-600'"><input v-model="paystackForm.mode" type="radio" value="live" class="sr-only" />Live</label>
+                                </div>
+                            </fieldset>
+                            <div class="grid gap-5 md:grid-cols-2">
+                                <section class="space-y-3 rounded-md border border-neutral-200 p-4">
+                                    <div><h3 class="font-bold text-neutral-900">Test credentials</h3><p class="text-xs text-neutral-500">Use test keys for simulated payments.</p></div>
+                                    <label class="block text-sm font-medium text-neutral-700">Test public key<input v-model="paystackForm.test_public_key" type="text" autocomplete="off" placeholder="pk_test_…" class="mt-1.5 min-h-10 w-full rounded-md border border-neutral-300 px-3 text-sm" /></label>
+                                    <label class="block text-sm font-medium text-neutral-700">Test secret key<input v-model="paystackForm.test_secret_key" type="password" autocomplete="new-password" :placeholder="paystackSettings.test_configured ? 'Saved; leave blank to keep current key' : 'sk_test_…'" class="mt-1.5 min-h-10 w-full rounded-md border border-neutral-300 px-3 text-sm" /></label>
+                                    <p class="text-xs text-neutral-500">{{ paystackSettings.test_configured ? 'Test keys saved.' : 'Test keys not configured.' }}</p>
+                                </section>
+                                <section class="space-y-3 rounded-md border border-neutral-200 p-4">
+                                    <div><h3 class="font-bold text-neutral-900">Live credentials</h3><p class="text-xs text-neutral-500">Use live keys for real customer payments.</p></div>
+                                    <label class="block text-sm font-medium text-neutral-700">Live public key<input v-model="paystackForm.live_public_key" type="text" autocomplete="off" placeholder="pk_live_…" class="mt-1.5 min-h-10 w-full rounded-md border border-neutral-300 px-3 text-sm" /></label>
+                                    <label class="block text-sm font-medium text-neutral-700">Live secret key<input v-model="paystackForm.live_secret_key" type="password" autocomplete="new-password" :placeholder="paystackSettings.live_configured ? 'Saved; leave blank to keep current key' : 'sk_live_…'" class="mt-1.5 min-h-10 w-full rounded-md border border-neutral-300 px-3 text-sm" /></label>
+                                    <p class="text-xs text-neutral-500">{{ paystackSettings.live_configured ? 'Live keys saved.' : 'Live keys not configured.' }}</p>
+                                </section>
+                            </div>
+                            <p v-if="paystackForm.errors.live_public_key || paystackForm.errors.live_secret_key || paystackForm.errors.test_public_key || paystackForm.errors.test_secret_key || paystackForm.errors.mode" class="text-sm text-red-700">{{ paystackForm.errors.live_public_key || paystackForm.errors.live_secret_key || paystackForm.errors.test_public_key || paystackForm.errors.test_secret_key || paystackForm.errors.mode }}</p>
+                            <label class="flex items-center gap-2 text-sm font-semibold text-neutral-800"><input v-model="paystackForm.enabled" type="checkbox" class="rounded border-neutral-300 text-[#e21b23] focus:ring-[#e21b23]" /> Enable Paystack payments for this subscriber</label>
+                            <p v-if="paystackForm.mode === 'test'" class="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900">Test mode: storefront payments use Paystack test credentials and do not collect real funds.</p>
+                            <p v-else class="text-xs text-neutral-500">Live mode: real customer payments will be collected.</p>
+                            <p class="text-xs text-neutral-500">Secret keys are encrypted at rest and never displayed after saving. Test keys must begin with <code>pk_test_</code>/<code>sk_test_</code>; live keys with <code>pk_live_</code>/<code>sk_live_</code>.</p>
+                            <button type="submit" class="min-h-10 rounded-md bg-[#e21b23] px-4 py-2 text-sm font-bold text-white hover:bg-[#b9151b] disabled:opacity-60" :disabled="paystackForm.processing">Save Paystack settings</button>
+                        </form>
                     </EnCard>
 
                     <div class="flex justify-end"><button type="submit" class="min-h-11 rounded-md bg-[#e21b23] px-5 py-2 text-sm font-bold text-white hover:bg-[#b9151b] disabled:opacity-60" :disabled="form.processing">Save tenant settings</button></div>

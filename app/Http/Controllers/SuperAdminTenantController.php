@@ -7,6 +7,7 @@ namespace App\Http\Controllers;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\Tenant;
+use App\Models\TenantPaystackSetting;
 use App\Models\TenantSetting;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
@@ -51,6 +52,9 @@ class SuperAdminTenantController extends Controller
 
         return Inertia::render('SuperAdmin/Tenant', [
             'tenant' => $tenant->only(['id', 'subscriber_code', 'name', 'slug', 'email', 'phone', 'status', 'created_at']),
+            'storefrontLogoUrl' => \App\Models\PlatformSetting::storefrontLogoUrl(request(), $tenant),
+            'hasCustomStorefrontLogo' => filled($tenant->data['storefront_logo'] ?? null),
+            'paystackSettings' => $this->paystackSettingsForAdmin($tenant),
             'subscription' => $subscription === null ? null : [
                 'id' => $subscription->id,
                 'plan_id' => $subscription->plan_id,
@@ -126,6 +130,60 @@ class SuperAdminTenantController extends Controller
         });
 
         return back()->with('status', 'Tenant settings updated.');
+    }
+
+    public function updatePaystackSettings(Request $request, Tenant $tenant): RedirectResponse
+    {
+        $settings = TenantPaystackSetting::query()->firstOrNew(['tenant_id' => $tenant->id]);
+        $validated = $request->validate([
+            'live_public_key' => ['nullable', 'string', 'max:255', 'starts_with:pk_live_'],
+            'live_secret_key' => ['nullable', 'string', 'max:255', 'starts_with:sk_live_'],
+            'test_public_key' => ['nullable', 'string', 'max:255', 'starts_with:pk_test_'],
+            'test_secret_key' => ['nullable', 'string', 'max:255', 'starts_with:sk_test_'],
+            'mode' => ['required', 'in:test,live'],
+            'enabled' => ['required', 'boolean'],
+        ]);
+
+        $livePublicKey = $validated['live_public_key'] ?? $settings->public_key;
+        $liveSecretKey = $validated['live_secret_key'] ?? $settings->secret_key;
+        $testPublicKey = $validated['test_public_key'] ?? $settings->test_public_key;
+        $testSecretKey = $validated['test_secret_key'] ?? $settings->test_secret_key;
+
+        if ($validated['enabled']) {
+            $activePublicKey = $validated['mode'] === 'test' ? $testPublicKey : $livePublicKey;
+            $activeSecretKey = $validated['mode'] === 'test' ? $testSecretKey : $liveSecretKey;
+
+            if (! filled($activePublicKey) || ! filled($activeSecretKey)) {
+                return back()->withErrors([
+                    $validated['mode'] === 'test' ? 'test_secret_key' : 'live_secret_key' => 'Enter both keys for the selected Paystack mode before enabling payments.',
+                ]);
+            }
+        }
+
+        $settings->public_key = $livePublicKey;
+        $settings->secret_key = $liveSecretKey;
+        $settings->test_public_key = $testPublicKey;
+        $settings->test_secret_key = $testSecretKey;
+        $settings->mode = $validated['mode'];
+        $settings->enabled = (bool) $validated['enabled'];
+        $settings->save();
+
+        return back()->with('status', 'Tenant Paystack settings updated.');
+    }
+
+    /** @return array{mode: string, enabled: bool, live_public_key: ?string, live_configured: bool, test_public_key: ?string, test_configured: bool} */
+    private function paystackSettingsForAdmin(Tenant $tenant): array
+    {
+        $settings = TenantPaystackSetting::query()->where('tenant_id', $tenant->id)->first();
+
+        return [
+            'mode' => $settings?->mode ?? 'live',
+            'enabled' => (bool) $settings?->enabled,
+            'live_public_key' => $settings?->public_key,
+            'live_configured' => filled($settings?->public_key) && filled($settings?->secret_key),
+            'test_public_key' => $settings?->test_public_key,
+            'test_configured' => filled($settings?->test_public_key) && filled($settings?->test_secret_key),
+        ];
     }
 
     /** @return array<string, string> */

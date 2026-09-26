@@ -20,12 +20,17 @@ class CheckoutRequest extends FormRequest
     {
         return [
             'transaction_uuid' => ['required', 'uuid'],
-            'payment_method' => ['required', 'in:cash,mobile_money,card'],
+            'payment_method' => ['required', 'in:cash,mobile_money,card,split'],
             'customer_name' => ['nullable', 'string', 'max:120'],
             'customer_phone' => ['nullable', 'string', 'max:40'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
+            'tenders' => ['sometimes', 'required', 'array', 'min:1', 'max:3'],
+            'tenders.*.method' => ['required_with:tenders', 'in:cash,mobile_money,card'],
+            'tenders.*.amount_minor' => ['required_with:tenders', 'integer', 'min:1'],
+            'tenders.*.cash_received_minor' => ['nullable', 'integer', 'min:0'],
+            'tenders.*.externally_confirmed' => ['nullable', 'boolean'],
             'discount_type' => ['nullable', 'in:fixed,percentage'],
             'discount_value' => ['nullable', 'numeric', 'min:0'],
             'discount_reason' => ['nullable', 'string', 'max:120'],

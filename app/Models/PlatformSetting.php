@@ -6,6 +6,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PlatformSetting extends Model
 {
@@ -31,6 +32,11 @@ class PlatformSetting extends Model
         return static::wallpaperUrl($request, 'dashboard_wallpaper');
     }
 
+    public static function posHeroImageUrl(Request $request): ?string
+    {
+        return static::wallpaperUrl($request, 'pos_hero_image');
+    }
+
     private static function wallpaperUrl(Request $request, string $key): ?string
     {
         $path = static::value($key);
@@ -42,12 +48,12 @@ class PlatformSetting extends Model
         return $request->getSchemeAndHttpHost().'/storage/'.ltrim($path, '/');
     }
 
-    public static function storefrontLogoUrl(Request $request): string
+    public static function storefrontLogoUrl(Request $request, ?Tenant $tenant = null): string
     {
-        $path = static::value('storefront_logo');
+        $path = $tenant?->data['storefront_logo'] ?? static::value('storefront_logo');
 
         if (is_string($path) && $path !== '') {
-            return $request->getSchemeAndHttpHost().'/storage/'.ltrim($path, '/');
+            return Storage::disk('public')->url(ltrim($path, '/'));
         }
 
         return $request->getSchemeAndHttpHost().'/images/storefront/enablstore-logo.png';

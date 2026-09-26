@@ -29,22 +29,25 @@ type Product = {
 };
 
 type CartItem = Product & { quantity: number };
+type TenderMethod = 'cash' | 'mobile_money' | 'card';
+type Tender = { id: string; method: TenderMethod; amountGhs: number | null; cashReceivedGhs: number | null; externallyConfirmed: boolean };
 type HeldSale = {
     id: string;
     items: CartItem[];
-    paymentMethod: 'cash' | 'mobile_money' | 'card';
+    tenders: Tender[];
     discountType: 'fixed' | 'percentage' | '';
     discountValue: number;
     discountReason: string;
     customerName: string;
     customerPhone: string;
-    cashReceived: number | null;
 };
 type Receipt = {
     items: Array<{ name: string; quantity: number; priceMinor: number }>;
     totalMinor: number;
     paymentMethod: string;
+    tenders: Array<{ method: string; amountMinor: number }>;
     transactionUuid: string;
+    cashierName: string;
     customerName: string;
     customerPhone: string;
     cashReceivedMinor: number | null;
@@ -55,24 +58,25 @@ const props = defineProps<{
     products: Product[];
     tenant: string;
     cashierName: string;
+    heroImageUrl: string | null;
+    completedReceipt?: Receipt | null;
 }>();
 
 const search = ref('');
 const cart = ref<CartItem[]>([]);
-const paymentMethod = ref<'cash' | 'mobile_money' | 'card'>('cash');
+const tenders = ref<Tender[]>([{ id: crypto.randomUUID(), method: 'cash', amountGhs: null, cashReceivedGhs: null, externallyConfirmed: false }]);
 const discountType = ref<'fixed' | 'percentage' | ''>('');
 const discountValue = ref(0);
 const discountReason = ref('');
 const customerName = ref('');
 const customerPhone = ref('');
-const cashReceived = ref<number | null>(null);
 const mobilePanelOpen = ref(false);
 const tenant = props.tenant;
 const isOnline = ref(navigator.onLine);
 const pendingCount = ref(0);
 const syncInProgress = ref(false);
 const scannerOpen = ref(false);
-const receipt = ref<Receipt | null>(null);
+const receipt = ref<Receipt | null>(props.completedReceipt ?? null);
 const heldSales = ref<HeldSale[]>([]);
 const displayMode = ref<'grid' | 'thumbnail' | 'list'>('grid');
 const productPage = ref(1);
@@ -124,31 +128,51 @@ const discountMinor = computed(() => {
     return Math.min(subtotalMinor.value, Math.round(discountValue.value * 100));
 });
 
-const cashReceivedMinor = computed(() => {
-    const amount = Number(cashReceived.value);
+const tenderAmountMinor = (amount: number | null): number => {
+    const value = Number(amount);
 
-    return Number.isFinite(amount) && amount >= 0 ? Math.round(amount * 100) : 0;
+    return Number.isFinite(value) && value > 0 ? Math.round(value * 100) : 0;
+};
+
+const appliedTenderTotalMinor = computed(() =>
+    tenders.value.reduce((total, tender) => total + tenderAmountMinor(tender.amountGhs), 0),
+);
+
+const cashReceivedMinor = computed(() => {
+    return tenders.value
+        .filter((tender) => tender.method === 'cash')
+        .reduce((total, tender) => total + tenderAmountMinor(tender.cashReceivedGhs), 0);
 });
 
-const cashShortfallMinor = computed(() =>
-    Math.max(0, totalMinor.value - cashReceivedMinor.value),
+const cashAllocationMinor = computed(() =>
+    tenders.value
+        .filter((tender) => tender.method === 'cash')
+        .reduce((total, tender) => total + tenderAmountMinor(tender.amountGhs), 0),
 );
 
 const changeMinor = computed(() =>
-    Math.max(0, cashReceivedMinor.value - totalMinor.value),
+    Math.max(0, cashReceivedMinor.value - cashAllocationMinor.value),
 );
 
+const tenderTotalMatches = computed(() => appliedTenderTotalMinor.value === totalMinor.value);
+const cashIsCovered = computed(() => tenders.value
+    .filter((tender) => tender.method === 'cash')
+    .every((tender) => tender.cashReceivedGhs !== null && tenderAmountMinor(tender.cashReceivedGhs) >= tenderAmountMinor(tender.amountGhs)),
+);
+const hasDigitalTender = computed(() => tenders.value.some((tender) => tender.method !== 'cash'));
+const externalPaymentsConfirmed = computed(() => tenders.value.every((tender) => tender.method === 'cash' || tender.externallyConfirmed));
 const canCompleteSale = computed(() =>
-    cart.value.length > 0 && (
-        paymentMethod.value !== 'cash' || (
-            cashReceived.value !== null && cashReceivedMinor.value >= totalMinor.value
-        )
-    ),
+    cart.value.length > 0 &&
+    tenderTotalMatches.value &&
+    cashIsCovered.value &&
+    externalPaymentsConfirmed.value &&
+    tenders.value.every((tender) => tenderAmountMinor(tender.amountGhs) > 0),
 );
 
 const checkoutForm = useForm({
     transaction_uuid: crypto.randomUUID(),
-    payment_method: paymentMethod.value,
+    payment_method: 'cash' as TenderMethod | 'split',
+    tenders: [] as Array<{ method: TenderMethod; amount_minor: number; cash_received_minor: number | null; externally_confirmed: boolean }>,
     discount_type: null as 'fixed' | 'percentage' | null,
     discount_value: 0,
     discount_reason: '',
@@ -156,6 +180,22 @@ const checkoutForm = useForm({
     customer_phone: '',
     items: [] as Array<{ product_id: number; quantity: number }>,
 });
+
+watch(totalMinor, (total) => {
+    if (tenders.value.length === 1 && tenders.value[0].method === 'cash') {
+        tenders.value[0].amountGhs = total > 0 ? total / 100 : null;
+    }
+});
+
+const addTender = (): void => {
+    tenders.value.push({ id: crypto.randomUUID(), method: 'cash', amountGhs: null, cashReceivedGhs: null, externallyConfirmed: false });
+};
+
+const removeTender = (id: string): void => {
+    if (tenders.value.length > 1) {
+        tenders.value = tenders.value.filter((tender) => tender.id !== id);
+    }
+};
 
 const addToCart = (product: Product): void => {
     const existing = cart.value.find((item) => item.id === product.id);
@@ -174,13 +214,12 @@ const removeFromCart = (productId: number): void => {
 
 const clearSale = (): void => {
     cart.value = [];
-    paymentMethod.value = 'cash';
+    tenders.value = [{ id: crypto.randomUUID(), method: 'cash', amountGhs: null, cashReceivedGhs: null, externallyConfirmed: false }];
     discountType.value = '';
     discountValue.value = 0;
     discountReason.value = '';
     customerName.value = '';
     customerPhone.value = '';
-    cashReceived.value = null;
 };
 
 const holdSale = (): void => {
@@ -191,13 +230,12 @@ const holdSale = (): void => {
     heldSales.value.push({
         id: crypto.randomUUID(),
         items: cart.value.map((item) => ({ ...item })),
-        paymentMethod: paymentMethod.value,
+        tenders: tenders.value.map((tender) => ({ ...tender })),
         discountType: discountType.value,
         discountValue: discountValue.value,
         discountReason: discountReason.value,
         customerName: customerName.value,
         customerPhone: customerPhone.value,
-        cashReceived: cashReceived.value,
     });
     clearSale();
 };
@@ -208,13 +246,12 @@ const resumeSale = (heldSale: HeldSale): void => {
     }
 
     cart.value = heldSale.items.map((item) => ({ ...item }));
-    paymentMethod.value = heldSale.paymentMethod;
+    tenders.value = heldSale.tenders.map((tender) => ({ ...tender }));
     discountType.value = heldSale.discountType;
     discountValue.value = heldSale.discountValue;
     discountReason.value = heldSale.discountReason;
     customerName.value = heldSale.customerName;
     customerPhone.value = heldSale.customerPhone;
-    cashReceived.value = heldSale.cashReceived;
     heldSales.value = heldSales.value.filter((sale) => sale.id !== heldSale.id);
 };
 
@@ -246,7 +283,14 @@ const formatPrice = (minor: number): string =>
 const checkout = (): void => {
     if (!canCompleteSale.value) return;
 
-    checkoutForm.payment_method = paymentMethod.value;
+    const paymentTenders = tenders.value.map((tender) => ({
+        method: tender.method,
+        amount_minor: tenderAmountMinor(tender.amountGhs),
+        cash_received_minor: tender.method === 'cash' ? tenderAmountMinor(tender.cashReceivedGhs) : null,
+        externally_confirmed: tender.method !== 'cash' && tender.externallyConfirmed,
+    }));
+    checkoutForm.payment_method = paymentTenders.length > 1 ? 'split' : paymentTenders[0].method;
+    checkoutForm.tenders = paymentTenders;
     checkoutForm.discount_type = discountType.value || null;
     checkoutForm.discount_value = discountValue.value;
     checkoutForm.discount_reason = discountReason.value;
@@ -263,12 +307,14 @@ const checkout = (): void => {
             priceMinor: item.price_minor,
         })),
         totalMinor: totalMinor.value,
-        paymentMethod: paymentMethod.value,
+        paymentMethod: paymentTenders.length > 1 ? 'split' : paymentTenders[0].method,
+        tenders: paymentTenders.map((tender) => ({ method: tender.method, amountMinor: tender.amount_minor })),
         transactionUuid: checkoutForm.transaction_uuid,
+        cashierName: props.cashierName,
         customerName: customerName.value,
         customerPhone: customerPhone.value,
-        cashReceivedMinor: paymentMethod.value === 'cash' ? cashReceivedMinor.value : null,
-        changeMinor: paymentMethod.value === 'cash' ? changeMinor.value : null,
+        cashReceivedMinor: cashAllocationMinor.value > 0 ? cashReceivedMinor.value : null,
+        changeMinor: cashAllocationMinor.value > 0 ? changeMinor.value : null,
     };
 
     if (!isOnline.value) {
@@ -284,7 +330,8 @@ const checkout = (): void => {
             discountType: discountType.value || null,
             discountValue: discountValue.value,
             discountReason: discountReason.value,
-            paymentMethod: paymentMethod.value,
+            paymentMethod: checkoutForm.payment_method,
+            tenders: paymentTenders,
             customerName: customerName.value,
             customerPhone: customerPhone.value,
             createdAt: new Date().toISOString(),
@@ -311,10 +358,6 @@ const checkout = (): void => {
     );
 };
 
-watch(paymentMethod, (method) => {
-    if (method !== 'cash') cashReceived.value = null;
-});
-
 const refreshPendingCount = async (): Promise<void> => {
     pendingCount.value = await pendingOfflineSaleCount();
 };
@@ -337,6 +380,7 @@ const syncOfflineSales = async (): Promise<void> => {
             sales: sales.map((sale) => ({
                 transaction_uuid: sale.transactionUuid,
                 payment_method: sale.paymentMethod,
+                tenders: sale.tenders,
                 items: sale.items.map((item) => ({
                     product_id: item.productId,
                     quantity: item.quantity,
@@ -348,7 +392,6 @@ const syncOfflineSales = async (): Promise<void> => {
                 customer_phone: sale.customerPhone,
             })),
         });
-
         await Promise.all(
             sales.map((sale) =>
                 sale.id === undefined
@@ -407,9 +450,11 @@ onUnmounted(() => {
                     <Menu :size="20" aria-hidden="true" />
                     Menu
                 </button>
-                <div class="mb-6 overflow-hidden rounded-2xl bg-linear-to-br from-[#3d0508] via-[#b3131b] to-[#ff4d55] text-white shadow-lg">
+                <div class="relative mb-6 overflow-hidden rounded-2xl bg-linear-to-br from-[#3d0508] via-[#b3131b] to-[#ff4d55] text-white shadow-lg">
+                    <img v-if="heroImageUrl" :src="heroImageUrl" alt="" class="absolute inset-0 h-full w-full object-cover" aria-hidden="true" />
+                    <div class="absolute inset-0 bg-[#3d0508]/65" aria-hidden="true" />
                     <div class="relative flex min-h-36 items-center justify-between gap-6 overflow-hidden px-6 py-6 sm:px-8">
-                        <img src="/images/products/cart.svg" alt="" class="pointer-events-none absolute right-5 -bottom-18 w-48 opacity-15 brightness-0 invert" aria-hidden="true" />
+                        <img v-if="!heroImageUrl" src="/images/products/cart.svg" alt="" class="pointer-events-none absolute right-5 -bottom-18 w-48 opacity-15 brightness-0 invert" aria-hidden="true" />
                         <div class="relative">
                             <p class="text-xs font-bold tracking-[0.2em] text-emerald-400 uppercase">Enablstore POS</p>
                             <h1 class="mt-2 text-2xl font-bold sm:text-3xl">Sell in-store</h1>
@@ -528,9 +573,9 @@ onUnmounted(() => {
                         </EnCard>
                     </section>
 
-                    <aside class="lg:sticky lg:top-6 lg:self-start">
-                        <section class="overflow-hidden rounded-lg border border-white/10 bg-[#202020] text-white shadow-sm lg:flex lg:h-[calc(100dvh-3rem)] lg:min-h-0 lg:flex-col [&_h2]:text-white [&_p]:text-white/75">
-                            <div class="p-6 lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+                    <aside class="lg:self-start">
+                        <section class="overflow-hidden rounded-lg border border-white/10 bg-[#202020] text-white shadow-sm [&_h2]:text-white [&_p]:text-white/75">
+                            <div class="p-6">
                             <div class="flex items-center justify-between">
                                 <h2
                                     class="text-xl font-semibold text-white"
@@ -554,7 +599,7 @@ onUnmounted(() => {
                                     </button>
                                 </div>
                             </div>
-                            <div v-if="cart.length" class="mt-6 space-y-4 lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-2">
+                            <div v-if="cart.length" class="mt-6 space-y-4">
                                 <div
                                     v-for="item in cart"
                                     :key="item.id"
@@ -586,11 +631,11 @@ onUnmounted(() => {
                             </div>
                             <EnEmptyState
                                 v-else
-                                class="lg:min-h-0 lg:flex-1"
                                 title="Cart is empty"
                                 description="Select a product to start the sale."
                             />
-                            <div class="mt-6 shrink-0 border-t border-white/20 pt-5 [&_input]:text-white [&_input]:placeholder:text-white/60 [&_select]:text-neutral-900">
+                            <div class="mt-6 border-t border-white/20 pt-5 [&_input]:text-white [&_input]:placeholder:text-white/60 [&_select]:text-neutral-900">
+                                <div>
                                                 <div class="flex justify-between text-sm text-white/70"><span>Subtotal</span><span>{{ formatPrice(subtotalMinor) }}</span></div>
                                                 <div class="mt-3 grid grid-cols-[1fr_110px] gap-2"><select v-model="discountType" class="min-h-10 rounded-md border border-neutral-300 bg-white px-2 text-sm"><option value="">No discount</option><option value="fixed">Fixed discount</option><option value="percentage">Percentage discount</option></select><input v-model.number="discountValue" type="number" min="0" :max="discountType === 'percentage' ? 100 : undefined" step="0.01" placeholder="Amount" class="min-h-10 rounded-md border border-neutral-300 px-2 text-sm" /></div>
                                                 <input v-if="discountType" v-model="discountReason" type="text" maxlength="120" placeholder="Discount reason (optional)" class="mt-2 min-h-10 w-full rounded-md border border-neutral-300 px-3 text-sm" />
@@ -608,29 +653,38 @@ onUnmounted(() => {
                                         formatPrice(totalMinor)
                                     }}</span>
                                 </div>
-                                <select
-                                    v-model="paymentMethod"
-                                    class="mt-4 min-h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm text-neutral-900"
-                                    aria-label="Payment method"
-                                >
-                                    <option value="cash">Cash</option>
-                                    <option value="mobile_money">
-                                        Mobile Money
-                                    </option>
-                                    <option value="card">Card</option>
-                                </select>
-                                <div v-if="paymentMethod === 'cash'" class="mt-3 rounded-lg border border-white/15 bg-white/5 p-3">
-                                    <label for="cash-received" class="block text-xs font-bold tracking-wide text-white/80 uppercase">Cash received</label>
-                                    <div class="mt-2 flex items-center rounded-md border border-white/20 bg-white px-3 text-neutral-900 focus-within:border-emerald-400 focus-within:ring-2 focus-within:ring-emerald-300/40">
-                                        <span class="mr-2 text-sm font-semibold text-neutral-500">GHS</span>
-                                        <input id="cash-received" v-model.number="cashReceived" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0.00" class="min-h-11 w-full border-0 bg-transparent px-0 text-right font-mono text-base font-bold text-neutral-900 focus:ring-0" />
+                                <div class="mt-4 space-y-3">
+                                    <div v-for="(tender, index) in tenders" :key="tender.id" class="rounded-lg border border-white/15 bg-white/5 p-3">
+                                        <div class="flex items-center gap-2">
+                                            <label class="sr-only" :for="`tender-method-${tender.id}`">Payment method {{ index + 1 }}</label>
+                                            <select :id="`tender-method-${tender.id}`" v-model="tender.method" class="min-h-10 min-w-0 flex-1 rounded-md border border-neutral-300 bg-white px-2 text-sm text-neutral-900" @change="tender.externallyConfirmed = false">
+                                                <option value="cash">Cash</option>
+                                                <option value="mobile_money">Mobile Money terminal</option>
+                                                <option value="card">Card terminal</option>
+                                            </select>
+                                            <button v-if="tenders.length > 1" type="button" class="rounded p-2 text-white/65 hover:bg-white/10 hover:text-white" :aria-label="`Remove payment ${index + 1}`" @click="removeTender(tender.id)"><Trash2 :size="16" aria-hidden="true" /></button>
+                                        </div>
+                                        <label class="mt-3 block text-xs font-bold tracking-wide text-white/75 uppercase">Amount applied (GHS)</label>
+                                        <input v-model.number="tender.amountGhs" type="number" min="0.01" step="0.01" inputmode="decimal" class="mt-1 min-h-10 w-full rounded-md border border-neutral-300 px-3 text-right font-mono text-sm text-neutral-900" />
+                                        <template v-if="tender.method === 'cash'">
+                                            <label class="mt-3 block text-xs font-bold tracking-wide text-white/75 uppercase">Cash received (GHS)</label>
+                                            <input v-model.number="tender.cashReceivedGhs" type="number" min="0.01" step="0.01" inputmode="decimal" placeholder="0.00" class="mt-1 min-h-10 w-full rounded-md border border-neutral-300 px-3 text-right font-mono text-sm text-neutral-900" />
+                                        </template>
+                                        <label v-else class="mt-3 flex items-start gap-2 text-xs font-semibold text-white/85"><input v-model="tender.externallyConfirmed" type="checkbox" class="mt-0.5 rounded border-neutral-300 text-[#e21b23] focus:ring-[#e21b23]" />Payment received on external terminal</label>
                                     </div>
-                                    <p v-if="cashReceived === null" class="mt-2 text-xs text-white/65">Enter the amount received to calculate change.</p>
-                                    <div v-else-if="cashShortfallMinor > 0" class="mt-3 flex justify-between gap-3 text-sm font-semibold text-amber-300"><span>Amount still due</span><span class="font-mono">{{ formatPrice(cashShortfallMinor) }}</span></div>
-                                    <div v-else class="mt-3 flex justify-between gap-3 rounded-md bg-emerald-400/15 px-3 py-2 text-sm font-bold text-emerald-200"><span>Change due</span><span class="font-mono text-base">{{ formatPrice(changeMinor) }}</span></div>
+                                    <button type="button" class="inline-flex min-h-9 items-center gap-2 rounded-md border border-white/25 px-3 text-xs font-bold text-white hover:bg-white/10 disabled:opacity-50" :disabled="tenders.length >= 3" @click="addTender"><Plus :size="14" aria-hidden="true" /> Add payment method</button>
+                                    <p class="text-xs text-white/55">Split a sale between cash and payments taken on external Card or Mobile Money terminals.</p>
+                                    <p v-if="!tenderTotalMatches" class="text-xs font-semibold text-amber-300">Tender amounts must add up to {{ formatPrice(totalMinor) }}. Current: {{ formatPrice(appliedTenderTotalMinor) }}.</p>
+                                    <p v-if="!cashIsCovered && tenders.some((tender) => tender.method === 'cash')" class="text-xs font-semibold text-amber-300">Enter enough cash received to cover the cash amount applied.</p>
+                                    <p v-if="hasDigitalTender" class="text-xs text-white/65">Take Card/Mobile Money payment on the external device, then confirm it below.</p>
+                                    <p v-if="!externalPaymentsConfirmed" class="text-xs font-semibold text-amber-300">Confirm every external payment before completing this sale.</p>
+                                    <div v-if="cashAllocationMinor > 0 && cashIsCovered" class="flex justify-between rounded-md bg-emerald-400/15 px-3 py-2 text-sm font-bold text-emerald-200"><span>Change due</span><span class="font-mono">{{ formatPrice(changeMinor) }}</span></div>
                                 </div>
+                                </div>
+                                <div class="pt-3">
+                                <p v-if="checkoutForm.errors.tenders" class="mb-2 text-center text-xs text-red-300">{{ checkoutForm.errors.tenders }}</p>
                                 <EnButton
-                                    class="mt-4 w-full bg-blue-600! text-white! hover:bg-blue-700!"
+                                    class="w-full bg-blue-600! text-white! hover:bg-blue-700! disabled:bg-blue-600! disabled:text-white! disabled:opacity-60!"
                                     variant="primary"
                                     :loading="checkoutForm.processing"
                                     :disabled="!canCompleteSale"
@@ -638,6 +692,10 @@ onUnmounted(() => {
                                 >
                                     Complete sale
                                 </EnButton>
+                                <p v-if="!canCompleteSale" class="mt-2 text-center text-xs text-white/65">
+                                    {{ cart.length === 0 ? 'Add a product to start a sale.' : 'Complete the payment amounts and cash received to continue.' }}
+                                </p>
+                                </div>
                             </div>
                             </div>
                         </section>
@@ -653,6 +711,8 @@ onUnmounted(() => {
             :total-minor="receipt.totalMinor"
             :payment-method="receipt.paymentMethod"
             :transaction-uuid="receipt.transactionUuid"
+            :cashier-name="receipt.cashierName"
+            :tenders="receipt.tenders"
             :customer-name="receipt.customerName"
             :customer-phone="receipt.customerPhone"
             :cash-received-minor="receipt.cashReceivedMinor"

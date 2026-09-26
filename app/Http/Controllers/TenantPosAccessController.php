@@ -15,7 +15,8 @@ class TenantPosAccessController extends Controller
     public function unlock(PosUnlockRequest $request): RedirectResponse
     {
         $username = strtolower($request->string('username')->toString());
-        $subscriberCode = strtolower((string) tenant()->subscriber_code);
+        $tenant = tenant();
+        $subscriberCode = strtolower((string) ($tenant->subscriber_code ?: data_get($tenant->data, 'subscriber_code', '')));
 
         if ($subscriberCode === '' || ! str_starts_with($username, $subscriberCode.'-')) {
             return back()->withErrors(['username' => 'Use the full username including this subscriber code prefix.']);

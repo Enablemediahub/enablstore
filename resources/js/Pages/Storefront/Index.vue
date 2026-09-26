@@ -3,20 +3,34 @@ import EnCard from '@/Components/EnCard.vue';
 import EnEmptyState from '@/Components/EnEmptyState.vue';
 import Modal from '@/Components/Modal.vue';
 import ProductArtwork from '@/Components/ProductArtwork.vue';
-import { Head } from '@inertiajs/vue3';
+import { Head, useForm } from '@inertiajs/vue3';
 import {
+    Apple,
+    Baby,
+    BookOpen,
+    CarFront,
     ChevronRight,
+    CupSoda,
+    Dumbbell,
+    Grid2X2,
+    HeartPulse,
+    House,
     Mail,
     MapPin,
     Minus,
+    Package,
+    PawPrint,
     Phone,
     Plus,
     Search,
+    Shirt,
+    Smartphone,
+    Sparkles,
     ShoppingCart,
     Trash2,
     UserRound,
 } from '@lucide/vue';
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 type Product = {
     id: number;
@@ -69,6 +83,11 @@ type Category = { id: number; name: string };
 
 type NavFilter = 'all' | 'deals' | 'best_sellers' | 'new_arrivals';
 
+type BeforeInstallPromptEvent = Event & {
+    prompt: () => Promise<void>;
+    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+};
+
 const props = defineProps<{
     hero: StorefrontHero;
     logoUrl: string;
@@ -76,6 +95,9 @@ const props = defineProps<{
     storefront: StorefrontConfig;
     categories: Category[];
     products: Product[];
+    paystackEnabled: boolean;
+    checkoutStatus?: string | null;
+    checkoutStatusError?: boolean;
 }>();
 
 const productsSection = ref<HTMLElement | null>(null);
@@ -93,6 +115,17 @@ const deliveryLocation = ref(props.storefront.defaultDeliveryLocation);
 const locationModalOpen = ref(false);
 const customerServiceOpen = ref(false);
 const accountModalOpen = ref(false);
+const checkoutModalOpen = ref(false);
+const installPrompt = ref<BeforeInstallPromptEvent | null>(null);
+const installPromptVisible = ref(false);
+const checkoutForm = useForm({
+    customer_name: '',
+    customer_email: '',
+    customer_phone: '',
+    delivery_location: props.storefront.defaultDeliveryLocation,
+    payment_method: 'card' as 'card' | 'mobile_money',
+    items: [] as Array<{ product_id: number; quantity: number }>,
+});
 
 const deliveryStorageKey = `enablstore-delivery-${tenant}`;
 
@@ -102,9 +135,62 @@ onMounted(() => {
     if (saved && props.storefront.deliveryLocations.includes(saved)) {
         deliveryLocation.value = saved;
     }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+});
+
+const handleBeforeInstallPrompt = (event: Event): void => {
+    event.preventDefault();
+    installPrompt.value = event as BeforeInstallPromptEvent;
+    installPromptVisible.value = true;
+};
+
+const handleAppInstalled = (): void => {
+    installPrompt.value = null;
+    installPromptVisible.value = false;
+};
+
+const installApp = async (): Promise<void> => {
+    if (!installPrompt.value) {
+        return;
+    }
+
+    await installPrompt.value.prompt();
+    installPrompt.value = null;
+    installPromptVisible.value = false;
+};
+
+const dismissInstallPrompt = (): void => {
+    installPromptVisible.value = false;
+};
+
+onUnmounted(() => {
+    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.removeEventListener('appinstalled', handleAppInstalled);
 });
 
 const categoryOptions = computed(() => ['All', ...props.categories.map((category) => category.name)]);
+
+const categoryIcon = (category: string) => {
+    const name = category.toLowerCase();
+
+    if (name === 'all') return Grid2X2;
+    if (/automotive|vehicle|car/.test(name)) return CarFront;
+    if (/baby|kid|child/.test(name)) return Baby;
+    if (/beverage|drink/.test(name)) return CupSoda;
+    if (/electronic|accessor/.test(name)) return Smartphone;
+    if (/fashion|footwear|clothing|apparel|shoe/.test(name)) return Shirt;
+    if (/home|household|furniture/.test(name)) return House;
+    if (/health|medical|pharmacy/.test(name)) return HeartPulse;
+    if (/grocery|food|produce/.test(name)) return Apple;
+    if (/beauty|personal care|cosmetic/.test(name)) return Sparkles;
+    if (/sport|fitness|exercise/.test(name)) return Dumbbell;
+    if (/pet|animal/.test(name)) return PawPrint;
+    if (/book|stationery|education/.test(name)) return BookOpen;
+
+    return Package;
+};
 
 const showTenantInHeader = computed(
     () =>
@@ -208,6 +294,14 @@ const scrollToBasket = (): void => {
     basketAside.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 };
 
+const submitCheckout = (): void => {
+    checkoutForm.delivery_location = deliveryLocation.value;
+    checkoutForm.items = cart.value.map((item) => ({ product_id: item.id, quantity: item.quantity }));
+    checkoutForm.post(route('tenant.storefront.checkout', { tenant }), {
+        preserveScroll: true,
+    });
+};
+
 const selectLocation = (location: string): void => {
     deliveryLocation.value = location;
     localStorage.setItem(deliveryStorageKey, location);
@@ -287,7 +381,9 @@ const formatPrice = (minor: number): string =>
 </script>
 
 <template>
-    <Head :title="storefront.storeName" />
+    <Head :title="storefront.storeName">
+        <link rel="manifest" :href="route('tenant.storefront.manifest', { tenant })" />
+    </Head>
     <main class="min-h-screen bg-[#f4f4f2] text-[#171717]">
         <header class="bg-[#171717] text-white">
             <div class="mx-auto flex max-w-[1500px] items-center gap-5 px-4 py-3 sm:px-8">
@@ -398,6 +494,7 @@ const formatPrice = (minor: number): string =>
         </header>
 
         <div class="mx-auto max-w-[1500px] px-4 py-5 sm:px-8">
+            <p v-if="checkoutStatus" class="mb-5 rounded-lg border px-4 py-3 text-sm font-semibold" :class="checkoutStatusError ? 'border-red-200 bg-red-50 text-red-800' : 'border-green-200 bg-green-50 text-green-800'">{{ checkoutStatus }}</p>
             <section class="relative overflow-hidden rounded-2xl shadow-lg sm:rounded-3xl">
                 <div class="absolute inset-0">
                     <img
@@ -440,10 +537,11 @@ const formatPrice = (minor: number): string =>
                     v-for="category in categoryOptions"
                     :key="category"
                     type="button"
-                    class="shrink-0 rounded-full border px-4 py-2 text-sm font-semibold transition"
+                    class="inline-flex shrink-0 items-center gap-2 rounded-full border px-4 py-2 text-sm font-semibold transition"
                     :class="selectedCategory === category ? 'border-[#e21b23] bg-[#e21b23] text-white' : 'border-neutral-300 bg-white text-[#555555] hover:border-[#e21b23]'"
                     @click="selectedCategory = category; activeNav = 'all'"
                 >
+                    <component :is="categoryIcon(category)" :size="16" stroke-width="1.8" aria-hidden="true" />
                     {{ category }}
                 </button>
             </div>
@@ -531,7 +629,8 @@ const formatPrice = (minor: number): string =>
                                 </div>
                             </div>
                             <div class="flex items-center justify-between pt-1 text-lg font-black"><span>Subtotal</span><span>{{ formatPrice(totalMinor) }}</span></div>
-                            <button type="button" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#e21b23] px-4 text-sm font-bold text-white hover:bg-[#b9151b]"><span>Proceed to checkout</span><ChevronRight :size="18" aria-hidden="true" /></button>
+                            <button type="button" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#e21b23] px-4 text-sm font-bold text-white hover:bg-[#b9151b] disabled:cursor-not-allowed disabled:bg-neutral-400" :disabled="!paystackEnabled" @click="checkoutModalOpen = true"><span>Proceed to checkout</span><ChevronRight :size="18" aria-hidden="true" /></button>
+                            <p v-if="!paystackEnabled" class="mt-2 text-xs text-neutral-500">Online payment is not available yet. Contact the store administrator.</p>
                         </div>
                         <div v-else class="py-8 text-center">
                             <ShoppingCart :size="38" class="mx-auto text-neutral-300" aria-hidden="true" />
@@ -616,6 +715,48 @@ const formatPrice = (minor: number): string =>
                     <button type="button" class="min-h-10 w-full rounded-full bg-[#e21b23] px-4 text-sm font-bold text-white" @click="accountModalOpen = false; scrollToBasket()">View basket ({{ cart.length }})</button>
                 </div>
             </Modal>
+
+            <Modal :show="checkoutModalOpen" max-width="md" @close="checkoutModalOpen = false">
+                <form class="space-y-5 p-6" @submit.prevent="submitCheckout">
+                    <div>
+                        <p class="text-xs font-bold tracking-widest text-[#b9151b] uppercase">Secure checkout</p>
+                        <h2 class="mt-1 text-2xl font-black text-[#171717]">Your delivery details</h2>
+                        <p class="mt-2 text-sm text-neutral-500">Payment is securely processed by Paystack. Your order is confirmed after payment verification.</p>
+                    </div>
+                    <label class="block text-sm font-semibold text-neutral-700">Full name<input v-model="checkoutForm.customer_name" required maxlength="120" autocomplete="name" class="mt-1.5 min-h-11 w-full rounded-md border border-neutral-300 px-3 font-normal" /></label>
+                    <p v-if="checkoutForm.errors.customer_name" class="-mt-3 text-sm text-red-700">{{ checkoutForm.errors.customer_name }}</p>
+                    <label class="block text-sm font-semibold text-neutral-700">Email address<input v-model="checkoutForm.customer_email" required type="email" maxlength="255" autocomplete="email" class="mt-1.5 min-h-11 w-full rounded-md border border-neutral-300 px-3 font-normal" /></label>
+                    <p v-if="checkoutForm.errors.customer_email" class="-mt-3 text-sm text-red-700">{{ checkoutForm.errors.customer_email }}</p>
+                    <label class="block text-sm font-semibold text-neutral-700">Phone number<input v-model="checkoutForm.customer_phone" required type="tel" maxlength="40" autocomplete="tel" class="mt-1.5 min-h-11 w-full rounded-md border border-neutral-300 px-3 font-normal" /></label>
+                    <p v-if="checkoutForm.errors.customer_phone" class="-mt-3 text-sm text-red-700">{{ checkoutForm.errors.customer_phone }}</p>
+                    <label class="block text-sm font-semibold text-neutral-700">Delivery location<select v-model="checkoutForm.delivery_location" class="mt-1.5 min-h-11 w-full rounded-md border border-neutral-300 bg-white px-3 font-normal"><option v-for="location in storefront.deliveryLocations" :key="location" :value="location">{{ location }}</option></select></label>
+                    <p v-if="checkoutForm.errors.delivery_location" class="-mt-3 text-sm text-red-700">{{ checkoutForm.errors.delivery_location }}</p>
+                    <label class="block text-sm font-semibold text-neutral-700">Pay with<select v-model="checkoutForm.payment_method" class="mt-1.5 min-h-11 w-full rounded-md border border-neutral-300 bg-white px-3 font-normal"><option value="card">Card</option><option value="mobile_money">Mobile Money</option></select></label>
+                    <p v-if="checkoutForm.errors.items || checkoutForm.errors.payment_method" class="text-sm text-red-700">{{ checkoutForm.errors.items || checkoutForm.errors.payment_method }}</p>
+                    <div class="flex items-center justify-between border-t border-neutral-200 pt-4"><span class="font-bold text-neutral-700">Order total</span><strong class="text-lg text-[#171717]">{{ formatPrice(totalMinor) }}</strong></div>
+                    <button type="submit" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#e21b23] px-4 text-sm font-bold text-white hover:bg-[#b9151b] disabled:opacity-60" :disabled="checkoutForm.processing || cart.length === 0"><span>{{ checkoutForm.processing ? 'Connecting to Paystack...' : 'Continue to Paystack' }}</span><ChevronRight :size="17" aria-hidden="true" /></button>
+                </form>
+            </Modal>
+
+            <div
+                v-if="installPromptVisible"
+                class="fixed right-4 bottom-4 z-40 w-[min( calc(100vw-2rem), 22rem)] rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xl"
+                role="dialog"
+                aria-label="Install store app"
+            >
+                <div class="flex items-start gap-3">
+                    <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#e21b23] text-sm font-black text-white">E</div>
+                    <div class="min-w-0 flex-1">
+                        <p class="font-black text-[#171717]">Install {{ storefront.storeName }}</p>
+                        <p class="mt-1 text-sm leading-5 text-neutral-500">Add this store to your device for quick access.</p>
+                        <div class="mt-3 flex items-center gap-2">
+                            <button type="button" class="rounded-full bg-[#e21b23] px-4 py-2 text-sm font-bold text-white hover:bg-[#b9151b]" @click="installApp">Install app</button>
+                            <button type="button" class="rounded-full px-3 py-2 text-sm font-semibold text-neutral-500 hover:bg-neutral-100" @click="dismissInstallPrompt">Not now</button>
+                        </div>
+                    </div>
+                    <button type="button" class="text-lg leading-none text-neutral-400 hover:text-neutral-700" aria-label="Dismiss install prompt" @click="dismissInstallPrompt">&times;</button>
+                </div>
+            </div>
         </div>
     </main>
 </template>

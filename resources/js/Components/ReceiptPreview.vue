@@ -24,6 +24,8 @@ withDefaults(
         totalMinor: number;
         paymentMethod: string;
         transactionUuid: string;
+        cashierName?: string;
+        tenders?: Array<{ method: string; amountMinor: number }>;
         customerName?: string;
         customerPhone?: string;
         cashReceivedMinor?: number | null;
@@ -31,6 +33,8 @@ withDefaults(
     }>(),
     {
         open: false,
+        cashierName: '',
+        tenders: () => [],
         customerName: '',
         customerPhone: '',
         cashReceivedMinor: null,
@@ -48,8 +52,13 @@ const formatPrice = (minor: number): string =>
         currency: 'GHS',
     }).format(minor / 100);
 
-const displayPaymentMethod = (method: string): string =>
-    method === 'mobile_money' ? 'Mobile Money' : method.charAt(0).toUpperCase() + method.slice(1);
+const displayPaymentMethod = (method: string): string => {
+    if (method === 'mobile_money') return 'Mobile Money terminal';
+    if (method === 'card') return 'Card terminal';
+    if (method === 'split') return 'Split payment';
+
+    return method.charAt(0).toUpperCase() + method.slice(1);
+};
 
 const issuedAt = new Intl.DateTimeFormat('en-GH', {
     dateStyle: 'medium',
@@ -100,6 +109,7 @@ const printReceipt = (): void => {
                 <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px] text-neutral-600">
                     <p><span class="text-neutral-500">Date:</span> {{ issuedAt }}</p>
                     <p class="text-right"><span class="text-neutral-500">Receipt:</span> {{ transactionUuid.slice(0, 8).toUpperCase() }}</p>
+                    <p v-if="cashierName" class="col-span-2"><span class="text-neutral-500">Served by:</span> {{ cashierName }}</p>
                     <p v-if="customerName" class="col-span-2"><span class="text-neutral-500">Customer:</span> {{ customerName }}</p>
                     <p v-if="customerPhone" class="col-span-2"><span class="text-neutral-500">Phone:</span> {{ customerPhone }}</p>
                 </div>
@@ -116,6 +126,13 @@ const printReceipt = (): void => {
                     </div>
                 </div>
                 <div class="my-4 border-t border-dashed border-neutral-400" />
+                <div v-if="tenders.length" class="space-y-1 text-[11px] text-neutral-600">
+                    <div v-for="(tender, index) in tenders" :key="`${tender.method}-${index}`" class="flex justify-between gap-2">
+                        <span>{{ displayPaymentMethod(tender.method) }}</span>
+                        <span class="font-semibold">{{ formatPrice(tender.amountMinor) }}</span>
+                    </div>
+                </div>
+                <div v-if="tenders.length" class="my-4 border-t border-dashed border-neutral-400" />
                 <div class="rounded-md bg-neutral-100 px-3 py-3">
                     <div class="flex justify-between text-base font-black"><span>Total paid</span><span>{{ formatPrice(totalMinor) }}</span></div>
                     <div class="mt-1 flex justify-between text-[11px] text-neutral-600"><span>Payment method</span><span class="font-semibold">{{ displayPaymentMethod(paymentMethod) }}</span></div>

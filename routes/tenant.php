@@ -14,6 +14,7 @@ use App\Http\Controllers\TenantReportsController;
 use App\Http\Controllers\TenantAuditController;
 use App\Http\Controllers\TenantTeamController;
 use App\Http\Controllers\TenantPosAccessController;
+use App\Http\Controllers\TenantPaymentController;
 use App\Http\Middleware\EnsureTenantAdmin;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
@@ -37,6 +38,15 @@ Route::middleware([
     Route::get('/onlinestore/{tenant}', [StorefrontController::class, 'index'])
         ->middleware(['feature:online_store'])
         ->name('tenant.home');
+    Route::get('/onlinestore/{tenant}/manifest.json', [StorefrontController::class, 'manifest'])
+        ->middleware(['feature:online_store'])
+        ->name('tenant.storefront.manifest');
+    Route::post('/onlinestore/{tenant}/checkout', [TenantPaymentController::class, 'storefrontCheckout'])
+        ->middleware(['feature:online_store'])
+        ->name('tenant.storefront.checkout');
+    Route::get('/onlinestore/{tenant}/payment/callback', [TenantPaymentController::class, 'storefrontCallback'])
+        ->middleware(['feature:online_store'])
+        ->name('tenant.storefront.payment.callback');
     Route::get('/onlinestore/{tenant}/storefront', [StorefrontController::class, 'index'])
         ->middleware(['feature:online_store'])
         ->name('tenant.storefront');
@@ -98,9 +108,12 @@ Route::middleware([
     Route::post('/pos/{tenant}/logout', [TenantPosAccessController::class, 'logout'])
         ->middleware([])
         ->name('tenant.pos.logout');
-    Route::post('/pos/{tenant}/checkout', [PosController::class, 'checkout'])
+    Route::post('/pos/{tenant}/checkout', [TenantPaymentController::class, 'posCheckout'])
         ->middleware(['feature:pos', \App\Http\Middleware\EnsurePosAccess::class])
         ->name('tenant.pos.checkout');
+    Route::get('/pos/{tenant}/payment/callback', [TenantPaymentController::class, 'callback'])
+        ->middleware(['feature:pos', \App\Http\Middleware\EnsurePosAccess::class])
+        ->name('tenant.payment.callback');
     Route::post('/pos/{tenant}/sync', OfflineSalesSyncController::class)
         ->middleware(['feature:pos', \App\Http\Middleware\EnsurePosAccess::class])
         ->name('tenant.pos.sync');

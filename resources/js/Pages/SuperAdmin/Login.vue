@@ -32,7 +32,7 @@ const submit = (): void => {
                     id="admin-username"
                     v-model="form.username"
                     type="text"
-                    label="Username"
+                    label="Username or email"
                     :error="form.errors.username"
                     required
                 />

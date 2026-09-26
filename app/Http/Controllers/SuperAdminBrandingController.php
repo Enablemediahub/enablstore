@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\PlatformSetting;
+use App\Models\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -53,6 +54,27 @@ class SuperAdminBrandingController extends Controller
         return back()->with('status', 'Login wallpaper updated.');
     }
 
+    public function updatePosHeroImage(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'pos_hero_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $previousPath = PlatformSetting::value('pos_hero_image');
+        $path = $request->file('pos_hero_image')->store('platform', 'public');
+
+        PlatformSetting::query()->updateOrCreate(
+            ['key' => 'pos_hero_image'],
+            ['value' => $path],
+        );
+
+        if (is_string($previousPath) && $previousPath !== $path) {
+            Storage::disk('public')->delete($previousPath);
+        }
+
+        return back()->with('status', 'POS hero image updated.');
+    }
+
     public function updateStorefrontLogo(Request $request): RedirectResponse
     {
         $request->validate([
@@ -72,6 +94,32 @@ class SuperAdminBrandingController extends Controller
         }
 
         return back()->with('status', 'Storefront logo updated.');
+    }
+
+    public function updateTenantStorefrontLogo(Request $request, Tenant $tenant): RedirectResponse
+    {
+        $request->validate([
+            'storefront_logo' => ['required', 'image', 'mimes:jpg,jpeg,png,webp,svg', 'max:5120'],
+        ]);
+
+        $data = is_array($tenant->data) ? $tenant->data : [];
+        $previousPath = $data['storefront_logo'] ?? null;
+
+        if (filled($previousPath)) {
+            return back()->withErrors([
+                'storefront_logo' => 'This subscriber logo is permanent and cannot be changed.',
+            ]);
+        }
+
+        $path = $request->file('storefront_logo')->store('tenants/'.$tenant->getTenantKey().'/branding', 'public');
+        $data['storefront_logo'] = $path;
+        $tenant->update(['data' => $data]);
+
+        if (is_string($previousPath) && $previousPath !== $path) {
+            Storage::disk('public')->delete($previousPath);
+        }
+
+        return back()->with('status', 'Tenant storefront logo updated.');
     }
 
     public function destroyStorefrontLogo(): RedirectResponse

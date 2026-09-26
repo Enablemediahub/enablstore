@@ -23,6 +23,7 @@ const props = defineProps<{
     };
     dashboardWallpaperUrl: string | null;
     loginWallpaperUrl: string | null;
+    posHeroImageUrl: string | null;
     storefrontLogoUrl: string;
     defaultStorefrontLogoUrl: string;
     hasCustomStorefrontLogo: boolean;
@@ -40,6 +41,9 @@ const brandingForm = useForm<{ login_wallpaper: File | null }>({
 });
 const dashboardWallpaperForm = useForm<{ dashboard_wallpaper: File | null }>({
     dashboard_wallpaper: null,
+});
+const posHeroImageForm = useForm<{ pos_hero_image: File | null }>({
+    pos_hero_image: null,
 });
 const logoForm = useForm<{ storefront_logo: File | null }>({
     storefront_logo: null,
@@ -66,6 +70,14 @@ const uploadDashboardWallpaper = (): void => {
         forceFormData: true,
         preserveScroll: true,
         onSuccess: () => dashboardWallpaperForm.reset('dashboard_wallpaper'),
+    });
+};
+
+const uploadPosHeroImage = (): void => {
+    posHeroImageForm.post(route('super-admin.branding.pos-hero-image'), {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => posHeroImageForm.reset('pos_hero_image'),
     });
 };
 
@@ -223,6 +235,24 @@ const formatGhs = (minor: number): string =>
                                 </div>
                             </div>
                             <p v-else class="mt-4 text-sm text-neutral-400">Tenant name hidden on storefront.</p>
+                        </div>
+                    </div>
+
+                    <hr class="border-neutral-200" />
+
+                    <div class="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-center">
+                        <div>
+                            <h2 class="text-xl font-bold text-neutral-900">POS hero image</h2>
+                            <p class="mt-2 max-w-xl text-sm text-neutral-500">Upload the hero image shown in the Enablstore POS at <code>/pos/{tenant}</code>. JPG, PNG, or WebP up to 5 MB.</p>
+                            <form class="mt-5 flex flex-wrap items-end gap-3" @submit.prevent="uploadPosHeroImage">
+                                <label class="block text-sm font-medium text-neutral-700">Choose image<input type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-sm text-neutral-600" @change="posHeroImageForm.pos_hero_image = ($event.target as HTMLInputElement).files?.[0] ?? null" /></label>
+                                <button type="submit" class="min-h-10 rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60" :disabled="!posHeroImageForm.pos_hero_image || posHeroImageForm.processing">Save POS hero image</button>
+                            </form>
+                            <p v-if="posHeroImageForm.errors.pos_hero_image" class="mt-2 text-sm text-red-600">{{ posHeroImageForm.errors.pos_hero_image }}</p>
+                        </div>
+                        <div class="aspect-video overflow-hidden rounded-md bg-neutral-100">
+                            <img v-if="posHeroImageUrl" :src="posHeroImageUrl" alt="Current POS hero image" class="h-full w-full object-cover" />
+                            <div v-else class="flex h-full items-center justify-center px-5 text-center text-sm text-neutral-500">Default POS artwork is in use.</div>
                         </div>
                     </div>
 

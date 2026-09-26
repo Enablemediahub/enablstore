@@ -21,7 +21,12 @@ class SyncOfflineSalesRequest extends FormRequest
         return [
             'sales' => ['required', 'array', 'max:100'],
             'sales.*.transaction_uuid' => ['required', 'uuid'],
-            'sales.*.payment_method' => ['required', 'in:cash,mobile_money,card'],
+            'sales.*.payment_method' => ['required', 'in:cash,mobile_money,card,split'],
+            'sales.*.tenders' => ['sometimes', 'array', 'min:1', 'max:3'],
+            'sales.*.tenders.*.method' => ['required_with:sales.*.tenders', 'in:cash,mobile_money,card'],
+            'sales.*.tenders.*.amount_minor' => ['required_with:sales.*.tenders', 'integer', 'min:1'],
+            'sales.*.tenders.*.cash_received_minor' => ['nullable', 'integer', 'min:0'],
+            'sales.*.tenders.*.externally_confirmed' => ['nullable', 'boolean'],
             'sales.*.customer_name' => ['nullable', 'string', 'max:120'],
             'sales.*.customer_phone' => ['nullable', 'string', 'max:40'],
             'sales.*.items' => ['required', 'array', 'min:1'],

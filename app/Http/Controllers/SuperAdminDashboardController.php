@@ -35,6 +35,7 @@ class SuperAdminDashboardController extends Controller
             }),
             'dashboardWallpaperUrl' => PlatformSetting::dashboardWallpaperUrl(request()),
             'loginWallpaperUrl' => PlatformSetting::loginWallpaperUrl(request()),
+            'posHeroImageUrl' => PlatformSetting::posHeroImageUrl(request()),
             'storefrontLogoUrl' => PlatformSetting::storefrontLogoUrl(request()),
             'defaultStorefrontLogoUrl' => request()->getSchemeAndHttpHost().'/images/storefront/enablstore-logo.png',
             'hasCustomStorefrontLogo' => filled(PlatformSetting::value('storefront_logo')),
