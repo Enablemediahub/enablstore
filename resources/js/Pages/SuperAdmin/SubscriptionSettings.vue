@@ -4,7 +4,7 @@ import EnInput from '@/Components/EnInput.vue';
 import SuperAdminSidePanel from '@/Components/SuperAdminSidePanel.vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import { Check, Pencil, Plus, X } from '@lucide/vue';
-import { ref } from 'vue';
+import { nextTick, ref } from 'vue';
 
 type Plan = {
     id: number;
@@ -19,6 +19,7 @@ type Plan = {
 
 const { plans, status } = defineProps<{ plans: Plan[]; status?: string | null }>();
 const editingId = ref<number | null>(null);
+const planEditor = ref<HTMLElement | null>(null);
 const form = useForm({ name: '', description: '', price_ghs: '', billing_interval_months: 1, features: ['pos', 'online_store'], is_active: true });
 const featureOptions = [
     { value: 'pos', label: 'Point of Sale' },
@@ -37,7 +38,7 @@ const resetForm = (): void => {
     form.clearErrors();
 };
 
-const editPlan = (plan: Plan): void => {
+const editPlan = async (plan: Plan): Promise<void> => {
     editingId.value = plan.id;
     form.name = plan.name;
     form.description = plan.description ?? '';
@@ -46,6 +47,9 @@ const editPlan = (plan: Plan): void => {
     form.features = [...plan.features];
     form.is_active = plan.is_active;
     form.clearErrors();
+    await nextTick();
+    planEditor.value?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.getElementById('plan-name')?.focus({ preventScroll: true });
 };
 
 const submit = (): void => {
@@ -72,6 +76,7 @@ const submit = (): void => {
                 <p v-if="status" class="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">{{ status }}</p>
 
                 <EnCard>
+                    <div ref="planEditor" tabindex="-1" class="scroll-mt-6">
                     <div class="flex items-start justify-between gap-4"><div><h2 class="text-lg font-bold">{{ editingId === null ? 'Add a plan' : 'Edit plan' }}</h2><p class="mt-1 text-sm text-neutral-500">Set a GHS price and billing duration in months.</p></div><button v-if="editingId !== null" type="button" class="inline-flex size-9 items-center justify-center rounded-md border border-neutral-300 text-neutral-600" aria-label="Cancel editing" @click="resetForm"><X :size="17" /></button></div>
                     <form class="mt-5 space-y-4" @submit.prevent="submit">
                         <div class="grid gap-4 sm:grid-cols-2">
@@ -92,6 +97,7 @@ const submit = (): void => {
                         <p v-if="form.errors.features || form.errors['features.0']" class="text-sm text-red-700">{{ form.errors.features || form.errors['features.0'] }}</p>
                         <div class="flex justify-end"><button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md bg-[#e21b23] px-5 text-sm font-bold text-white hover:bg-[#b9151b] disabled:opacity-60" :disabled="form.processing"><Check v-if="editingId !== null" :size="17" /><Plus v-else :size="17" />{{ form.processing ? 'Saving...' : editingId === null ? 'Create plan' : 'Save changes' }}</button></div>
                     </form>
+                    </div>
                 </EnCard>
 
                 <EnCard>

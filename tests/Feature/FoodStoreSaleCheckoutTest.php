@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Models\RestaurantMenuItem;
 use App\Models\Category;
 use App\Models\Plan;
+use App\Models\PlatformSetting;
 use App\Models\Sale;
 use App\Models\StockMovement;
 use App\Models\Subscription;
@@ -106,6 +107,113 @@ class FoodStoreSaleCheckoutTest extends TestCase
         ]);
     }
 
+    public function test_foodstore_checkout_records_discount_and_split_tenders(): void
+    {
+        $this->startTenant();
+        $menuItem = RestaurantMenuItem::query()->create([
+            'name' => 'Grilled meat box',
+            'category' => 'Grill',
+            'price_minor' => 5000,
+            'is_available' => true,
+        ]);
+
+        $sale = app(CheckoutService::class)->checkout([
+            'transaction_uuid' => (string) Str::uuid(),
+            'payment_method' => 'split',
+            'source' => 'foodstore',
+            'discount_type' => 'percentage',
+            'discount_value' => 10,
+            'discount_reason' => 'Loyalty discount',
+            'items' => [['menu_item_id' => $menuItem->id, 'quantity' => 2]],
+            'tenders' => [
+                ['method' => 'cash', 'amount_minor' => 5000, 'cash_received_minor' => 6000],
+                ['method' => 'mobile_money', 'amount_minor' => 4000, 'cash_received_minor' => null, 'externally_confirmed' => true],
+            ],
+        ]);
+
+        $this->assertSame(10000, $sale->subtotal_minor);
+        $this->assertSame(1000, $sale->discount_minor);
+        $this->assertSame('Loyalty discount', $sale->discount_reason);
+        $this->assertSame(9000, $sale->total_minor);
+        $this->assertSame('split', $sale->payment_method);
+        $this->assertDatabaseCount('sale_payments', 2);
+        $this->assertDatabaseHas('sale_payments', [
+            'sale_id' => $sale->id,
+            'method' => 'cash',
+            'amount_minor' => 5000,
+            'cash_received_minor' => 6000,
+        ]);
+        $this->assertDatabaseHas('sale_payments', [
+            'sale_id' => $sale->id,
+            'method' => 'mobile_money',
+            'amount_minor' => 4000,
+            'externally_confirmed' => true,
+        ]);
+    }
+
+    public function test_pos_and_foodstore_heroes_show_separate_completed_sales_for_today(): void
+    {
+        $this->startTenant();
+        app(Tenancy::class)->end();
+        $plan = Plan::query()->create([
+            'name' => 'Daily totals plan',
+            'slug' => 'daily-totals-plan',
+            'price_minor' => 0,
+            'currency' => 'GHS',
+            'billing_interval' => 'monthly',
+            'features' => ['pos', 'restaurant_foodstore'],
+            'is_active' => true,
+        ]);
+        Subscription::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'plan_id' => $plan->id,
+            'provider' => 'internal',
+            'status' => 'active',
+            'starts_at' => now(),
+            'metadata' => ['features' => ['pos', 'restaurant_foodstore']],
+        ]);
+        $admin = User::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'role' => 'admin',
+        ]);
+        app(Tenancy::class)->initialize($this->tenant);
+
+        foreach ([
+            ['source' => 'pos', 'amount' => 12500, 'date' => now()],
+            ['source' => 'foodstore', 'amount' => 4600, 'date' => now()],
+            ['source' => 'pos', 'amount' => 9900, 'date' => now()->subDay()],
+        ] as $index => $entry) {
+            Sale::query()->create([
+                'transaction_uuid' => (string) Str::uuid(),
+                'cashier_name' => 'Test Admin',
+                'subtotal_minor' => $entry['amount'],
+                'total_minor' => $entry['amount'],
+                'currency' => 'GHS',
+                'payment_method' => 'cash',
+                'source' => $entry['source'],
+                'status' => 'completed',
+                'completed_at' => $entry['date'],
+            ]);
+        }
+
+        $this->actingAs($admin)
+            ->get(route('tenant.pos', ['tenant' => $this->tenant->id]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Tenant/Pos/Index')
+                ->where('todaySalesMinor', 12500)
+                ->where('todaySalesCount', 1));
+
+        $this->actingAs($admin)
+            ->get(route('tenant.foodstore.index', ['tenant' => $this->tenant->id]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Tenant/Restaurant/Index')
+                    ->where('operatorName', $admin->name)
+                ->where('todaySalesMinor', 4600)
+                ->where('todaySalesCount', 1));
+    }
+
     public function test_guest_foodstore_access_opens_the_staff_pin_screen_before_entitlement_check(): void
     {
         $this->startTenant();
@@ -115,6 +223,43 @@ class FoodStoreSaleCheckoutTest extends TestCase
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Tenant/Pos/Unlock')
                 ->where('workspace', 'foodstore'));
+    }
+
+    public function test_foodstore_access_denial_renders_the_branded_access_dialog(): void
+    {
+        $this->startTenant();
+        app(Tenancy::class)->end();
+        $plan = Plan::query()->create([
+            'name' => 'POS-only test plan',
+            'slug' => 'pos-only-test-plan',
+            'price_minor' => 0,
+            'currency' => 'GHS',
+            'billing_interval' => 'monthly',
+            'features' => ['pos'],
+            'is_active' => true,
+        ]);
+        Subscription::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'plan_id' => $plan->id,
+            'provider' => 'internal',
+            'status' => 'active',
+            'starts_at' => now(),
+            'metadata' => ['features' => ['pos']],
+        ]);
+        $admin = User::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'role' => 'admin',
+        ]);
+        app(Tenancy::class)->initialize($this->tenant);
+
+        $this->actingAs($admin)
+            ->get(route('tenant.foodstore.index', ['tenant' => $this->tenant->id]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Tenant/FeatureDenied')
+                ->where('featureName', 'FoodStore')
+                ->where('tenantName', $this->tenant->name)
+                ->where('dashboardUrl', route('dashboard')));
     }
 
     public function test_admin_can_add_a_food_item_with_a_photo_and_package_price(): void
@@ -181,6 +326,18 @@ class FoodStoreSaleCheckoutTest extends TestCase
             'tenant' => $this->tenant->id,
             'path' => $menuItem->image_path,
         ]))->assertOk();
+
+        PlatformSetting::query()->updateOrCreate(
+            ['key' => 'foodstore_hero_image'],
+            ['value' => 'platform/foodstore-hero.jpg'],
+        );
+
+        $this->actingAs($admin)
+            ->get(route('tenant.foodstore.index', ['tenant' => $this->tenant->id]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Tenant/Restaurant/Index')
+                ->where('heroImageUrl', 'http://localhost/storage/platform/foodstore-hero.jpg'));
     }
 
     private function startTenant(): void

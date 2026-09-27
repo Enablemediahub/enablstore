@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\Plan;
+use App\Models\Category;
+use App\Models\Product;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -69,7 +71,73 @@ class WorkspaceDashboardTest extends TestCase
         $this->actingAs($admin)->get($categoryUrl)->assertOk();
 
         $subscription->update(['metadata' => ['features' => []]]);
-        $this->actingAs($admin)->get($categoryUrl)->assertStatus(402);
+        $this->actingAs($admin)
+            ->get($categoryUrl)
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Tenant/FeatureDenied')
+                ->where('featureName', 'POS and FoodStore features')
+                ->where('dashboardUrl', route('dashboard')));
+    }
+
+    public function test_admin_can_delete_a_category_without_deleting_its_products(): void
+    {
+        $this->createdTenant = Tenant::query()->create([
+            'id' => 'category-delete-test',
+            'subscriber_code' => 'ES905',
+            'name' => 'Category Delete Test',
+            'slug' => 'category-delete-test',
+            'email' => 'category-delete@example.test',
+            'status' => 'active',
+            'data' => ['subscriber_code' => 'ES905'],
+        ]);
+        $plan = Plan::query()->create([
+            'name' => 'Category Delete Plan',
+            'slug' => 'category-delete-plan',
+            'price_minor' => 0,
+            'currency' => 'GHS',
+            'billing_interval' => 'monthly',
+            'features' => ['pos'],
+            'is_active' => true,
+        ]);
+        Subscription::query()->create([
+            'tenant_id' => $this->createdTenant->id,
+            'plan_id' => $plan->id,
+            'provider' => 'internal',
+            'status' => 'active',
+            'starts_at' => now(),
+            'metadata' => ['features' => ['pos']],
+        ]);
+        $admin = User::factory()->create([
+            'username' => 'ES905-owner',
+            'tenant_id' => $this->createdTenant->id,
+            'role' => 'admin',
+        ]);
+        app(Tenancy::class)->initialize($this->createdTenant);
+        $category = Category::query()->create(['name' => 'Grill', 'slug' => 'grill']);
+        $product = Product::query()->create([
+            'category_id' => $category->id,
+            'name' => 'Meat box',
+            'slug' => 'meat-box',
+            'sku' => 'MEAT-BOX',
+            'price_minor' => 5000,
+        ]);
+
+        $this->actingAs($admin)
+            ->delete(route('tenant.categories.destroy', ['tenant' => $this->createdTenant->id, 'category' => $category->id]))
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Category deleted. Linked products are now uncategorized.');
+
+        $this->actingAs($admin)
+            ->get(route('tenant.categories.index', ['tenant' => $this->createdTenant->id]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Tenant/Categories/Index')
+                ->where('success', 'Category deleted. Linked products are now uncategorized.'));
+
+        $this->assertDatabaseMissing('categories', ['id' => $category->id]);
+        $this->assertSame($product->id, $product->fresh()->id);
+        $this->assertNull($product->fresh()->category_id);
     }
 
     public function test_dashboard_uses_the_tenant_selected_in_superadmin_session(): void

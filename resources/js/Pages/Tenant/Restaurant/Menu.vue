@@ -3,7 +3,7 @@ import AdminSidePanel from '@/Components/AdminSidePanel.vue';
 import EnInput from '@/Components/EnInput.vue';
 import Modal from '@/Components/Modal.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
-import { ImagePlus, Pencil, Plus, Tags, Trash2, Utensils } from '@lucide/vue';
+import { ImagePlus, LayoutGrid, List, Pencil, Plus, Rows3, Tags, Trash2, Utensils } from '@lucide/vue';
 import { computed, onUnmounted, ref } from 'vue';
 
 type MenuItem = {
@@ -26,6 +26,7 @@ const props = defineProps<{
 }>();
 
 const mobilePanelOpen = ref(false);
+const displayMode = ref<'grid' | 'thumbnail' | 'list'>('thumbnail');
 const modalOpen = ref(false);
 const editingItem = ref<MenuItem | null>(null);
 const imagePreview = ref<string | null>(null);
@@ -152,14 +153,14 @@ onUnmounted(clearPreview);
 
                     <div>
                         <section>
-                            <div class="mb-4 flex items-end justify-between gap-4"><div><h2 class="text-xl font-bold">Menu items</h2><p class="mt-1 text-sm text-neutral-500">{{ menuItems.length }} items · {{ menuItems.filter((item) => item.is_available).length }} available</p></div><button type="button" class="inline-flex min-h-10 items-center gap-2 rounded-md bg-emerald-700 px-3 text-sm font-bold text-white hover:bg-emerald-800" @click="openCreateModal"><Plus :size="16" aria-hidden="true" /> New food item</button></div>
-                            <div v-if="menuItems.length" class="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3">
-                                <article v-for="item in menuItems" :key="item.id" class="overflow-hidden rounded-md border border-neutral-200 bg-white">
-                                    <div class="aspect-[4/3] bg-emerald-50">
+                            <div class="mb-4 flex flex-wrap items-end justify-between gap-3"><div><h2 class="text-xl font-bold">Menu items</h2><p class="mt-1 text-sm text-neutral-500">{{ menuItems.length }} items · {{ menuItems.filter((item) => item.is_available).length }} available</p></div><div class="flex flex-wrap items-center gap-2"><div class="flex items-center gap-1 rounded-md border border-neutral-200 bg-white p-1" aria-label="Menu view"><button v-for="mode in [{ value: 'grid', label: 'Grid', icon: LayoutGrid }, { value: 'thumbnail', label: 'Thumbnail', icon: Rows3 }, { value: 'list', label: 'List', icon: List }]" :key="mode.value" type="button" class="rounded p-2" :class="displayMode === mode.value ? 'bg-emerald-50 text-emerald-800' : 'text-neutral-500 hover:bg-neutral-50'" :aria-label="`${mode.label} view`" :aria-pressed="displayMode === mode.value" @click="displayMode = mode.value as 'grid' | 'thumbnail' | 'list'"><component :is="mode.icon" :size="16" aria-hidden="true" /></button></div><button type="button" class="inline-flex min-h-10 items-center gap-2 rounded-md bg-emerald-700 px-3 text-sm font-bold text-white hover:bg-emerald-800" @click="openCreateModal"><Plus :size="16" aria-hidden="true" /> New food item</button></div></div>
+                            <div v-if="menuItems.length" class="gap-4" :class="displayMode === 'grid' ? 'grid sm:grid-cols-2 2xl:grid-cols-3' : displayMode === 'thumbnail' ? 'grid grid-cols-2 gap-3 sm:grid-cols-4 xl:grid-cols-5' : 'flex flex-col gap-2'">
+                                <article v-for="item in menuItems" :key="item.id" class="overflow-hidden rounded-md border border-neutral-200 bg-white" :class="displayMode === 'list' ? 'flex items-center gap-3 p-3' : ''">
+                                    <div class="bg-emerald-50" :class="displayMode === 'list' ? 'size-16 shrink-0 rounded-md' : displayMode === 'thumbnail' ? 'aspect-square' : 'aspect-[4/3]'">
                                         <img v-if="item.image_url" :src="item.image_url" :alt="item.name" class="h-full w-full object-cover" />
                                         <div v-else class="grid h-full place-items-center text-emerald-700"><Utensils :size="38" aria-hidden="true" /></div>
                                     </div>
-                                    <div class="p-4"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><p class="text-xs font-bold uppercase text-emerald-800">{{ item.category }}</p><h3 class="mt-1 truncate font-bold">{{ item.name }}</h3></div><span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold" :class="item.is_available ? 'bg-emerald-50 text-emerald-800' : 'bg-neutral-100 text-neutral-600'">{{ item.is_available ? 'Available' : 'Paused' }}</span></div>
+                                    <div class="min-w-0 flex-1" :class="displayMode === 'list' ? '' : 'p-4'"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><p class="text-xs font-bold uppercase text-emerald-800">{{ item.category }}</p><h3 class="mt-1 truncate font-bold">{{ item.name }}</h3></div><span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold" :class="item.is_available ? 'bg-emerald-50 text-emerald-800' : 'bg-neutral-100 text-neutral-600'">{{ item.is_available ? 'Available' : 'Paused' }}</span></div>
                                         <p v-if="item.description" class="mt-2 line-clamp-2 text-sm text-neutral-500">{{ item.description }}</p>
                                         <p class="mt-3 font-mono text-sm font-semibold">{{ formatPrice(item.price_minor) }} <span class="font-sans font-normal text-neutral-500">/ {{ item.unit_label }}</span></p>
                                         <div class="mt-4 flex flex-wrap gap-2 border-t border-neutral-100 pt-3"><button type="button" class="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 text-xs font-semibold text-neutral-700 hover:border-emerald-300 hover:text-emerald-800" @click="editItem(item)"><Pencil :size="14" aria-hidden="true" /> Edit</button><button type="button" class="min-h-9 rounded-md border border-neutral-200 px-2.5 text-xs font-semibold text-neutral-700 hover:border-emerald-300 hover:text-emerald-800" @click="toggleAvailability(item)">{{ item.is_available ? 'Pause' : 'Enable' }}</button><button type="button" class="ml-auto grid size-9 place-items-center rounded-md text-neutral-500 hover:bg-red-50 hover:text-red-700" :aria-label="`Remove ${item.name}`" @click="removeItem(item)"><Trash2 :size="15" aria-hidden="true" /></button></div>

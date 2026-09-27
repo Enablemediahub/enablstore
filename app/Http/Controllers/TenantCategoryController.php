@@ -17,6 +17,7 @@ class TenantCategoryController extends Controller
     {
         return Inertia::render('Tenant/Categories/Index', [
             'categories' => Category::query()->withCount('products')->orderBy('name')->get(),
+            'success' => session('success'),
         ]);
     }
 
@@ -29,5 +30,15 @@ class TenantCategoryController extends Controller
         ]);
 
         return back()->with('success', 'Category added successfully.');
+    }
+
+    public function destroy(Category $category): RedirectResponse
+    {
+        $hasProducts = $category->products()->exists();
+        $category->delete();
+
+        return back()->with('success', $hasProducts
+            ? 'Category deleted. Linked products are now uncategorized.'
+            : 'Category deleted.');
     }
 }

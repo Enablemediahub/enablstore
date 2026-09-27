@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { Link } from '@inertiajs/vue3';
-import { CreditCard, LayoutDashboard, Menu, Settings, ShieldCheck, X } from '@lucide/vue';
+import { CreditCard, LayoutDashboard, Menu, Settings, ShieldCheck, WalletCards, X } from '@lucide/vue';
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
-defineProps<{ current: 'dashboard' | 'tenants' | 'accounts' | 'subscriptions' }>();
+defineProps<{ current: 'dashboard' | 'tenants' | 'accounts' | 'subscriptions' | 'financial' }>();
 
 const mobileOpen = ref(false);
 
@@ -46,6 +46,9 @@ onBeforeUnmount(() => {
             </Link>
             <Link :href="route('super-admin.subscriptions.settings')" class="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition" :class="current === 'subscriptions' ? 'bg-[#e21b23] text-white' : 'text-neutral-300 hover:bg-white/10 hover:text-white'" @click="closePanel">
                 <CreditCard :size="19" aria-hidden="true" /> Subscription settings
+            </Link>
+            <Link :href="route('super-admin.financial.index')" class="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition" :class="current === 'financial' ? 'bg-[#e21b23] text-white' : 'text-neutral-300 hover:bg-white/10 hover:text-white'" @click="closePanel">
+                <WalletCards :size="19" aria-hidden="true" /> Financial
             </Link>
             <Link v-for="link in links" :key="link.key" :href="route(link.href)" class="flex items-center gap-3 rounded-md px-3 py-3 text-sm font-semibold transition" :class="current === link.key ? 'bg-[#e21b23] text-white' : 'text-neutral-300 hover:bg-white/10 hover:text-white'" @click="closePanel">
                 <component :is="link.icon" :size="19" aria-hidden="true" />{{ link.label }}

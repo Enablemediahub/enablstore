@@ -114,14 +114,23 @@ class SubscriptionPlanSettingsTest extends TestCase
                 'password' => 'correct-password',
                 'business_name' => $businessName,
                 'plan_id' => $plan->id,
-                'features' => ['pos'],
+                'features' => [],
             ])
-            ->assertRedirect();
+            ->assertRedirect()
+            ->assertSessionHas('status', 'Workspace user created.');
+
+        $this->actingAs($admin, 'super_admin')
+            ->get(route('super-admin.tenants.index'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('SuperAdmin/Tenants')
+                ->where('status', 'Workspace user created.'));
 
         $tenant = Tenant::query()->findOrFail(Str::slug($businessName));
         $subscription = Subscription::query()->where('tenant_id', $tenant->id)->firstOrFail();
         $this->assertSame(120000, $subscription->amount_minor);
         $this->assertSame('active', $subscription->status);
+        $this->assertSame([], $subscription->metadata['features']);
         $this->assertTrue($subscription->renews_at->greaterThan(now()->addMonthsNoOverflow(11)));
         $this->assertDatabaseHas('payments', [
             'tenant_id' => $tenant->id,

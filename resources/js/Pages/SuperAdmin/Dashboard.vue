@@ -24,6 +24,7 @@ const props = defineProps<{
     dashboardWallpaperUrl: string | null;
     loginWallpaperUrl: string | null;
     posHeroImageUrl: string | null;
+    foodStoreHeroImageUrl: string | null;
     storefrontLogoUrl: string;
     defaultStorefrontLogoUrl: string;
     hasCustomStorefrontLogo: boolean;
@@ -44,6 +45,9 @@ const dashboardWallpaperForm = useForm<{ dashboard_wallpaper: File | null }>({
 });
 const posHeroImageForm = useForm<{ pos_hero_image: File | null }>({
     pos_hero_image: null,
+});
+const foodStoreHeroImageForm = useForm<{ foodstore_hero_image: File | null }>({
+    foodstore_hero_image: null,
 });
 const logoForm = useForm<{ storefront_logo: File | null }>({
     storefront_logo: null,
@@ -78,6 +82,14 @@ const uploadPosHeroImage = (): void => {
         forceFormData: true,
         preserveScroll: true,
         onSuccess: () => posHeroImageForm.reset('pos_hero_image'),
+    });
+};
+
+const uploadFoodStoreHeroImage = (): void => {
+    foodStoreHeroImageForm.post(route('super-admin.branding.foodstore-hero-image'), {
+        forceFormData: true,
+        preserveScroll: true,
+        onSuccess: () => foodStoreHeroImageForm.reset('foodstore_hero_image'),
     });
 };
 
@@ -188,6 +200,24 @@ const formatGhs = (minor: number): string =>
                         </div>
                         <div class="flex min-h-[120px] items-center justify-center rounded-md border border-neutral-200 bg-[#171717] p-6">
                             <img :src="storefrontLogoUrl" alt="Current storefront logo" class="max-h-16 w-auto object-contain" />
+                        </div>
+                    </div>
+
+                    <hr class="border-neutral-200" />
+
+                    <div class="grid gap-6 lg:grid-cols-[1fr_280px] lg:items-center">
+                        <div>
+                            <h2 class="text-xl font-bold text-neutral-900">FoodStore hero image</h2>
+                            <p class="mt-2 max-w-xl text-sm text-neutral-500">Upload the shared hero image shown on every tenant FoodStore page. It appears beneath the green overlay. JPG, PNG, or WebP up to 5 MB.</p>
+                            <form class="mt-5 flex flex-wrap items-end gap-3" @submit.prevent="uploadFoodStoreHeroImage">
+                                <label class="block text-sm font-medium text-neutral-700">Choose image<input type="file" accept="image/jpeg,image/png,image/webp" class="mt-2 block w-full text-sm text-neutral-600" @change="foodStoreHeroImageForm.foodstore_hero_image = ($event.target as HTMLInputElement).files?.[0] ?? null" /></label>
+                                <button type="submit" class="min-h-10 rounded-md bg-primary-600 px-4 py-2 text-sm font-semibold text-white hover:bg-primary-700 disabled:opacity-60" :disabled="!foodStoreHeroImageForm.foodstore_hero_image || foodStoreHeroImageForm.processing">Save FoodStore hero image</button>
+                            </form>
+                            <p v-if="foodStoreHeroImageForm.errors.foodstore_hero_image" class="mt-2 text-sm text-red-600">{{ foodStoreHeroImageForm.errors.foodstore_hero_image }}</p>
+                        </div>
+                        <div class="aspect-video overflow-hidden rounded-md bg-neutral-100">
+                            <img v-if="foodStoreHeroImageUrl" :src="foodStoreHeroImageUrl" alt="Current FoodStore hero image" class="h-full w-full object-cover" />
+                            <div v-else class="flex h-full items-center justify-center px-5 text-center text-sm text-neutral-500">Menu photography or the default hero is in use until a shared image is uploaded.</div>
                         </div>
                     </div>
 

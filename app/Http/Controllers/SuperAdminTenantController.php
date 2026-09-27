@@ -58,6 +58,7 @@ class SuperAdminTenantController extends Controller
                 }),
             'filters' => ['search' => $search, 'feature' => $feature],
             'enrol' => $request->boolean('enrol'),
+            'status' => session('status'),
             'plans' => Plan::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'features', 'price_minor', 'currency', 'billing_interval_months'])
                 ->map(function (Plan $plan): array {
                     $billingLabel = match ($plan->billing_interval_months) {

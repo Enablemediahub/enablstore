@@ -37,7 +37,7 @@ class SuperAdminUserController extends Controller
             'password' => ['required', 'string', 'min:8'],
             'business_name' => ['required', 'string', 'max:120'],
             'plan_id' => ['required', Rule::exists('plans', 'id')->where('is_active', true)],
-            'features' => ['required', 'array'],
+            'features' => ['present', 'array'],
             'features.*' => ['string', 'in:pos,online_store,restaurant_foodstore'],
         ]);
 

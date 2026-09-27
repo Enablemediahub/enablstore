@@ -56,20 +56,30 @@ class RestaurantFoodStoreController extends Controller
         }
 
         $subscription = tenant()->subscriptions()->with('plan')->latest()->first();
-        abort_unless(
-            in_array('restaurant_foodstore', TenantPortalFeatures::forSubscription($subscription), true),
-            402,
-            'Your current plan does not include FoodStore.',
-        );
+        if (! in_array('restaurant_foodstore', TenantPortalFeatures::forSubscription($subscription), true)) {
+            return Inertia::render('Tenant/FeatureDenied', [
+                'tenantName' => (string) (tenant()->name ?? 'your workspace'),
+                'featureName' => 'FoodStore',
+                'dashboardUrl' => route('dashboard'),
+            ]);
+        }
 
         $completedSaleId = $request->session()->pull('foodstore_completed_sale_id');
         $completedSale = $completedSaleId
             ? Sale::query()->with(['items.product', 'items.restaurantMenuItem', 'payments'])->find((int) $completedSaleId)
             : null;
+        $todaySales = Sale::query()
+            ->where('status', 'completed')
+            ->where('source', 'foodstore')
+            ->whereDate('completed_at', today());
 
         return Inertia::render('Tenant/Restaurant/Index', [
             'tenant' => (string) tenant()->getTenantKey(),
             'restaurantName' => (string) (tenant()->name ?? 'Restaurant'),
+            'heroImageUrl' => PlatformSetting::foodStoreHeroImageUrl($request),
+            'todaySalesMinor' => (clone $todaySales)->sum('total_minor'),
+            'todaySalesCount' => (clone $todaySales)->count(),
+            'operatorName' => $admin ? (string) $request->user()->name : $cashier->name,
             'cashierName' => $admin ? null : $cashier->name,
             'status' => session('status'),
             'menuItems' => RestaurantMenuItem::query()->orderBy('category')->orderBy('name')->get()

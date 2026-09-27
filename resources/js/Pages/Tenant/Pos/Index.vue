@@ -8,7 +8,7 @@ import ProductArtwork from '@/Components/ProductArtwork.vue';
 import ReceiptPreview from '@/Components/ReceiptPreview.vue';
 import AdminSidePanel from '@/Components/AdminSidePanel.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { ChevronDown, LayoutDashboard, LayoutGrid, List, LogOut, Pause, Play, Rows3, Trash2 } from '@lucide/vue';
+import { LayoutDashboard, LayoutGrid, List, LogOut, Pause, Play, Rows3, Trash2, UserRound } from '@lucide/vue';
 import axios from 'axios';
 import {
     markOfflineSaleSynced,
@@ -60,6 +60,8 @@ const props = defineProps<{
     tenant: string;
     cashierName: string;
     heroImageUrl: string | null;
+    todaySalesMinor: number;
+    todaySalesCount: number;
     completedReceipt?: Receipt | null;
 }>();
 
@@ -447,28 +449,28 @@ onUnmounted(() => {
                 <div class="relative mb-6 overflow-hidden rounded-2xl bg-linear-to-br from-[#3d0508] via-[#b3131b] to-[#ff4d55] text-white shadow-lg">
                     <img v-if="heroImageUrl" :src="heroImageUrl" alt="" class="absolute inset-0 h-full w-full object-cover" aria-hidden="true" />
                     <div class="absolute inset-0 bg-[#3d0508]/65" aria-hidden="true" />
-                    <div class="relative flex min-h-36 items-center justify-between gap-6 overflow-hidden px-6 py-6 sm:px-8">
+                    <div class="relative flex min-h-[360px] flex-col items-start justify-between gap-5 overflow-hidden px-4 py-5 sm:min-h-[280px] sm:flex-row sm:items-end sm:gap-6 sm:px-8 sm:py-6">
                         <img v-if="!heroImageUrl" src="/images/products/cart.svg" alt="" class="pointer-events-none absolute right-5 -bottom-18 w-48 opacity-15 brightness-0 invert" aria-hidden="true" />
-                        <div class="relative">
-                            <p class="text-xs font-bold tracking-[0.2em] text-emerald-400 uppercase">Enablstore POS</p>
-                            <h1 class="mt-2 text-2xl font-bold sm:text-3xl">Sell in-store</h1>
+                        <div class="relative flex min-w-0 flex-col items-start gap-3">
+                            <div class="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-full border-2 border-white/80 bg-white p-2 shadow-lg ring-4 ring-white/20 sm:size-24">
+                                <img src="/images/Enablstore.png" alt="Enablstore" class="h-full w-full object-contain" />
+                            </div>
+                            <div>
+                                <p class="text-xs font-bold tracking-[0.2em] text-emerald-300 uppercase">Enablstore POS</p>
+                                <h1 class="mt-1 text-2xl font-bold sm:text-3xl">Sell in-store</h1>
+                            </div>
                         </div>
-                        <div class="relative z-10 flex shrink-0 items-center gap-2">
-                            <button v-if="$page.props.auth.user?.role === 'admin'" type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3 text-sm font-semibold text-white transition hover:bg-white/20" @click="adminPortalOpen = !adminPortalOpen"><LayoutDashboard :size="16" aria-hidden="true" />{{ adminPortalOpen ? 'Close Admin Portal' : 'Admin Portal' }}</button>
-                            <details class="relative">
-                                <summary class="flex cursor-pointer list-none items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold transition hover:bg-white/15">
-                                    <span>{{ cashierName }}</span>
-                                    <ChevronDown :size="16" aria-hidden="true" />
-                                </summary>
-                                <div class="absolute right-0 mt-2 w-40 rounded-lg border border-neutral-200 bg-white p-1 text-neutral-900 shadow-xl">
-                                    <form @submit.prevent="logout">
-                                        <button type="submit" class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition hover:bg-red-50 hover:text-red-700" :disabled="logoutForm.processing">
-                                            <LogOut :size="16" aria-hidden="true" />
-                                            Log out
-                                        </button>
-                                    </form>
-                                </div>
-                            </details>
+                        <div class="relative z-10 flex w-full flex-col items-start gap-3 sm:w-auto sm:items-end">
+                            <div class="text-left sm:text-right">
+                                <p class="text-xs font-semibold uppercase tracking-wider text-white/75">Today's sales</p>
+                                <p class="mt-0.5 whitespace-nowrap font-sales text-[42pt] font-light leading-[0.88] sm:text-[65pt]">{{ formatPrice(todaySalesMinor) }}</p>
+                                <p class="mt-1 text-xs text-white/75">{{ todaySalesCount }} transactions</p>
+                            </div>
+                            <div class="flex flex-wrap items-center justify-start gap-2 sm:justify-end">
+                                <button v-if="$page.props.auth.user?.role === 'admin'" type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3 text-sm font-semibold text-white transition hover:bg-white/20" @click="adminPortalOpen = !adminPortalOpen"><LayoutDashboard :size="16" aria-hidden="true" />{{ adminPortalOpen ? 'Close Admin Portal' : 'Admin Portal' }}</button>
+                                <div class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 text-sm font-semibold text-white"><UserRound :size="16" aria-hidden="true" /><span>{{ cashierName }}</span></div>
+                                <button type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3 text-sm font-semibold text-white transition hover:bg-red-950/60 disabled:opacity-60" :disabled="logoutForm.processing" @click="logout"><LogOut :size="16" aria-hidden="true" /> Log out</button>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -37,6 +37,11 @@ class PlatformSetting extends Model
         return static::wallpaperUrl($request, 'pos_hero_image');
     }
 
+    public static function foodStoreHeroImageUrl(Request $request): ?string
+    {
+        return static::wallpaperUrl($request, 'foodstore_hero_image');
+    }
+
     private static function wallpaperUrl(Request $request, string $key): ?string
     {
         $path = static::value($key);

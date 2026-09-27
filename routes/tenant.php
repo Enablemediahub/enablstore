@@ -93,6 +93,9 @@ Route::middleware([
     Route::post('/client/{tenant}/categories', [TenantCategoryController::class, 'store'])
         ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class, 'feature:pos,restaurant_foodstore'])
         ->name('tenant.categories.store');
+    Route::delete('/client/{tenant}/categories/{category}', [TenantCategoryController::class, 'destroy'])
+        ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class, 'feature:pos,restaurant_foodstore'])
+        ->name('tenant.categories.destroy');
     Route::get('/client/{tenant}/settings', [TenantSettingsController::class, 'index'])
         ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
         ->name('tenant.settings.index');

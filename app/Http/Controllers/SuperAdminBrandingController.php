@@ -75,6 +75,27 @@ class SuperAdminBrandingController extends Controller
         return back()->with('status', 'POS hero image updated.');
     }
 
+    public function updateFoodStoreHeroImage(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'foodstore_hero_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        ]);
+
+        $previousPath = PlatformSetting::value('foodstore_hero_image');
+        $path = $request->file('foodstore_hero_image')->store('platform', 'public');
+
+        PlatformSetting::query()->updateOrCreate(
+            ['key' => 'foodstore_hero_image'],
+            ['value' => $path],
+        );
+
+        if (is_string($previousPath) && $previousPath !== $path) {
+            Storage::disk('public')->delete($previousPath);
+        }
+
+        return back()->with('status', 'FoodStore hero image updated.');
+    }
+
     public function updateStorefrontLogo(Request $request): RedirectResponse
     {
         $request->validate([

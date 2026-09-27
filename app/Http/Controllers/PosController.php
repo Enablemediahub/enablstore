@@ -53,11 +53,17 @@ class PosController extends Controller
         $completedSale = $completedSaleId
             ? Sale::query()->with(['items.product', 'payments'])->find($completedSaleId)
             : null;
+        $todaySales = Sale::query()
+            ->where('status', 'completed')
+            ->where('source', 'pos')
+            ->whereDate('completed_at', today());
 
         return Inertia::render('Tenant/Pos/Index', [
             'tenant' => (string) tenant()->getTenantKey(),
             'cashierName' => $cashier->name,
             'heroImageUrl' => PlatformSetting::posHeroImageUrl($request),
+            'todaySalesMinor' => (clone $todaySales)->sum('total_minor'),
+            'todaySalesCount' => (clone $todaySales)->count(),
             'completedReceipt' => $completedSale === null ? null : [
                 'items' => $completedSale->items->map(static fn ($item): array => [
                     'name' => $item->product?->name ?? 'Product',
