@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Models\AuditLog;
 use App\Models\InventoryStock;
 use App\Models\Product;
+use App\Models\RestaurantMenuItem;
 use App\Models\Sale;
 use App\Models\StockMovement;
 use App\Models\User;
@@ -56,13 +57,15 @@ class CheckoutService
     }
 
     /**
-     * @param array{transaction_uuid: string, payment_method: string, customer_name?: string|null, customer_phone?: string|null, items: array<int, array{product_id: int, quantity: int}>, discount_type?: string|null, discount_value?: float|int|null, discount_reason?: string|null} $payload
+    * @param array{transaction_uuid: string, payment_method: string, customer_name?: string|null, customer_phone?: string|null, customer_email?: string|null, delivery_location?: string|null, items: array<int, array{product_id?: int, menu_item_id?: int, quantity: int, ...}>, tenders?: array<int, array{method: string, amount_minor: int, cash_received_minor?: int|null, externally_confirmed?: bool, provider_reference?: string, ...}>, source?: string, discount_type?: string|null, discount_value?: float|int|null, discount_reason?: string|null, ...} $payload
+     * @return Sale
      */
     public function checkout(array $payload): Sale
     {
         $cashierName = $this->operatorName($payload);
+        $foodstore = ($payload['source'] ?? null) === 'foodstore';
 
-        return DB::transaction(function () use ($payload, $cashierName): Sale {
+        return DB::transaction(function () use ($payload, $cashierName, $foodstore): Sale {
             $existingSale = Sale::query()->where('transaction_uuid', $payload['transaction_uuid'])->first();
 
             if ($existingSale !== null) {
@@ -73,6 +76,30 @@ class CheckoutService
             $subtotalMinor = 0;
 
             foreach ($payload['items'] as $item) {
+                if ($foodstore) {
+                    $menuItem = RestaurantMenuItem::query()
+                        ->where('is_available', true)
+                        ->lockForUpdate()
+                        ->find($item['menu_item_id']);
+
+                    if ($menuItem === null) {
+                        throw new \DomainException('A food item is no longer available. Refresh and review the cart.');
+                    }
+
+                    $lineTotalMinor = $menuItem->price_minor * $item['quantity'];
+                    $subtotalMinor += $lineTotalMinor;
+                    $lineItems[] = [
+                        'product_id' => null,
+                        'restaurant_menu_item_id' => $menuItem->id,
+                        'item_name' => $menuItem->name,
+                        'quantity' => $item['quantity'],
+                        'unit_price_minor' => $menuItem->price_minor,
+                        'line_total_minor' => $lineTotalMinor,
+                    ];
+
+                    continue;
+                }
+
                 $product = Product::query()->find($item['product_id']);
 
                 if ($product === null) {
@@ -135,7 +162,7 @@ class CheckoutService
                     throw new \DomainException('Storefront digital payments must be verified before completing the sale.');
                 }
 
-                if ($tender['method'] !== 'cash' && ($payload['source'] ?? 'pos') === 'pos'
+                if ($tender['method'] !== 'cash' && in_array(($payload['source'] ?? 'pos'), ['pos', 'foodstore'], true)
                     && ! ($tender['externally_confirmed'] ?? false)) {
                     throw new \DomainException('Confirm the payment was received on the external terminal.');
                 }
@@ -180,6 +207,7 @@ class CheckoutService
         });
     }
 
+    /** @param array<string, mixed> $payload */
     private function operatorName(array $payload): ?string
     {
         if (($payload['source'] ?? null) === 'storefront') {

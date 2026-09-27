@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Plan;
+use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\TenantPaystackSetting;
 use App\Models\TenantSetting;
 use App\Models\User;
+use App\Support\TenantPortalFeatures;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -21,19 +25,55 @@ class SuperAdminTenantController extends Controller
     {
         $search = trim((string) $request->query('search', ''));
         $feature = $request->query('feature');
-        $feature = in_array($feature, ['pos', 'online_store'], true) ? $feature : null;
+        $feature = in_array($feature, ['pos', 'online_store', 'restaurant_foodstore'], true) ? $feature : null;
 
         return Inertia::render('SuperAdmin/Tenants', [
             'tenants' => Tenant::query()->with('subscriptions.plan')
-                ->when($search !== '', fn ($query) => $query->where(fn ($tenantQuery) => $tenantQuery->where('name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")->orWhere('slug', 'like', "%{$search}%")))
-                ->when($feature !== null, fn ($query) => $query->whereHas('subscriptions.plan', fn ($planQuery) => $planQuery->whereJsonContains('features', $feature)))
+                ->when($search !== '', fn ($query) => $query->where(fn ($tenantQuery) => $tenantQuery
+                    ->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%")
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('slug', 'like', "%{$search}%")
+                    ->orWhere('subscriber_code', 'like', "%{$search}%")
+                    ->orWhere('data->name', 'like', "%{$search}%")
+                    ->orWhere('data->email', 'like', "%{$search}%")
+                    ->orWhere('data->phone', 'like', "%{$search}%")
+                    ->orWhere('data->slug', 'like', "%{$search}%")))
+                ->when($feature !== null, fn ($query) => $query->whereHas('subscriptions', function ($subscriptionQuery) use ($feature): void {
+                    $subscriptionQuery->whereIn('status', ['trialing', 'active'])
+                        ->where(function ($accessQuery) use ($feature): void {
+                            $accessQuery->whereJsonContains('metadata->features', $feature)
+                                ->orWhere(function ($legacyQuery) use ($feature): void {
+                                    $legacyQuery->where(function ($metadataQuery): void {
+                                        $metadataQuery->whereNull('metadata')
+                                            ->orWhereRaw("JSON_EXTRACT(metadata, '$.features') IS NULL");
+                                    })->whereHas('plan', fn ($planQuery) => $planQuery->whereJsonContains('features', $feature));
+                                });
+                        });
+                }))
                 ->latest()->paginate(20)->withQueryString()->through(function (Tenant $tenant): array {
                     $subscription = $tenant->subscriptions->sortByDesc('created_at')->first();
 
-                    return ['id' => $tenant->id, 'subscriber_code' => $tenant->subscriber_code, 'name' => $tenant->name, 'slug' => $tenant->slug, 'email' => $tenant->email, 'status' => $tenant->status, 'plan' => $subscription?->plan?->name, 'subscription_status' => $subscription?->status];
+                    return ['id' => $tenant->id, 'subscriber_code' => $tenant->subscriber_code, 'name' => $tenant->name, 'slug' => $tenant->slug, 'email' => $tenant->email, 'phone' => $tenant->phone, 'status' => $tenant->status, 'plan' => $subscription?->plan?->name, 'subscription_status' => $subscription?->status];
                 }),
             'filters' => ['search' => $search, 'feature' => $feature],
-            'plans' => Plan::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'enrol' => $request->boolean('enrol'),
+            'plans' => Plan::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'features', 'price_minor', 'currency', 'billing_interval_months'])
+                ->map(function (Plan $plan): array {
+                    $billingLabel = match ($plan->billing_interval_months) {
+                        1 => 'monthly',
+                        3 => 'quarterly',
+                        6 => 'every 6 months',
+                        12 => 'yearly',
+                        default => 'every '.$plan->billing_interval_months.' months',
+                    };
+
+                    return [
+                        'id' => $plan->id,
+                        'name' => $plan->name.' · '.strtoupper($plan->currency).' '.number_format($plan->price_minor / 100, 2).' / '.$billingLabel,
+                        'features' => $plan->features,
+                    ];
+                }),
             'metrics' => [
                 'subscriber_count' => Tenant::query()->count(),
                 'active_count' => Tenant::query()->where('status', 'active')->count(),
@@ -46,6 +86,7 @@ class SuperAdminTenantController extends Controller
 
     public function show(Tenant $tenant): Response
     {
+        request()->session()->put('workspace_tenant_id', $tenant->id);
         $settings = $tenant->run(fn (): array => $this->storefrontSettings());
         $subscription = $tenant->subscriptions()->with('plan')->latest()->first();
         $team = $tenant->users()->orderByRaw("CASE WHEN role = 'admin' THEN 0 ELSE 1 END")->oldest()->get();
@@ -55,14 +96,16 @@ class SuperAdminTenantController extends Controller
             'storefrontLogoUrl' => \App\Models\PlatformSetting::storefrontLogoUrl(request(), $tenant),
             'hasCustomStorefrontLogo' => filled($tenant->data['storefront_logo'] ?? null),
             'paystackSettings' => $this->paystackSettingsForAdmin($tenant),
+            'portalFeatures' => TenantPortalFeatures::forSubscription($subscription),
             'subscription' => $subscription === null ? null : [
                 'id' => $subscription->id,
                 'plan_id' => $subscription->plan_id,
                 'plan_name' => $subscription->plan?->name,
+                'amount_minor' => $subscription->amount_minor ?? $subscription->plan?->price_minor ?? 0,
                 'status' => $subscription->status,
                 'renews_at' => $subscription->renews_at?->toDateString(),
             ],
-            'plans' => Plan::query()->where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            'plans' => Plan::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'price_minor', 'currency', 'billing_interval_months']),
             'team' => $team->map(fn (User $user): array => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -85,7 +128,10 @@ class SuperAdminTenantController extends Controller
             'status' => ['required', 'in:active,suspended'],
             'subscription_plan_id' => ['nullable', 'exists:plans,id'],
             'subscription_status' => ['nullable', 'in:trialing,active,past_due,disabled,cancelled'],
+            'subscription_amount_ghs' => ['nullable', 'numeric', 'gt:0', 'max:1000000'],
             'catalogue_mode' => ['required', 'in:shared,separate_online'],
+            'features' => ['required', 'array'],
+            'features.*' => ['string', 'in:pos,online_store,restaurant_foodstore'],
             'storefront_store_name' => ['nullable', 'string', 'max:80'],
             'storefront_delivery_message' => ['nullable', 'string', 'max:160'],
             'storefront_hero_delivery_message' => ['nullable', 'string', 'max:160'],
@@ -99,12 +145,19 @@ class SuperAdminTenantController extends Controller
             'phone' => $data['phone'] ?: null,
             'status' => $data['status'],
         ]);
+        $request->session()->put('workspace_tenant_id', $tenant->id);
 
         $subscription = $tenant->subscriptions()->latest()->first();
         if ($subscription !== null) {
             $subscription->update([
                 'plan_id' => $data['subscription_plan_id'] ?? $subscription->plan_id,
                 'status' => $data['subscription_status'] ?? $subscription->status,
+                'amount_minor' => isset($data['subscription_amount_ghs'])
+                    ? (int) round((float) $data['subscription_amount_ghs'] * 100)
+                    : $subscription->amount_minor,
+                'metadata' => array_merge($subscription->metadata ?? [], [
+                    'features' => array_values(array_unique($data['features'])),
+                ]),
             ]);
         }
 
@@ -130,6 +183,49 @@ class SuperAdminTenantController extends Controller
         });
 
         return back()->with('status', 'Tenant settings updated.');
+    }
+
+    public function activateManually(Tenant $tenant): RedirectResponse
+    {
+        $subscription = $tenant->subscriptions()->with('plan')->latest()->first();
+        abort_if($subscription === null, 422, 'A subscription is required before this tenant can be activated.');
+
+        if ($tenant->status === 'active' && $subscription->status === 'active') {
+            return back()->with('status', 'Tenant is already active.');
+        }
+
+        $amountMinor = $subscription->amount_minor ?? $subscription->plan?->price_minor ?? 0;
+        $renewalBase = $subscription->renews_at?->isFuture() ? $subscription->renews_at->copy() : now();
+        $renewsAt = match ($subscription->plan?->billing_interval) {
+            'weekly' => $renewalBase->addWeek(),
+            'daily' => $renewalBase->addDay(),
+            default => $renewalBase->addMonthsNoOverflow(max(1, (int) ($subscription->plan?->billing_interval_months ?? 1))),
+        };
+
+        DB::transaction(function () use ($tenant, $subscription, $amountMinor, $renewsAt): void {
+            Payment::query()->create([
+                'tenant_id' => $tenant->id,
+                'subscription_id' => $subscription->id,
+                'provider' => 'manual',
+                'provider_reference' => 'manual-'.Str::uuid(),
+                'amount_minor' => $amountMinor,
+                'currency' => 'GHS',
+                'status' => 'paid',
+                'paid_at' => now(),
+                'metadata' => ['source' => 'super_admin_manual_activation'],
+            ]);
+
+            $tenant->update(['status' => 'active']);
+            $subscription->update([
+                'status' => 'active',
+                'starts_at' => now(),
+                'renews_at' => $renewsAt,
+                'ends_at' => null,
+                'grace_ends_at' => null,
+            ]);
+        });
+
+        return back()->with('status', 'Tenant manually activated and payment recorded.');
     }
 
     public function updatePaystackSettings(Request $request, Tenant $tenant): RedirectResponse

@@ -42,4 +42,9 @@ class Payment extends Model
     {
         return $this->belongsTo(Subscription::class);
     }
+
+    public function getConnectionName(): ?string
+    {
+        return config('tenancy.database.central_connection', config('database.default'));
+    }
 }

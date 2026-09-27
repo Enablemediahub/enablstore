@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { BarChart3, ClipboardList, FileText, LogOut, Package, Settings, ShoppingCart, Store, Tags, Truck, Users, X } from '@lucide/vue';
+import { BarChart3, ClipboardList, FileText, LayoutDashboard, LogOut, Package, Settings, ShoppingCart, Store, Tags, Truck, Utensils, Users, X } from '@lucide/vue';
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
-type PanelContext = 'storefront' | 'pos' | 'products' | 'categories' | 'settings' | 'analytics' | 'suppliers' | 'reports' | 'audit' | 'team';
+type PanelContext = 'workspace' | 'storefront' | 'pos' | 'foodstore' | 'food-menu' | 'products' | 'categories' | 'settings' | 'analytics' | 'suppliers' | 'reports' | 'audit' | 'team';
 
 const props = withDefaults(
     defineProps<{
@@ -30,8 +30,10 @@ const groups = computed(() => [
     {
         label: 'Workspace',
         links: [
+            { label: 'Admin dashboard', href: route('tenant.dashboard', { tenant: props.tenant }), icon: LayoutDashboard, active: props.current === 'workspace' },
             { label: 'Storefront', href: route('tenant.home', { tenant: props.tenant }), icon: Store, active: props.current === 'storefront' },
             { label: 'Point of sale', href: route('tenant.pos', { tenant: props.tenant }), icon: ShoppingCart, active: props.current === 'pos' },
+            { label: 'FoodStore', href: route('tenant.foodstore.index', { tenant: props.tenant }), icon: Utensils, active: props.current === 'foodstore' },
         ],
     },
     {
@@ -39,6 +41,7 @@ const groups = computed(() => [
         links: [
             { label: 'Products', href: route('tenant.products.index', { tenant: props.tenant }), icon: Package, active: props.current === 'products' },
             { label: 'Categories', href: route('tenant.categories.index', { tenant: props.tenant }), icon: Tags, active: props.current === 'categories' },
+            { label: 'Food menu', href: route('tenant.foodstore.menu.index', { tenant: props.tenant }), icon: Utensils, active: props.current === 'food-menu' },
         ],
     },
     {

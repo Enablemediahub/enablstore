@@ -72,7 +72,7 @@ const source = computed(() => {
         <img
             :src="source"
             :alt="`${name} product image`"
-            class="h-full w-full object-contain p-2 transition duration-300 group-hover:scale-105"
+            class="h-full w-full object-cover transition duration-300 group-hover:scale-105"
         />
     </div>
 </template>

@@ -30,7 +30,7 @@ import {
     Trash2,
     UserRound,
 } from '@lucide/vue';
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 
 type Product = {
     id: number;
@@ -83,11 +83,6 @@ type Category = { id: number; name: string };
 
 type NavFilter = 'all' | 'deals' | 'best_sellers' | 'new_arrivals';
 
-type BeforeInstallPromptEvent = Event & {
-    prompt: () => Promise<void>;
-    userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
-};
-
 const props = defineProps<{
     hero: StorefrontHero;
     logoUrl: string;
@@ -116,8 +111,6 @@ const locationModalOpen = ref(false);
 const customerServiceOpen = ref(false);
 const accountModalOpen = ref(false);
 const checkoutModalOpen = ref(false);
-const installPrompt = ref<BeforeInstallPromptEvent | null>(null);
-const installPromptVisible = ref(false);
 const checkoutForm = useForm({
     customer_name: '',
     customer_email: '',
@@ -136,38 +129,6 @@ onMounted(() => {
         deliveryLocation.value = saved;
     }
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
-});
-
-const handleBeforeInstallPrompt = (event: Event): void => {
-    event.preventDefault();
-    installPrompt.value = event as BeforeInstallPromptEvent;
-    installPromptVisible.value = true;
-};
-
-const handleAppInstalled = (): void => {
-    installPrompt.value = null;
-    installPromptVisible.value = false;
-};
-
-const installApp = async (): Promise<void> => {
-    if (!installPrompt.value) {
-        return;
-    }
-
-    await installPrompt.value.prompt();
-    installPrompt.value = null;
-    installPromptVisible.value = false;
-};
-
-const dismissInstallPrompt = (): void => {
-    installPromptVisible.value = false;
-};
-
-onUnmounted(() => {
-    window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.removeEventListener('appinstalled', handleAppInstalled);
 });
 
 const categoryOptions = computed(() => ['All', ...props.categories.map((category) => category.name)]);
@@ -381,9 +342,7 @@ const formatPrice = (minor: number): string =>
 </script>
 
 <template>
-    <Head :title="storefront.storeName">
-        <link rel="manifest" :href="route('tenant.storefront.manifest', { tenant })" />
-    </Head>
+    <Head :title="storefront.storeName" />
     <main class="min-h-screen bg-[#f4f4f2] text-[#171717]">
         <header class="bg-[#171717] text-white">
             <div class="mx-auto flex max-w-[1500px] items-center gap-5 px-4 py-3 sm:px-8">
@@ -738,25 +697,6 @@ const formatPrice = (minor: number): string =>
                 </form>
             </Modal>
 
-            <div
-                v-if="installPromptVisible"
-                class="fixed right-4 bottom-4 z-40 w-[min( calc(100vw-2rem), 22rem)] rounded-2xl border border-neutral-200 bg-white p-4 shadow-2xl"
-                role="dialog"
-                aria-label="Install store app"
-            >
-                <div class="flex items-start gap-3">
-                    <div class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#e21b23] text-sm font-black text-white">E</div>
-                    <div class="min-w-0 flex-1">
-                        <p class="font-black text-[#171717]">Install {{ storefront.storeName }}</p>
-                        <p class="mt-1 text-sm leading-5 text-neutral-500">Add this store to your device for quick access.</p>
-                        <div class="mt-3 flex items-center gap-2">
-                            <button type="button" class="rounded-full bg-[#e21b23] px-4 py-2 text-sm font-bold text-white hover:bg-[#b9151b]" @click="installApp">Install app</button>
-                            <button type="button" class="rounded-full px-3 py-2 text-sm font-semibold text-neutral-500 hover:bg-neutral-100" @click="dismissInstallPrompt">Not now</button>
-                        </div>
-                    </div>
-                    <button type="button" class="text-lg leading-none text-neutral-400 hover:text-neutral-700" aria-label="Dismiss install prompt" @click="dismissInstallPrompt">&times;</button>
-                </div>
-            </div>
         </div>
     </main>
 </template>

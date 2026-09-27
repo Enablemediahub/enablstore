@@ -2,7 +2,7 @@
 
 // odsl-C:\xampp\htdocs\enablstore\app\Http\Requests\Auth\LoginRequest.php-PHPStan\BetterReflection\Reflection\ReflectionClass-App\Http\Requests\Auth\LoginRequest
 return \PHPStan\Cache\CacheItem::__set_state(array(
-   'variableKey' => 'v2-6.70.0.6-8.2.12-d64740bf9748fcd0b33a14d72aa42ec2868f2579746b3e1701426006c7eaa6a3',
+   'variableKey' => 'v2-6.70.0.6-8.2.12-faed4295ba5233355060cf041d267412199fad4c08fa06d6b179b0b73016d579',
    'data' => 
   array (
     'locatedSource' => 
@@ -27,7 +27,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     array (
     ),
     'startLine' => 13,
-    'endLine' => 86,
+    'endLine' => 95,
     'startColumn' => 1,
     'endColumn' => 1,
     'parentClassName' => 'Illuminate\\Foundation\\Http\\FormRequest',
@@ -107,7 +107,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
  * @return array<string, ValidationRule|array<mixed>|string>
  */',
         'startLine' => 28,
-        'endLine' => 34,
+        'endLine' => 35,
         'startColumn' => 5,
         'endColumn' => 5,
         'couldThrow' => false,
@@ -145,11 +145,11 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
  *
  * @throws ValidationException
  */',
-        'startLine' => 41,
-        'endLine' => 54,
+        'startLine' => 42,
+        'endLine' => 59,
         'startColumn' => 5,
         'endColumn' => 5,
-        'couldThrow' => true,
+        'couldThrow' => false,
         'isClosure' => false,
         'isGenerator' => false,
         'isVariadic' => false,
@@ -184,11 +184,11 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
  *
  * @throws ValidationException
  */',
-        'startLine' => 61,
-        'endLine' => 77,
+        'startLine' => 66,
+        'endLine' => 82,
         'startColumn' => 5,
         'endColumn' => 5,
-        'couldThrow' => true,
+        'couldThrow' => false,
         'isClosure' => false,
         'isGenerator' => false,
         'isVariadic' => false,
@@ -221,8 +221,8 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         'docComment' => '/**
  * Get the rate limiting throttle key for the request.
  */',
-        'startLine' => 82,
-        'endLine' => 85,
+        'startLine' => 87,
+        'endLine' => 94,
         'startColumn' => 5,
         'endColumn' => 5,
         'couldThrow' => false,

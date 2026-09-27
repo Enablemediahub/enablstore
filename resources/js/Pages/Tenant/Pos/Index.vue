@@ -8,7 +8,7 @@ import ProductArtwork from '@/Components/ProductArtwork.vue';
 import ReceiptPreview from '@/Components/ReceiptPreview.vue';
 import AdminSidePanel from '@/Components/AdminSidePanel.vue';
 import { Head, useForm } from '@inertiajs/vue3';
-import { ChevronDown, LayoutGrid, List, LogOut, Menu, Pause, Play, Rows3, Trash2 } from '@lucide/vue';
+import { ChevronDown, LayoutDashboard, LayoutGrid, List, LogOut, Pause, Play, Rows3, Trash2 } from '@lucide/vue';
 import axios from 'axios';
 import {
     markOfflineSaleSynced,
@@ -23,6 +23,7 @@ type Product = {
     name: string;
     sku: string;
     barcode?: string | null;
+    category?: { name: string } | null;
     price_minor: number;
     image_path?: string | null;
     inventory_stock?: { quantity: number };
@@ -70,7 +71,7 @@ const discountValue = ref(0);
 const discountReason = ref('');
 const customerName = ref('');
 const customerPhone = ref('');
-const mobilePanelOpen = ref(false);
+const adminPortalOpen = ref(false);
 const tenant = props.tenant;
 const isOnline = ref(navigator.onLine);
 const pendingCount = ref(0);
@@ -78,7 +79,7 @@ const syncInProgress = ref(false);
 const scannerOpen = ref(false);
 const receipt = ref<Receipt | null>(props.completedReceipt ?? null);
 const heldSales = ref<HeldSale[]>([]);
-const displayMode = ref<'grid' | 'thumbnail' | 'list'>('grid');
+const displayMode = ref<'grid' | 'thumbnail' | 'list'>('thumbnail');
 const productPage = ref(1);
 const logoutForm = useForm({});
 
@@ -93,7 +94,9 @@ const filteredProducts = computed(() => {
         (product) =>
             term === '' ||
             product.name.toLowerCase().includes(term) ||
-            product.sku.toLowerCase().includes(term),
+            product.sku.toLowerCase().includes(term) ||
+            (product.barcode?.toLowerCase().includes(term) ?? false) ||
+            (product.category?.name.toLowerCase().includes(term) ?? false),
     );
 });
 
@@ -434,22 +437,13 @@ onUnmounted(() => {
     <main class="min-h-screen bg-neutral-50">
         <div class="mx-auto flex min-h-screen max-w-[1600px]">
             <AdminSidePanel
-                v-if="$page.props.auth.user"
+                v-if="$page.props.auth.user?.role === 'admin' && adminPortalOpen"
                 :tenant="tenant"
                 current="pos"
-                :mobile-open="mobilePanelOpen"
-                @close="mobilePanelOpen = false"
+                :mobile-open="adminPortalOpen"
+                @close="adminPortalOpen = false"
             />
             <div class="min-w-0 flex-1 px-4 py-6 sm:px-8">
-                <button
-                    type="button"
-                    class="mb-5 inline-flex items-center gap-2 rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm font-medium text-neutral-700 shadow-sm lg:hidden"
-                    aria-label="Open store navigation"
-                    @click="mobilePanelOpen = true"
-                >
-                    <Menu :size="20" aria-hidden="true" />
-                    Menu
-                </button>
                 <div class="relative mb-6 overflow-hidden rounded-2xl bg-linear-to-br from-[#3d0508] via-[#b3131b] to-[#ff4d55] text-white shadow-lg">
                     <img v-if="heroImageUrl" :src="heroImageUrl" alt="" class="absolute inset-0 h-full w-full object-cover" aria-hidden="true" />
                     <div class="absolute inset-0 bg-[#3d0508]/65" aria-hidden="true" />
@@ -459,20 +453,23 @@ onUnmounted(() => {
                             <p class="text-xs font-bold tracking-[0.2em] text-emerald-400 uppercase">Enablstore POS</p>
                             <h1 class="mt-2 text-2xl font-bold sm:text-3xl">Sell in-store</h1>
                         </div>
-                        <details class="relative z-10 shrink-0">
-                            <summary class="flex cursor-pointer list-none items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold transition hover:bg-white/15">
-                                <span>{{ cashierName }}</span>
-                                <ChevronDown :size="16" aria-hidden="true" />
-                            </summary>
-                            <div class="absolute right-0 mt-2 w-40 rounded-lg border border-neutral-200 bg-white p-1 text-neutral-900 shadow-xl">
-                                <form @submit.prevent="logout">
-                                    <button type="submit" class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition hover:bg-red-50 hover:text-red-700" :disabled="logoutForm.processing">
-                                        <LogOut :size="16" aria-hidden="true" />
-                                        Log out
-                                    </button>
-                                </form>
-                            </div>
-                        </details>
+                        <div class="relative z-10 flex shrink-0 items-center gap-2">
+                            <button v-if="$page.props.auth.user?.role === 'admin'" type="button" class="inline-flex min-h-10 items-center gap-2 rounded-lg border border-white/25 bg-white/10 px-3 text-sm font-semibold text-white transition hover:bg-white/20" @click="adminPortalOpen = !adminPortalOpen"><LayoutDashboard :size="16" aria-hidden="true" />{{ adminPortalOpen ? 'Close Admin Portal' : 'Admin Portal' }}</button>
+                            <details class="relative">
+                                <summary class="flex cursor-pointer list-none items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 py-2 text-sm font-semibold transition hover:bg-white/15">
+                                    <span>{{ cashierName }}</span>
+                                    <ChevronDown :size="16" aria-hidden="true" />
+                                </summary>
+                                <div class="absolute right-0 mt-2 w-40 rounded-lg border border-neutral-200 bg-white p-1 text-neutral-900 shadow-xl">
+                                    <form @submit.prevent="logout">
+                                        <button type="submit" class="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-medium transition hover:bg-red-50 hover:text-red-700" :disabled="logoutForm.processing">
+                                            <LogOut :size="16" aria-hidden="true" />
+                                            Log out
+                                        </button>
+                                    </form>
+                                </div>
+                            </details>
+                        </div>
                     </div>
                 </div>
                 <div class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
@@ -495,8 +492,8 @@ onUnmounted(() => {
                                 <input
                                     v-model="search"
                                     type="search"
-                                    placeholder="Search products or scan a SKU"
-                                    aria-label="Search products or scan a SKU"
+                                    placeholder="Type a product name, SKU, or barcode"
+                                    aria-label="Find a product by name, SKU, or barcode"
                                     class="focus:border-primary-600 focus:ring-primary-100 min-h-11 w-full rounded-md border border-neutral-300 px-3 text-sm focus:ring-2 focus:outline-none"
                                 />
                                 <EnButton variant="ghost" @click="scannerOpen = true">
@@ -530,6 +527,7 @@ onUnmounted(() => {
                                     :sku="product.sku"
                                     :image-path="product.image_path"
                                     :size="displayMode === 'grid' ? 'large' : 'compact'"
+                                    :class="displayMode === 'list' ? 'w-14 shrink-0' : ''"
                                 />
                                 <div class="p-2" :class="displayMode === 'list' ? 'flex flex-1 items-center justify-between gap-4' : ''">
                                     <p class="font-semibold text-neutral-900">

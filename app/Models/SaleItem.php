@@ -12,6 +12,8 @@ class SaleItem extends Model
     protected $fillable = [
         'sale_id',
         'product_id',
+        'restaurant_menu_item_id',
+        'item_name',
         'quantity',
         'unit_price_minor',
         'line_total_minor',
@@ -37,5 +39,13 @@ class SaleItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * @return BelongsTo<RestaurantMenuItem, $this>
+     */
+    public function restaurantMenuItem(): BelongsTo
+    {
+        return $this->belongsTo(RestaurantMenuItem::class);
     }
 }

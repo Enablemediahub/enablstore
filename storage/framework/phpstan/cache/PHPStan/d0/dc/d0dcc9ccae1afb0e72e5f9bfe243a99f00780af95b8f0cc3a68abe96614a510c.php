@@ -68,7 +68,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\database\\seeders\\DatabaseSeeder.php' => 
     array (
-      0 => 'a5b36d80e978bb56e3e58542f93306ecb56952901cc9b9014283ec659b57fc66',
+      0 => 'e948f1f813e27df48ded069f9fa36b4cbbf138a44bd9e2158a2a2654c64b98cc',
       1 => 
       array (
         0 => 'database\\seeders\\databaseseeder',
@@ -130,7 +130,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_17_223000_extend_tenants_table.php' => 
     array (
-      0 => 'a4406f065638b6276dddb8a5e6e04d3076038b49afa3bd7e2c99d94f3b69b139',
+      0 => '0d775dbc9a66f159fdbaf2da87416e2546cb0b5c8af330c034c2eede28feb389',
       1 => 
       array (
       ),
@@ -145,7 +145,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_17_223010_create_plans_table.php' => 
     array (
-      0 => '9900fa3150ff6091d15777c5c9fa82aee23183830ebe274371787baddf98c0a0',
+      0 => '5c66a31ee159e6a88017f6a66da78a648c2632cd9468450e02d019d3ac69d211',
       1 => 
       array (
       ),
@@ -160,7 +160,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_17_223020_create_subscriptions_table.php' => 
     array (
-      0 => 'c27414a8c4a98914aa7cab3b319509ea6b19eb22cedb8242e808e3b788964f42',
+      0 => 'bb2d645d1450d144ecb387a9ba3768fba4a52624b7e0a9490e093fd22b140abb',
       1 => 
       array (
       ),
@@ -175,7 +175,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_17_223030_create_payments_table.php' => 
     array (
-      0 => '5c49b77cb30bb294b01adf8992b608da2bc787cfc8aad884294c04d8876cbc5f',
+      0 => 'd391931ce56ea85afbe6d7049bf43c64c029c704280040d407734abe63257b44',
       1 => 
       array (
       ),
@@ -190,7 +190,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\database\\seeders\\PlanSeeder.php' => 
     array (
-      0 => '1d108a4a1b1c80890c5b1971ed6855914ab90c5ab8eb9a1bd47046ae35d63053',
+      0 => '64c1a37b645c7482fdd0eb07058d2b1d3d4f47acd35c89be17474b8ead6b3cdf',
       1 => 
       array (
         0 => 'database\\seeders\\planseeder',
@@ -205,7 +205,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_17_230000_create_tenant_users_table.php' => 
     array (
-      0 => '80056b937f9af6a2b779441d6f045580e5e73aa6d6b92a231596220ca277e885',
+      0 => '2991b5e6fe5c794eb78a05b044cb32585d6aafa58f887c3bd1fcd6bd5678eca5',
       1 => 
       array (
       ),
@@ -220,7 +220,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_17_230010_create_categories_table.php' => 
     array (
-      0 => 'be8a9d46f7f4be4e434a83d21e2c1fcea178ee2be1c35d57a25a4e8d702d26c0',
+      0 => 'b30af8c2a5ee219cfc733660958ba3179ef1ae1262b1951036c76e229e8f4cef',
       1 => 
       array (
       ),
@@ -235,7 +235,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_17_230020_create_products_table.php' => 
     array (
-      0 => '9ac655d5322e15bb1ef7e2bcc9e40cbed779a5f4125c5d10a9da7060d5b86a9c',
+      0 => '99b9f2be4d12e75ebe5484f80f09817a9783b1d98b89e571603f7150ad88d321',
       1 => 
       array (
       ),
@@ -250,7 +250,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_17_230030_create_inventory_stocks_table.php' => 
     array (
-      0 => '75efc8a6c7beba3f1f73cd306e6dd92e6a0a98658cc7f3a1a9bf17c8eda42f7e',
+      0 => '1a18e22d85711f5cada1f7ebd11c38e41eb4acde604e4be2150f717f97cfe70f',
       1 => 
       array (
       ),
@@ -265,7 +265,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_17_230040_create_tenant_settings_table.php' => 
     array (
-      0 => 'bce6cde6478309bf21101dc506d93270953f55ae1f6a395e51caf7de36efd258',
+      0 => 'e8909f2588136553bea1ba623a5cd2558e632f779fd66a4075c8fe552074422d',
       1 => 
       array (
       ),
@@ -295,7 +295,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_17_230100_create_super_admins_table.php' => 
     array (
-      0 => '9664c0d23b11d43086a9368e06b01c230489cf9ad5db12b4b78fb1a2290eff7a',
+      0 => '9bca9a453c28d075ed3fdec225ffce3e86da6dcd382dd6852dd4eec918ff1a85',
       1 => 
       array (
       ),
@@ -310,7 +310,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\database\\seeders\\SuperAdminSeeder.php' => 
     array (
-      0 => 'ae0498ae81c143555b2b5d04ef8c02c7092172b810d8adeee7278921ea94a278',
+      0 => '348be3984da0c1d7241eed49384393d840980032848dcf4e8d2b5a20a7939678',
       1 => 
       array (
         0 => 'database\\seeders\\superadminseeder',
@@ -318,6 +318,396 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
       2 => 
       array (
         0 => 'database\\seeders\\run',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_20_000001_add_username_and_tenant_to_users_table.php' => 
+    array (
+      0 => '43b1c0133980e9654410ab3a32793c8c8eb664fd877e367855fbeaa9865d10bf',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_20_000002_create_platform_settings_table.php' => 
+    array (
+      0 => 'ff8ba20f60b4ee51a2419b0c607764b8baa18b202abd50cec87fb12ff091e7a4',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_20_000003_add_role_to_users_table.php' => 
+    array (
+      0 => '294c6977d2a068e4e1c85a7233740b787149e861b899437002c929bf730520e9',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_20_000004_add_pos_pin_to_users_table.php' => 
+    array (
+      0 => '7b690bad2fde99a97c21c641d437ff341840fbf0f734f89ec3f0e82ff78caf29',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_20_000005_add_username_to_super_admins_table.php' => 
+    array (
+      0 => '2661636846c9d0ebf70a566c20aae8b90c54370535e3693e9f65665a05e63c80',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_21_180000_make_user_email_nullable.php' => 
+    array (
+      0 => '5303ef52587dc1eb85fa6bfba6ffccb6c62ac0ed31a0fbceafa056b5b3e50f64',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_21_183000_add_subscriber_codes_to_tenants.php' => 
+    array (
+      0 => '7d1482302ccebb2c991b0506d1095a3f0e14e2c3fa1207aefd60c8b85ab96ac7',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_26_000002_create_tenant_paystack_settings_table.php' => 
+    array (
+      0 => 'c223ebec2a48d68dad51ad74bdf9548b66050f9fd325250f930768a4a6ea1339',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_26_000003_create_tenant_payment_intents_table.php' => 
+    array (
+      0 => '8bdd34a730f949f70ba370fbf2bef8e33b3eeb573050e6efeedb4c703b18bfe1',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\2026_09_26_000004_add_test_keys_to_tenant_paystack_settings.php' => 
+    array (
+      0 => '03e73ab2db2a3606bb6d78434ab7594436f71db4de5b4476fa3d89c9b73bd9cb',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_20_000003_add_catalogue_channels_to_products.php' => 
+    array (
+      0 => 'dee28784de8af93fa738dd10a41dd4e33325762b88dbe056ddf848bd46ac467c',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_20_000004_seed_ghanaian_market_categories.php' => 
+    array (
+      0 => 'daedb95af43bbf6e8bb2c46f3b84403ae23c25dc99d36e7fe68b8c52ba0d3892',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_20_000005_add_pos_operations_tables.php' => 
+    array (
+      0 => '7eb7a50fc4e531f2ede0fe47504757d6d3902d367171d1484f4bfc0ef31e0281',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_20_000006_add_purchase_date_to_stock_movements.php' => 
+    array (
+      0 => '5bdb9028a78d156fbe78762ac4f9afe36d8783a7a11aa4154e4991007d021d12',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_20_000006_add_purchase_packaging_to_products.php' => 
+    array (
+      0 => '89e97ed56c2a91446795be5c1476b9e3255e7c1928ab1f3b28323eb6207bee50',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_21_000001_add_storefront_fields_to_products.php' => 
+    array (
+      0 => '2701ff5d85f44c1c3ce0e687509dcd1faebf908d3e6c6ea84799587fb2f5aa8c',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_21_000002_add_customer_details_to_sales_table.php' => 
+    array (
+      0 => 'fb85e04c2686188ac5b67650833fb48a000f69a50393faf5ce8fab7d8f23330c',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_26_000001_add_cashier_name_to_sales_table.php' => 
+    array (
+      0 => 'fbc9a93fc8ded1b974012adf46c87a0206ffdaa2d2cbae89de22672d4da794af',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_26_000002_create_sale_payments_table.php' => 
+    array (
+      0 => '4356855f36e0f6c4a73e819040ec53e43a7ab93420de59d5890ff60b6223ddd1',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_26_000003_add_storefront_order_fields_to_sales.php' => 
+    array (
+      0 => '0359a2133878d2967b13159fe2f0f7c9170eb001fe8b10a8a430a0f8021ce22d',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_26_000004_add_cash_receipt_and_customer_email_fields.php' => 
+    array (
+      0 => '330fd71ba9c51e904872f767ff9debcc3c16b7eeb694a46d59a5e9d85373fc31',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_26_000005_add_external_payment_confirmation.php' => 
+    array (
+      0 => 'bae61a6867f46983eafc3df173b120ac7390b163b735acc5c87d90db7a13b5bd',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_26_000006_create_restaurant_foodstore_tables.php' => 
+    array (
+      0 => 'd762c8f43390c329f50d2a5952c28609124294070d4023eda22b9d66f3dfecb7',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_27_000001_add_foodstore_menu_items_to_sale_items.php' => 
+    array (
+      0 => '59745d3a5cd9b507c5ec514ac70be132b82c8b260f93cc359b9d52db9c3c908e',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\seeders\\DemoWorkspaceSeeder.php' => 
+    array (
+      0 => '70e427f627504ad705960e10ae14386ae4ea8e47fa06346992d9a31b5fd7d39c',
+      1 => 
+      array (
+        0 => 'database\\seeders\\demoworkspaceseeder',
+      ),
+      2 => 
+      array (
+        0 => 'database\\seeders\\run',
+      ),
+      3 => 
+      array (
+      ),
+    ),
+    'C:\\xampp\\htdocs\\enablstore\\database\\migrations\\tenant\\2026_09_27_000002_add_package_and_image_fields_to_restaurant_menu_items.php' => 
+    array (
+      0 => 'faccfa7783b41d812f37e9e79addb4729444db6020fae46ff7c33be08b6005d2',
+      1 => 
+      array (
+      ),
+      2 => 
+      array (
+        0 => 'up',
+        1 => 'down',
       ),
       3 => 
       array (

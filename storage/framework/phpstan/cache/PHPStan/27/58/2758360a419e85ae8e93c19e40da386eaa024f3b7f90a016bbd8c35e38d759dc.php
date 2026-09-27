@@ -7,7 +7,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
   array (
     'C:\\xampp\\htdocs\\enablstore\\routes\\auth.php' => 
     array (
-      0 => 'ae97a0c4ed28bd79ac0ff8c3a11539489518e1da4f17a3cf7a2b606b96dfd765',
+      0 => 'ece72e5701c73108441058512254e0871f3b7ee8bc5a42768d05194338bed85c',
       1 => 
       array (
       ),
@@ -33,7 +33,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\routes\\web.php' => 
     array (
-      0 => '254a31f5ed5513f977c36a77af379f536015dfd80a0cc110448e2048e1879f4e',
+      0 => 'a5fc77dfed508d28dfa81c010e1e6e43d02d73e42e02fcab78ef59725fd5c943',
       1 => 
       array (
       ),
@@ -46,7 +46,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     'C:\\xampp\\htdocs\\enablstore\\routes\\tenant.php' => 
     array (
-      0 => 'fc82e41490a0d4b498b31b5828d2aa1337308b8c143cc380999f90cc38e010f9',
+      0 => 'a495a9f72ed694989c9e1da2b15777a6099492c9c197d3fda223ad1881346b39',
       1 => 
       array (
       ),

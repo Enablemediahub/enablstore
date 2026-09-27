@@ -2,7 +2,7 @@
 
 // odsl-C:\xampp\htdocs\enablstore\app\Models\SuperAdmin.php-PHPStan\BetterReflection\Reflection\ReflectionClass-App\Models\SuperAdmin
 return \PHPStan\Cache\CacheItem::__set_state(array(
-   'variableKey' => 'v2-6.70.0.6-8.2.12-669b2e50c780bcbe7c25b19a960c583f9511b69bd4ee80c326551e2e7d9b1222',
+   'variableKey' => 'v2-6.70.0.6-8.2.12-e3d35eef5c26dd1d8055fc0619bb0ba6de0bfd647cf4829f46626f89b2ecc44a',
    'data' => 
   array (
     'locatedSource' => 
@@ -52,15 +52,15 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         'type' => NULL,
         'default' => 
         array (
-          'code' => '[\'name\', \'email\', \'password\']',
+          'code' => '[\'name\', \'username\', \'email\', \'password\']',
           'attributes' => 
           array (
             'startLine' => 14,
             'endLine' => 14,
             'startTokenPos' => 50,
             'startFilePos' => 244,
-            'endTokenPos' => 58,
-            'endFilePos' => 272,
+            'endTokenPos' => 61,
+            'endFilePos' => 284,
           ),
         ),
         'docComment' => NULL,
@@ -70,7 +70,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         'startLine' => 14,
         'endLine' => 14,
         'startColumn' => 5,
-        'endColumn' => 56,
+        'endColumn' => 68,
         'isPromoted' => false,
         'declaredAtCompileTime' => true,
         'immediateVirtual' => false,
@@ -92,10 +92,10 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
           array (
             'startLine' => 16,
             'endLine' => 16,
-            'startTokenPos' => 67,
-            'startFilePos' => 300,
-            'endTokenPos' => 72,
-            'endFilePos' => 329,
+            'startTokenPos' => 70,
+            'startFilePos' => 312,
+            'endTokenPos' => 75,
+            'endFilePos' => 341,
           ),
         ),
         'docComment' => NULL,
@@ -127,10 +127,10 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
           array (
             'startLine' => 18,
             'endLine' => 21,
-            'startTokenPos' => 81,
-            'startFilePos' => 356,
-            'endTokenPos' => 97,
-            'endFilePos' => 437,
+            'startTokenPos' => 84,
+            'startFilePos' => 368,
+            'endTokenPos' => 100,
+            'endFilePos' => 449,
           ),
         ),
         'docComment' => NULL,

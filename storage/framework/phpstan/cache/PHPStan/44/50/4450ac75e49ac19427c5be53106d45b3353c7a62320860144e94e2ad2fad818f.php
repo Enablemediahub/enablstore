@@ -82,7 +82,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     1 => 
     array (
-      'C:\\xampp\\htdocs\\enablstore\\app\\Models\\Subscription.php' => 'd36d1bb9ca1d0f76ce42a2a53f70a3cc7a5c38a284e070ee969dc0b1298b1d66',
+      'C:\\xampp\\htdocs\\enablstore\\app\\Models\\Subscription.php' => 'd67123d863097e57c8d04a5ca8c3ee5f205c978d5ac4f25bdac9518508d76232',
     ),
   ),
 ));

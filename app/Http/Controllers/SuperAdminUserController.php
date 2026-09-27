@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Plan;
+use App\Models\Payment;
 use App\Models\Subscription;
 use App\Models\Tenant;
 use App\Models\User;
@@ -23,7 +24,7 @@ class SuperAdminUserController extends Controller
     {
         return Inertia::render('SuperAdmin/Users', [
             'users' => User::query()->with('tenant')->latest()->paginate(20),
-            'plans' => Plan::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'features']),
+            'plans' => Plan::query()->where('is_active', true)->orderBy('name')->get(['id', 'name', 'features', 'price_minor', 'currency', 'billing_interval_months']),
         ]);
     }
 
@@ -32,10 +33,12 @@ class SuperAdminUserController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
             'username' => ['required', 'string', 'alpha_dash', 'max:52'],
-            'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+            'email' => ['nullable', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8'],
             'business_name' => ['required', 'string', 'max:120'],
-            'plan_id' => ['required', 'exists:plans,id'],
+            'plan_id' => ['required', Rule::exists('plans', 'id')->where('is_active', true)],
+            'features' => ['required', 'array'],
+            'features.*' => ['string', 'in:pos,online_store,restaurant_foodstore'],
         ]);
 
         $slug = $this->uniqueTenantSlug($data['business_name']);
@@ -45,27 +48,41 @@ class SuperAdminUserController extends Controller
         if (User::query()->where('username', $username)->exists()) {
             return back()->withErrors(['username' => 'This username is already in use for the generated subscriber code.'])->withInput();
         }
+        $plan = Plan::query()->where('is_active', true)->findOrFail((int) $data['plan_id']);
         $tenant = Tenant::create([
                 'id' => $slug,
                 'subscriber_code' => $subscriberCode,
                 'name' => $data['business_name'],
                 'slug' => $slug,
-                'email' => $data['email'],
+                'email' => $data['email'] ?? null,
                 'status' => 'active',
         ]);
 
-        DB::transaction(function () use ($data, $tenant): void {
-            $tenant->subscriptions()->create([
+        DB::transaction(function () use ($data, $tenant, $plan, $username): void {
+            $subscription = $tenant->subscriptions()->create([
                 'plan_id' => $data['plan_id'],
+            'amount_minor' => $plan->price_minor,
                 'provider' => 'internal',
                 'status' => 'active',
                 'starts_at' => now(),
-                'renews_at' => now()->addMonth(),
+            'renews_at' => now()->addMonthsNoOverflow(max(1, $plan->billing_interval_months)),
+                'metadata' => ['features' => array_values(array_unique($data['features']))],
+            ]);
+            Payment::query()->create([
+                'tenant_id' => $tenant->id,
+                'subscription_id' => $subscription->id,
+                'provider' => 'manual',
+                'provider_reference' => 'manual-'.Str::uuid(),
+                'amount_minor' => $plan->price_minor,
+                'currency' => $plan->currency,
+                'status' => 'paid',
+                'paid_at' => now(),
+                'metadata' => ['source' => 'super_admin_manual_enrollment'],
             ]);
             User::create([
                 'name' => $data['name'],
                 'username' => $username,
-                'email' => $data['email'],
+                'email' => $data['email'] ?? null,
                 'tenant_id' => $tenant->id,
                 'password' => $data['password'],
                 'role' => 'admin',

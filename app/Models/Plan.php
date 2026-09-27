@@ -16,6 +16,7 @@ class Plan extends Model
         'price_minor',
         'currency',
         'billing_interval',
+        'billing_interval_months',
         'features',
         'is_active',
     ];
@@ -24,6 +25,7 @@ class Plan extends Model
         'features' => 'array',
         'is_active' => 'boolean',
         'price_minor' => 'integer',
+        'billing_interval_months' => 'integer',
     ];
 
     /**
@@ -32,5 +34,10 @@ class Plan extends Model
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    public function getConnectionName(): ?string
+    {
+        return config('tenancy.database.central_connection', config('database.default'));
     }
 }

@@ -19,6 +19,7 @@ class PlanSeeder extends Seeder
                 'price_minor' => 9900,
                 'currency' => 'GHS',
                 'billing_interval' => 'monthly',
+                'billing_interval_months' => 1,
                 'features' => [
                     'products',
                     'inventory',

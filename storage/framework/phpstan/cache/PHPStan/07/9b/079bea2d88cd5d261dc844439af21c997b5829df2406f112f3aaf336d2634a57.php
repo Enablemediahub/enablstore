@@ -16,6 +16,8 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
           'hasfactory' => 'Illuminate\\Database\\Eloquent\\Factories\\HasFactory',
           'authenticatable' => 'Illuminate\\Foundation\\Auth\\User',
           'notifiable' => 'Illuminate\\Notifications\\Notifiable',
+          'belongsto' => 'Illuminate\\Database\\Eloquent\\Relations\\BelongsTo',
+          'tenant' => 'App\\Models\\Tenant',
         ),
          'className' => 'App\\Models\\User',
          'functionName' => NULL,
@@ -588,6 +590,34 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
           4 => NULL,
         ),
       )),
+      '09a082be958a4fd500f6aaa7f2c20014' => 
+      \PHPStan\Analyser\IntermediaryNameScope::__set_state(array(
+         'namespace' => 'App\\Models',
+         'uses' => 
+        array (
+          'mustverifyemail' => 'Illuminate\\Contracts\\Auth\\MustVerifyEmail',
+          'hasfactory' => 'Illuminate\\Database\\Eloquent\\Factories\\HasFactory',
+          'authenticatable' => 'Illuminate\\Foundation\\Auth\\User',
+          'notifiable' => 'Illuminate\\Notifications\\Notifiable',
+          'belongsto' => 'Illuminate\\Database\\Eloquent\\Relations\\BelongsTo',
+          'tenant' => 'App\\Models\\Tenant',
+        ),
+         'className' => 'App\\Models\\User',
+         'functionName' => 'getConnectionName',
+         'templatePhpDocNodes' => 
+        array (
+        ),
+         'parent' => NULL,
+         'typeAliasesMap' => 
+        array (
+        ),
+         'bypassTypeAliases' => false,
+         'constUses' => 
+        array (
+        ),
+         'typeAliasClassName' => NULL,
+         'traitData' => NULL,
+      )),
       '600370fae7e1a1efeda2b43ad457902c' => 
       \PHPStan\Analyser\IntermediaryNameScope::__set_state(array(
          'namespace' => 'App\\Models',
@@ -597,6 +627,8 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
           'hasfactory' => 'Illuminate\\Database\\Eloquent\\Factories\\HasFactory',
           'authenticatable' => 'Illuminate\\Foundation\\Auth\\User',
           'notifiable' => 'Illuminate\\Notifications\\Notifiable',
+          'belongsto' => 'Illuminate\\Database\\Eloquent\\Relations\\BelongsTo',
+          'tenant' => 'App\\Models\\Tenant',
         ),
          'className' => 'App\\Models\\User',
          'functionName' => 'casts',
@@ -614,10 +646,94 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
          'typeAliasClassName' => NULL,
          'traitData' => NULL,
       )),
+      'df7034763f2bfe9f71c840fa1001aec3' => 
+      \PHPStan\Analyser\IntermediaryNameScope::__set_state(array(
+         'namespace' => 'App\\Models',
+         'uses' => 
+        array (
+          'mustverifyemail' => 'Illuminate\\Contracts\\Auth\\MustVerifyEmail',
+          'hasfactory' => 'Illuminate\\Database\\Eloquent\\Factories\\HasFactory',
+          'authenticatable' => 'Illuminate\\Foundation\\Auth\\User',
+          'notifiable' => 'Illuminate\\Notifications\\Notifiable',
+          'belongsto' => 'Illuminate\\Database\\Eloquent\\Relations\\BelongsTo',
+          'tenant' => 'App\\Models\\Tenant',
+        ),
+         'className' => 'App\\Models\\User',
+         'functionName' => 'tenant',
+         'templatePhpDocNodes' => 
+        array (
+        ),
+         'parent' => NULL,
+         'typeAliasesMap' => 
+        array (
+        ),
+         'bypassTypeAliases' => false,
+         'constUses' => 
+        array (
+        ),
+         'typeAliasClassName' => NULL,
+         'traitData' => NULL,
+      )),
+      '4c5cc6723a59c3c2268df2d03e327f33' => 
+      \PHPStan\Analyser\IntermediaryNameScope::__set_state(array(
+         'namespace' => 'App\\Models',
+         'uses' => 
+        array (
+          'mustverifyemail' => 'Illuminate\\Contracts\\Auth\\MustVerifyEmail',
+          'hasfactory' => 'Illuminate\\Database\\Eloquent\\Factories\\HasFactory',
+          'authenticatable' => 'Illuminate\\Foundation\\Auth\\User',
+          'notifiable' => 'Illuminate\\Notifications\\Notifiable',
+          'belongsto' => 'Illuminate\\Database\\Eloquent\\Relations\\BelongsTo',
+          'tenant' => 'App\\Models\\Tenant',
+        ),
+         'className' => 'App\\Models\\User',
+         'functionName' => 'isAdmin',
+         'templatePhpDocNodes' => 
+        array (
+        ),
+         'parent' => NULL,
+         'typeAliasesMap' => 
+        array (
+        ),
+         'bypassTypeAliases' => false,
+         'constUses' => 
+        array (
+        ),
+         'typeAliasClassName' => NULL,
+         'traitData' => NULL,
+      )),
+      '40215b0b2c58273c69c611687e0fe949' => 
+      \PHPStan\Analyser\IntermediaryNameScope::__set_state(array(
+         'namespace' => 'App\\Models',
+         'uses' => 
+        array (
+          'mustverifyemail' => 'Illuminate\\Contracts\\Auth\\MustVerifyEmail',
+          'hasfactory' => 'Illuminate\\Database\\Eloquent\\Factories\\HasFactory',
+          'authenticatable' => 'Illuminate\\Foundation\\Auth\\User',
+          'notifiable' => 'Illuminate\\Notifications\\Notifiable',
+          'belongsto' => 'Illuminate\\Database\\Eloquent\\Relations\\BelongsTo',
+          'tenant' => 'App\\Models\\Tenant',
+        ),
+         'className' => 'App\\Models\\User',
+         'functionName' => 'isCashier',
+         'templatePhpDocNodes' => 
+        array (
+        ),
+         'parent' => NULL,
+         'typeAliasesMap' => 
+        array (
+        ),
+         'bypassTypeAliases' => false,
+         'constUses' => 
+        array (
+        ),
+         'typeAliasClassName' => NULL,
+         'traitData' => NULL,
+      )),
     ),
     1 => 
     array (
-      'C:\\xampp\\htdocs\\enablstore\\app\\Models\\User.php' => 'd13ab5f6cf544564b2d4c8962655a8a264c6c885a27623bc28017dc43cf4d393',
+      'C:\\xampp\\htdocs\\enablstore\\app\\Models\\User.php' => 'b7344bc3395d5840cbfe704ec0f4712f30bdb521dd009821a86ba7b1daffd191',
       'C:\\xampp\\htdocs\\enablstore\\vendor\\composer\\..\\laravel\\framework\\src\\Illuminate\\Database\\Eloquent\\Factories\\HasFactory.php' => 'f656f22af602c0c7a3b73524ece133d391640c8c78d29da5ddc48a235e583431',
       'C:\\xampp\\htdocs\\enablstore\\vendor\\composer\\..\\laravel\\framework\\src\\Illuminate\\Notifications\\Notifiable.php' => '573fa9bb96fa392434450c9cd9deb8d4e40a5bb93c140a648267b48dfa0433ac',
       'C:\\xampp\\htdocs\\enablstore\\vendor\\composer\\..\\laravel\\framework\\src\\Illuminate\\Notifications\\HasDatabaseNotifications.php' => 'a3aeeb10c4354368fcbb5a95fd2418a452ac219c2e8f844864b62fcb53e47507',

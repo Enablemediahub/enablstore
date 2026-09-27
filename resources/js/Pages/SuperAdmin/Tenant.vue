@@ -3,7 +3,7 @@ import EnCard from '@/Components/EnCard.vue';
 import EnInput from '@/Components/EnInput.vue';
 import SuperAdminSidePanel from '@/Components/SuperAdminSidePanel.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowLeft, ExternalLink, KeyRound, Pencil, Store, Trash2, Users } from '@lucide/vue';
+import { ArrowLeft, CheckCircle2, ExternalLink, KeyRound, Pencil, Store, Trash2, Users } from '@lucide/vue';
 import { ref } from 'vue';
 
 type Tenant = {
@@ -21,6 +21,7 @@ type Subscription = {
     id: number;
     plan_id: number;
     plan_name: string | null;
+    amount_minor: number;
     status: string;
     renews_at: string | null;
 } | null;
@@ -43,6 +44,7 @@ const props = defineProps<{
     storefrontSettings: StorefrontSettings;
     team: TeamMember[];
     status?: string | null;
+    portalFeatures: string[];
     storefrontLogoUrl: string;
     hasCustomStorefrontLogo: boolean;
     paystackSettings: {
@@ -62,8 +64,15 @@ const form = useForm({
     status: props.tenant.status,
     subscription_plan_id: props.subscription?.plan_id ?? '',
     subscription_status: props.subscription?.status ?? '',
+    subscription_amount_ghs: props.subscription ? props.subscription.amount_minor / 100 : '',
+    features: [...props.portalFeatures],
     ...props.storefrontSettings,
 });
+const portalOptions = [
+    { key: 'online_store', label: 'Online Store' },
+    { key: 'pos', label: 'Point of Sale' },
+    { key: 'restaurant_foodstore', label: 'FoodStore' },
+];
 const logoForm = useForm<{ storefront_logo: File | null }>({ storefront_logo: null });
 const paystackForm = useForm({
     mode: props.paystackSettings.mode,
@@ -75,6 +84,12 @@ const paystackForm = useForm({
 });
 
 const submit = (): void => form.patch(route('super-admin.tenants.update', { tenant: props.tenant.id }));
+const manualActivationForm = useForm({});
+const activateManually = (): void => {
+    if (!window.confirm(`Confirm that ${props.tenant.name} has paid outside Paystack and activate its subscription?`)) return;
+
+    manualActivationForm.patch(route('super-admin.tenants.activate', { tenant: props.tenant.id }), { preserveScroll: true });
+};
 const uploadLogo = (): void => {
     logoForm.post(route('super-admin.tenants.storefront-logo', { tenant: props.tenant.id }), {
         forceFormData: true,
@@ -136,6 +151,10 @@ const deleteMember = (member: TeamMember): void => {
                 <p v-if="status" class="mt-5 rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm font-medium text-green-800">{{ status }}</p>
 
                 <form class="mt-8 space-y-7" @submit.prevent="submit">
+                    <EnCard v-if="tenant.status === 'suspended' && subscription">
+                        <div class="flex flex-wrap items-center justify-between gap-4"><div><h2 class="text-lg font-bold">Manual activation</h2><p class="mt-1 text-sm text-neutral-500">Use this after confirming payment received outside the company Paystack checkout.</p></div><button type="button" class="inline-flex min-h-10 items-center gap-2 rounded-md bg-emerald-700 px-4 text-sm font-bold text-white hover:bg-emerald-800 disabled:opacity-60" :disabled="manualActivationForm.processing" @click="activateManually"><CheckCircle2 :size="17" aria-hidden="true" />{{ manualActivationForm.processing ? 'Activating...' : 'Manually activate' }}</button></div>
+                    </EnCard>
+
                     <EnCard>
                         <div class="flex items-start gap-3"><Store :size="22" class="mt-0.5 text-[#e21b23]" aria-hidden="true" /><div><h2 class="text-lg font-bold">Tenant account</h2><p class="mt-1 text-sm text-neutral-500">The account details used to identify this subscribed workspace.</p></div></div>
                         <div class="mt-6 space-y-4">
@@ -158,9 +177,24 @@ const deleteMember = (member: TeamMember): void => {
                         <p class="mt-1 text-sm text-neutral-500">Manage the current plan and access state for this tenant.</p>
                         <div v-if="subscription" class="mt-6 space-y-4">
                             <label class="block text-sm font-medium text-neutral-700">Plan<select v-model="form.subscription_plan_id" class="mt-1.5 min-h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm"><option v-for="plan in plans" :key="plan.id" :value="plan.id">{{ plan.name }}</option></select></label>
+                            <EnInput id="subscription-amount" v-model="form.subscription_amount_ghs" type="number" min="0.01" step="0.01" label="Subscription amount (GHS)" required />
+                            <p v-if="form.errors.subscription_amount_ghs" class="text-sm text-red-700">{{ form.errors.subscription_amount_ghs }}</p>
                             <label class="block text-sm font-medium text-neutral-700">Subscription status<select v-model="form.subscription_status" class="mt-1.5 min-h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm"><option value="trialing">Trialing</option><option value="active">Active</option><option value="past_due">Past due</option><option value="disabled">Disabled</option><option value="cancelled">Cancelled</option></select></label>
                         </div>
                         <p v-else class="mt-5 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">This tenant does not yet have a subscription.</p>
+                    </EnCard>
+
+                    <EnCard>
+                        <h2 class="text-lg font-bold">Portal access</h2>
+                        <p class="mt-1 text-sm text-neutral-500">Choose which portals this subscriber can open. Changes apply only to {{ tenant.name }}.</p>
+                        <fieldset class="mt-5 space-y-2">
+                            <legend class="sr-only">Subscriber portals</legend>
+                            <label v-for="portal in portalOptions" :key="portal.key" class="flex items-center gap-3 rounded-md border border-neutral-200 px-4 py-3 text-sm font-semibold text-neutral-800">
+                                <input v-model="form.features" type="checkbox" :value="portal.key" class="rounded border-neutral-300 text-[#e21b23] focus:ring-[#e21b23]" />
+                                {{ portal.label }}
+                            </label>
+                        </fieldset>
+                        <p v-if="form.errors.features || form.errors['features.0']" class="mt-3 text-sm text-red-700">{{ form.errors.features || form.errors['features.0'] }}</p>
                     </EnCard>
 
                     <EnCard>

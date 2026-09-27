@@ -79,10 +79,34 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
          'typeAliasClassName' => NULL,
          'traitData' => NULL,
       )),
+      '79267317bc87d54c0d439e9b6b4b98b1' => 
+      \PHPStan\Analyser\IntermediaryNameScope::__set_state(array(
+         'namespace' => 'App\\Models',
+         'uses' => 
+        array (
+          'model' => 'Illuminate\\Database\\Eloquent\\Model',
+          'belongsto' => 'Illuminate\\Database\\Eloquent\\Relations\\BelongsTo',
+        ),
+         'className' => 'App\\Models\\SaleItem',
+         'functionName' => 'restaurantMenuItem',
+         'templatePhpDocNodes' => 
+        array (
+        ),
+         'parent' => NULL,
+         'typeAliasesMap' => 
+        array (
+        ),
+         'bypassTypeAliases' => false,
+         'constUses' => 
+        array (
+        ),
+         'typeAliasClassName' => NULL,
+         'traitData' => NULL,
+      )),
     ),
     1 => 
     array (
-      'C:\\xampp\\htdocs\\enablstore\\app\\Models\\SaleItem.php' => '5be427bc716e38cb6c6980a59e1a125b35f585740b8377ff22259d586bfabd69',
+      'C:\\xampp\\htdocs\\enablstore\\app\\Models\\SaleItem.php' => '8d95f877cec411833ef8968ee675ad8dd7757823fc901936c52696657db7c0be',
     ),
   ),
 ));

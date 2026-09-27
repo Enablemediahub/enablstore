@@ -9,7 +9,7 @@ import ProductArtwork from '@/Components/ProductArtwork.vue';
 import { Head, router, useForm } from '@inertiajs/vue3';
 import axios from 'axios';
 import { Edit3, LayoutGrid, List, Plus, Rows3, ScanLine, Search, Trash2, X } from '@lucide/vue';
-import { ref } from 'vue';
+import { onUnmounted, ref, watch } from 'vue';
 
 type Product = {
     id: number;
@@ -17,6 +17,7 @@ type Product = {
     sku: string;
     barcode?: string | null;
     category_id?: number | null;
+    category?: Category | null;
     image_path?: string | null;
     price_minor: number;
     compare_at_price_minor?: number | null;
@@ -30,9 +31,11 @@ type Product = {
 
 type Category = { id: number; name: string };
 
-const props = defineProps<{ products: { data: Product[]; current_page: number; last_page: number; links: Array<{ url: string | null; label: string; active: boolean }> }; categories: Category[]; catalogueMode: 'shared' | 'separate_online'; filters: { search: string } }>();
+const props = defineProps<{ products: { data: Product[]; current_page: number; last_page: number; links: Array<{ url: string | null; label: string; active: boolean }> }; categories: Category[]; catalogueMode: 'shared' | 'separate_online'; filters: { search: string; category_id: number | null; stock_status: 'all' | 'in_stock' | 'low_stock' | 'out_of_stock' }; summary: { product_count: number; units_in_stock: number; cost_value_minor: number; retail_value_minor: number; profit_value_minor: number; low_stock_count: number; out_of_stock_count: number } }>();
 const tenant = String(route().params.tenant);
 const search = ref(props.filters.search);
+const categoryFilter = ref(props.filters.category_id === null ? '' : String(props.filters.category_id));
+const stockFilter = ref(props.filters.stock_status);
 const mobilePanelOpen = ref(false);
 const modalOpen = ref(false);
 const scannerOpen = ref(false);
@@ -145,17 +148,33 @@ const deleteProduct = (product: Product): void => {
     router.delete(route('tenant.products.destroy', { tenant, product: product.id }));
 };
 
-const submitSearch = (): void => {
-    router.get(route('tenant.products.index', { tenant }), { search: search.value.trim() || undefined }, {
+const updateResults = (): void => {
+    router.get(route('tenant.products.index', { tenant }), {
+        search: search.value.trim() || undefined,
+        category_id: categoryFilter.value || undefined,
+        stock_status: stockFilter.value === 'all' ? undefined : stockFilter.value,
+    }, {
         preserveState: true,
         replace: true,
+        preserveScroll: true,
     });
 };
 
-const clearSearch = (): void => {
+let filterTimeout: ReturnType<typeof setTimeout> | undefined;
+watch([search, categoryFilter, stockFilter], () => {
+    if (filterTimeout) clearTimeout(filterTimeout);
+    filterTimeout = setTimeout(updateResults, 250);
+});
+
+const clearFilters = (): void => {
     search.value = '';
-    submitSearch();
+    categoryFilter.value = '';
+    stockFilter.value = 'all';
 };
+
+onUnmounted(() => {
+    if (filterTimeout) clearTimeout(filterTimeout);
+});
 
 const submit = (): void => {
     form.transform((data) => ({
@@ -220,24 +239,37 @@ const submit = (): void => {
                         </div>
                     </header>
 
+                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                        <EnCard><p class="text-xs font-bold uppercase tracking-wide text-neutral-500">Matching products</p><p class="mt-2 text-2xl font-black text-neutral-900">{{ summary.product_count }}</p><p class="mt-1 text-xs text-neutral-500">In the current catalogue view</p></EnCard>
+                        <EnCard><p class="text-xs font-bold uppercase tracking-wide text-neutral-500">Units in stock</p><p class="mt-2 text-2xl font-black text-neutral-900">{{ summary.units_in_stock.toLocaleString() }}</p><p class="mt-1 text-xs text-neutral-500">Across matching products</p></EnCard>
+                        <EnCard><p class="text-xs font-bold uppercase tracking-wide text-neutral-500">Inventory cost value</p><p class="mt-2 font-mono text-xl font-bold text-neutral-900">{{ formatPrice(summary.cost_value_minor) }}</p><p class="mt-1 text-xs text-neutral-500">Based on current stock</p></EnCard>
+                        <EnCard><p class="text-xs font-bold uppercase tracking-wide text-neutral-500">Potential sales value</p><p class="mt-2 font-mono text-xl font-bold text-neutral-900">{{ formatPrice(summary.retail_value_minor) }}</p><p class="mt-1 text-xs text-neutral-500">Current stock at selling price</p></EnCard>
+                        <EnCard><p class="text-xs font-bold uppercase tracking-wide text-neutral-500">Potential gross profit</p><p class="mt-2 font-mono text-xl font-bold text-emerald-800">{{ formatPrice(summary.profit_value_minor) }}</p><p class="mt-1 text-xs text-neutral-500">Excludes items without a cost price</p></EnCard>
+                    </div>
+                    <div v-if="summary.low_stock_count || summary.out_of_stock_count" class="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm"><span v-if="summary.low_stock_count" class="font-semibold text-amber-900">{{ summary.low_stock_count }} low-stock</span><span v-if="summary.out_of_stock_count" class="font-semibold text-red-800">{{ summary.out_of_stock_count }} out of stock</span><span class="text-neutral-600">Counts reflect the current filters.</span></div>
+
                     <EnCard>
-                        <form class="mb-6 flex flex-col gap-3 border-b border-neutral-100 pb-6 sm:flex-row" @submit.prevent="submitSearch">
-                            <label class="relative flex-1">
+                        <div class="mb-6 grid gap-3 border-b border-neutral-100 pb-6 md:grid-cols-[minmax(220px,1fr)_190px_180px_auto]">
+                            <label class="relative min-w-0">
                                 <span class="sr-only">Search products</span>
                                 <Search :size="18" class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-neutral-400" aria-hidden="true" />
                                 <input v-model="search" type="search" class="min-h-11 w-full rounded-md border border-neutral-300 bg-white py-2 pr-10 pl-10 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-red-500 focus:ring-red-500" placeholder="Search by product name, SKU, or barcode" />
-                                <button v-if="search" type="button" class="absolute top-1/2 right-2 inline-flex -translate-y-1/2 rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700" aria-label="Clear search" @click="clearSearch"><X :size="17" aria-hidden="true" /></button>
+                                <button v-if="search" type="button" class="absolute top-1/2 right-2 inline-flex -translate-y-1/2 rounded p-1 text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700" aria-label="Clear search" @click="search = ''"><X :size="17" aria-hidden="true" /></button>
                             </label>
-                            <EnButton type="submit"><Search :size="17" aria-hidden="true" /> Search</EnButton>
-                        </form>
+                            <label class="sr-only" for="product-category-filter">Filter by category</label><select id="product-category-filter" v-model="categoryFilter" class="min-h-11 rounded-md border border-neutral-300 bg-white px-3 text-sm"><option value="">All categories</option><option v-for="category in categories" :key="category.id" :value="String(category.id)">{{ category.name }}</option></select>
+                            <label class="sr-only" for="product-stock-filter">Filter by stock status</label><select id="product-stock-filter" v-model="stockFilter" class="min-h-11 rounded-md border border-neutral-300 bg-white px-3 text-sm"><option value="all">All stock levels</option><option value="in_stock">In stock</option><option value="low_stock">Low stock</option><option value="out_of_stock">Out of stock</option></select>
+                            <EnButton type="submit"><Search :size="17" aria-hidden="true" /> Apply</EnButton>
+                            <button type="button" class="min-h-11 rounded-md border border-neutral-300 px-3 text-sm font-semibold text-neutral-700 hover:bg-neutral-50" @click="clearFilters">Clear</button>
+                        </div>
                         <div v-if="displayMode === 'list' && props.products.data.length" class="overflow-x-auto">
                             <table class="w-full min-w-170 text-left text-sm">
                                 <thead class="border-b border-neutral-100 text-xs text-neutral-500 uppercase">
-                                    <tr><th class="px-3 py-3 font-semibold">Product</th><th class="px-3 py-3 font-semibold">SKU / Barcode</th><th class="px-3 py-3 font-semibold">Price</th><th class="px-3 py-3 font-semibold">Stock</th><th class="px-3 py-3 text-right font-semibold">Action</th></tr>
+                                    <tr><th class="px-3 py-3 font-semibold">Product</th><th class="px-3 py-3 font-semibold">Category</th><th class="px-3 py-3 font-semibold">SKU / Barcode</th><th class="px-3 py-3 font-semibold">Price</th><th class="px-3 py-3 font-semibold">Stock</th><th class="px-3 py-3 text-right font-semibold">Action</th></tr>
                                 </thead>
                                 <tbody>
                                     <tr v-for="product in props.products.data" :key="product.id" class="border-b border-neutral-100 last:border-0 hover:bg-neutral-50">
-                                        <td class="px-3 py-4"><div class="flex items-center gap-3"><ProductArtwork :name="product.name" :sku="product.sku" :image-path="product.image_path" /><span class="font-semibold text-neutral-900">{{ product.name }}</span></div></td>
+                                        <td class="px-3 py-4"><div class="flex items-center gap-3"><ProductArtwork :name="product.name" :sku="product.sku" :image-path="product.image_path" class="w-14 shrink-0" /><span class="font-semibold text-neutral-900">{{ product.name }}</span></div></td>
+                                        <td class="px-3 py-4 text-neutral-600">{{ product.category?.name ?? 'Uncategorised' }}</td>
                                         <td class="px-3 py-4"><p class="font-mono text-xs text-neutral-700">{{ product.sku }}</p><p class="mt-1 text-xs text-neutral-500">{{ product.barcode || 'No barcode' }}</p></td>
                                         <td class="px-3 py-4 font-mono text-neutral-700">{{ formatPrice(product.price_minor) }}</td>
                                         <td class="px-3 py-4"><span :class="(product.inventory_stock?.quantity ?? 0) <= (product.inventory_stock?.low_stock_threshold ?? 0) ? 'font-semibold text-red-700' : 'text-neutral-700'">{{ product.inventory_stock?.quantity ?? 0 }}</span></td>
@@ -249,7 +281,7 @@ const submit = (): void => {
                         <div v-else-if="displayMode !== 'list' && props.products.data.length" class="grid gap-4" :class="displayMode === 'grid' ? 'sm:grid-cols-2 xl:grid-cols-3' : 'grid-cols-2 sm:grid-cols-4 xl:grid-cols-5'">
                             <article v-for="product in props.products.data" :key="product.id" class="rounded-lg border border-neutral-100 bg-white p-3 shadow-sm">
                                 <ProductArtwork :name="product.name" :sku="product.sku" :image-path="product.image_path" :size="displayMode === 'grid' ? 'large' : 'compact'" />
-                                <div class="mt-3"><h2 class="font-semibold text-neutral-900">{{ product.name }}</h2><p class="mt-1 font-mono text-xs text-neutral-500">{{ product.sku }}</p><p class="mt-2 font-mono text-sm text-neutral-700">{{ formatPrice(product.price_minor) }}</p><p class="mt-1 text-xs text-neutral-500">{{ product.inventory_stock?.quantity ?? 0 }} in stock</p></div>
+                                <div class="mt-3"><p class="text-xs font-semibold uppercase text-neutral-500">{{ product.category?.name ?? 'Uncategorised' }}</p><h2 class="mt-1 font-semibold text-neutral-900">{{ product.name }}</h2><p class="mt-1 font-mono text-xs text-neutral-500">{{ product.sku }}</p><p class="mt-2 font-mono text-sm text-neutral-700">{{ formatPrice(product.price_minor) }}</p><p class="mt-1 text-xs text-neutral-500">{{ product.inventory_stock?.quantity ?? 0 }} in stock</p></div>
                                 <div class="mt-3 flex gap-2"><button type="button" class="flex-1 rounded-md border border-neutral-200 px-2 py-1.5 text-xs font-semibold text-neutral-700" @click="openEditModal(product)"><Edit3 :size="14" class="mx-auto" aria-hidden="true" /></button><button type="button" class="rounded-md border border-red-200 px-2 py-1.5 text-red-700" @click="deleteProduct(product)"><Trash2 :size="14" aria-hidden="true" /></button></div>
                             </article>
                         </div>

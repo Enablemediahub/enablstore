@@ -4,6 +4,7 @@ namespace Tests\Feature\Auth;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -37,6 +38,29 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_tenant_admin_login_opens_the_tenant_dashboard(): void
+    {
+        DB::table('tenants')->insert([
+            'id' => 'royal',
+            'name' => 'Royal Supermarket',
+            'slug' => 'royal',
+            'email' => 'royal@example.test',
+            'status' => 'active',
+            'data' => json_encode(['name' => 'Royal Supermarket', 'slug' => 'royal']),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        $admin = User::factory()->create([
+            'tenant_id' => 'royal',
+            'role' => 'admin',
+        ]);
+
+        $this->post('/login', [
+            'email' => $admin->email,
+            'password' => 'password',
+        ])->assertRedirect('/royal/dashboard');
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void

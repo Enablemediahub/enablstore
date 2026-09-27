@@ -26,6 +26,13 @@ class PosController extends Controller
 
             return Inertia::render('Tenant/Pos/Unlock', [
                 'tenant' => (string) tenant()->getTenantKey(),
+                'subscriberCode' => (string) tenant()->subscriber_code,
+                'usernameHint' => (string) (User::query()
+                    ->where('tenant_id', tenant()->getTenantKey())
+                    ->where('role', 'cashier')
+                    ->whereNotNull('pos_pin_hash')
+                    ->orderBy('id')
+                    ->value('username') ?? tenant()->subscriber_code.'-username'),
                 'workspace' => 'pos',
                 'wallpaperUrl' => ($path = PlatformSetting::value('login_wallpaper'))
                     ? $request->getSchemeAndHttpHost().'/storage/'.ltrim($path, '/')
@@ -73,7 +80,7 @@ class PosController extends Controller
                 'changeMinor' => max(0, $completedSale->payments->sum('cash_received_minor') - $completedSale->payments->where('method', 'cash')->sum('amount_minor')),
             ],
             'products' => Product::query()
-                ->with('inventoryStock')
+                ->with(['inventoryStock', 'category'])
                 ->where('is_active', true)
                 ->where('available_in_pos', true)
                 ->orderBy('name')

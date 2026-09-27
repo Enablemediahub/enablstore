@@ -45,4 +45,16 @@ class PaystackService
             'reference' => (string) $response['reference'],
         ];
     }
+
+    /** @return array<string, mixed> */
+    public function verify(string $reference): array
+    {
+        $data = $this->client()
+            ->get('/transaction/verify/'.rawurlencode($reference))
+            ->throw()
+            ->json('data');
+
+        return is_array($data) ? $data : [];
+    }
+
 }

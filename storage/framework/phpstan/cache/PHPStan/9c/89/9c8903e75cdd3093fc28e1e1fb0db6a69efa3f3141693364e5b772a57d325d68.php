@@ -55,10 +55,34 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
          'typeAliasClassName' => NULL,
          'traitData' => NULL,
       )),
+      'b70e2a6599d5e3b2086f879412e2b598' => 
+      \PHPStan\Analyser\IntermediaryNameScope::__set_state(array(
+         'namespace' => 'App\\Models',
+         'uses' => 
+        array (
+          'model' => 'Illuminate\\Database\\Eloquent\\Model',
+          'hasmany' => 'Illuminate\\Database\\Eloquent\\Relations\\HasMany',
+        ),
+         'className' => 'App\\Models\\Sale',
+         'functionName' => 'payments',
+         'templatePhpDocNodes' => 
+        array (
+        ),
+         'parent' => NULL,
+         'typeAliasesMap' => 
+        array (
+        ),
+         'bypassTypeAliases' => false,
+         'constUses' => 
+        array (
+        ),
+         'typeAliasClassName' => NULL,
+         'traitData' => NULL,
+      )),
     ),
     1 => 
     array (
-      'C:\\xampp\\htdocs\\enablstore\\app\\Models\\Sale.php' => 'e88fc9d7570742420b8e7fabdae8e1289605a46bd0c9871b04dd43248311b503',
+      'C:\\xampp\\htdocs\\enablstore\\app\\Models\\Sale.php' => 'af9188314c8dd0d175d94422fa73159b7b65108980777d60204a519c3c86bbca',
     ),
   ),
 ));

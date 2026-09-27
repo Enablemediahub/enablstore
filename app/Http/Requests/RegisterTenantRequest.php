@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class RegisterTenantRequest extends FormRequest
 {
@@ -24,6 +25,7 @@ class RegisterTenantRequest extends FormRequest
             'email' => ['required', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
             'owner_name' => ['required', 'string', 'max:120'],
+            'plan_id' => ['required', Rule::exists('plans', 'id')->where('is_active', true)],
         ];
     }
 

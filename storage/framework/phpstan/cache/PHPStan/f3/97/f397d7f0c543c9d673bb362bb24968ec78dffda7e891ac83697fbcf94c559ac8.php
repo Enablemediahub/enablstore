@@ -18,6 +18,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
           'request' => 'Illuminate\\Http\\Request',
           'auth' => 'Illuminate\\Support\\Facades\\Auth',
           'route' => 'Illuminate\\Support\\Facades\\Route',
+          'platformsetting' => 'App\\Models\\PlatformSetting',
           'inertia' => 'Inertia\\Inertia',
           'response' => 'Inertia\\Response',
         ),
@@ -48,6 +49,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
           'request' => 'Illuminate\\Http\\Request',
           'auth' => 'Illuminate\\Support\\Facades\\Auth',
           'route' => 'Illuminate\\Support\\Facades\\Route',
+          'platformsetting' => 'App\\Models\\PlatformSetting',
           'inertia' => 'Inertia\\Inertia',
           'response' => 'Inertia\\Response',
         ),
@@ -78,6 +80,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
           'request' => 'Illuminate\\Http\\Request',
           'auth' => 'Illuminate\\Support\\Facades\\Auth',
           'route' => 'Illuminate\\Support\\Facades\\Route',
+          'platformsetting' => 'App\\Models\\PlatformSetting',
           'inertia' => 'Inertia\\Inertia',
           'response' => 'Inertia\\Response',
         ),
@@ -108,6 +111,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
           'request' => 'Illuminate\\Http\\Request',
           'auth' => 'Illuminate\\Support\\Facades\\Auth',
           'route' => 'Illuminate\\Support\\Facades\\Route',
+          'platformsetting' => 'App\\Models\\PlatformSetting',
           'inertia' => 'Inertia\\Inertia',
           'response' => 'Inertia\\Response',
         ),
@@ -130,7 +134,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     1 => 
     array (
-      'C:\\xampp\\htdocs\\enablstore\\app\\Http\\Controllers\\Auth\\AuthenticatedSessionController.php' => 'd95d474990642bcf88536c698f0c9748059c4bccb8ee7f60efc9e0b24879b1fd',
+      'C:\\xampp\\htdocs\\enablstore\\app\\Http\\Controllers\\Auth\\AuthenticatedSessionController.php' => '2267bededf44b04ed693281b3ea5cdcdb66705aa56a492aa00ff346ec320da96',
     ),
   ),
 ));

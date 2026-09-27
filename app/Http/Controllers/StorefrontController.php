@@ -9,40 +9,12 @@ use App\Models\PlatformSetting;
 use App\Models\Product;
 use App\Models\TenantPaystackSetting;
 use App\Models\TenantSetting;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class StorefrontController extends Controller
 {
-    public function manifest(): JsonResponse
-    {
-        $tenant = (string) tenant()->getTenantKey();
-        $logoUrl = PlatformSetting::storefrontLogoUrl(request(), tenant());
-        $logoType = str_ends_with(strtolower((string) parse_url($logoUrl, PHP_URL_PATH)), '.svg')
-            ? 'image/svg+xml'
-            : 'image/png';
-
-        return response()->json([
-            'name' => tenant()->name.' Online Store',
-            'short_name' => tenant()->name,
-            'description' => 'Shop online at '.tenant()->name,
-            'start_url' => route('tenant.home', ['tenant' => $tenant]),
-            'scope' => url('/onlinestore/'.$tenant.'/'),
-            'display' => 'standalone',
-            'background_color' => '#f6f3ef',
-            'theme_color' => '#e21b23',
-            'icons' => [
-                [
-                    'src' => $logoUrl,
-                    'sizes' => $logoType === 'image/svg+xml' ? 'any' : '512x512',
-                    'type' => $logoType,
-                ],
-            ],
-        ])->header('Cache-Control', 'no-store');
-    }
-
     public function index(Request $request): Response
     {
         $catalogueMode = TenantSetting::query()->where('key', 'catalogue_mode')->value('value')

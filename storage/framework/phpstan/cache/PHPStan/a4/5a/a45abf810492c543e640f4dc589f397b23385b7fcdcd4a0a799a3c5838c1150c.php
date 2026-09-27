@@ -2,7 +2,7 @@
 
 // odsl-C:\xampp\htdocs\enablstore\app\Models\Subscription.php-PHPStan\BetterReflection\Reflection\ReflectionClass-App\Models\Subscription
 return \PHPStan\Cache\CacheItem::__set_state(array(
-   'variableKey' => 'v2-6.70.0.6-8.2.12-d36d1bb9ca1d0f76ce42a2a53f70a3cc7a5c38a284e070ee969dc0b1298b1d66',
+   'variableKey' => 'v2-6.70.0.6-8.2.12-d67123d863097e57c8d04a5ca8c3ee5f205c978d5ac4f25bdac9518508d76232',
    'data' => 
   array (
     'locatedSource' => 
@@ -57,9 +57,9 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
             'startLine' => 12,
             'endLine' => 23,
             'startTokenPos' => 41,
-            'startFilePos' => 223,
+            'startFilePos' => 212,
             'endTokenPos' => 73,
-            'endFilePos' => 454,
+            'endFilePos' => 432,
           ),
         ),
         'docComment' => NULL,
@@ -92,9 +92,9 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
             'startLine' => 25,
             'endLine' => 31,
             'startTokenPos' => 82,
-            'startFilePos' => 483,
+            'startFilePos' => 459,
             'endTokenPos' => 119,
-            'endFilePos' => 668,
+            'endFilePos' => 638,
           ),
         ),
         'docComment' => NULL,

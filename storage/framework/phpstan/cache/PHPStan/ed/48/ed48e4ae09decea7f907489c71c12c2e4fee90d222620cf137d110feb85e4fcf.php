@@ -13,6 +13,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
          'uses' => 
         array (
           'hasmany' => 'Illuminate\\Database\\Eloquent\\Relations\\HasMany',
+          'user' => 'App\\Models\\User',
           'tenantwithdatabase' => 'Stancl\\Tenancy\\Contracts\\TenantWithDatabase',
           'hasdatabase' => 'Stancl\\Tenancy\\Database\\Concerns\\HasDatabase',
           'basetenant' => 'Stancl\\Tenancy\\Database\\Models\\Tenant',
@@ -101,6 +102,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
          'uses' => 
         array (
           'hasmany' => 'Illuminate\\Database\\Eloquent\\Relations\\HasMany',
+          'user' => 'App\\Models\\User',
           'tenantwithdatabase' => 'Stancl\\Tenancy\\Contracts\\TenantWithDatabase',
           'hasdatabase' => 'Stancl\\Tenancy\\Database\\Concerns\\HasDatabase',
           'basetenant' => 'Stancl\\Tenancy\\Database\\Models\\Tenant',
@@ -121,12 +123,40 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
          'typeAliasClassName' => NULL,
          'traitData' => NULL,
       )),
+      '5fc535b5c1556e9394f1eae936861e3b' => 
+      \PHPStan\Analyser\IntermediaryNameScope::__set_state(array(
+         'namespace' => 'App\\Models',
+         'uses' => 
+        array (
+          'hasmany' => 'Illuminate\\Database\\Eloquent\\Relations\\HasMany',
+          'user' => 'App\\Models\\User',
+          'tenantwithdatabase' => 'Stancl\\Tenancy\\Contracts\\TenantWithDatabase',
+          'hasdatabase' => 'Stancl\\Tenancy\\Database\\Concerns\\HasDatabase',
+          'basetenant' => 'Stancl\\Tenancy\\Database\\Models\\Tenant',
+        ),
+         'className' => 'App\\Models\\Tenant',
+         'functionName' => 'users',
+         'templatePhpDocNodes' => 
+        array (
+        ),
+         'parent' => NULL,
+         'typeAliasesMap' => 
+        array (
+        ),
+         'bypassTypeAliases' => false,
+         'constUses' => 
+        array (
+        ),
+         'typeAliasClassName' => NULL,
+         'traitData' => NULL,
+      )),
       'f9fac49ea23c5a792a348c5264634069' => 
       \PHPStan\Analyser\IntermediaryNameScope::__set_state(array(
          'namespace' => 'App\\Models',
          'uses' => 
         array (
           'hasmany' => 'Illuminate\\Database\\Eloquent\\Relations\\HasMany',
+          'user' => 'App\\Models\\User',
           'tenantwithdatabase' => 'Stancl\\Tenancy\\Contracts\\TenantWithDatabase',
           'hasdatabase' => 'Stancl\\Tenancy\\Database\\Concerns\\HasDatabase',
           'basetenant' => 'Stancl\\Tenancy\\Database\\Models\\Tenant',
@@ -150,7 +180,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     ),
     1 => 
     array (
-      'C:\\xampp\\htdocs\\enablstore\\app\\Models\\Tenant.php' => 'b1656beeae5bebd97abefc2245c81713f7482765f7470ad0c893df7dd4ecf076',
+      'C:\\xampp\\htdocs\\enablstore\\app\\Models\\Tenant.php' => '807889cb45f9df25a208d6e26b1c4809ac1991d40bf4b58edf3083e002b48567',
       'C:\\xampp\\htdocs\\enablstore\\vendor\\composer\\..\\stancl\\tenancy\\src\\Database\\Concerns\\HasDatabase.php' => '9c54bd81deda8d222bf37d481fb243f8db77c734065f8d03c057a15dead49455',
     ),
   ),

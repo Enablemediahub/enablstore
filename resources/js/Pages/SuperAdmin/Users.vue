@@ -16,7 +16,7 @@ type User = {
 };
 const props = defineProps<{
     users: { data: User[] };
-    plans: Array<{ id: number; name: string }>;
+    plans: Array<{ id: number; name: string; price_minor: number; currency: string; billing_interval_months: number }>;
 }>();
 const form = useForm({
     name: '',
@@ -26,6 +26,8 @@ const form = useForm({
     business_name: '',
     plan_id: props.plans[0]?.id ?? '',
 });
+const billingLabel = (months: number): string => ({ 1: 'monthly', 3: 'quarterly', 6: 'every 6 months', 12: 'yearly' })[months] ?? `every ${months} months`;
+const formatPrice = (minor: number, currency: string): string => new Intl.NumberFormat('en-GH', { style: 'currency', currency }).format(minor / 100);
 const editingId = ref<number | null>(null);
 const editingForm = useForm({
     name: '',
@@ -133,7 +135,7 @@ const deleteUser = (user: User): void => {
                                     :key="plan.id"
                                     :value="plan.id"
                                 >
-                                    {{ plan.name }}
+                                    {{ plan.name }} · {{ formatPrice(plan.price_minor, plan.currency) }} / {{ billingLabel(plan.billing_interval_months) }}
                                 </option>
                             </select></label
                         ><button

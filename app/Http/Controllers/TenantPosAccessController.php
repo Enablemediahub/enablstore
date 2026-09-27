@@ -36,9 +36,11 @@ class TenantPosAccessController extends Controller
 
         $destination = $request->session()->pull('workspace_destination', 'pos');
 
-        return $destination === 'store'
-            ? redirect()->route('tenant.home', ['tenant' => tenant()->getTenantKey()])
-            : redirect()->route('tenant.pos', ['tenant' => tenant()->getTenantKey()]);
+        return match ($destination) {
+            'store' => redirect()->route('tenant.home', ['tenant' => tenant()->getTenantKey()]),
+            'foodstore' => redirect()->route('tenant.foodstore.index', ['tenant' => tenant()->getTenantKey()]),
+            default => redirect()->route('tenant.pos', ['tenant' => tenant()->getTenantKey()]),
+        };
     }
 
     public function logout(Request $request): RedirectResponse

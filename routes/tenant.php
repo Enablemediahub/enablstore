@@ -15,6 +15,9 @@ use App\Http\Controllers\TenantAuditController;
 use App\Http\Controllers\TenantTeamController;
 use App\Http\Controllers\TenantPosAccessController;
 use App\Http\Controllers\TenantPaymentController;
+use App\Http\Controllers\TenantSubscriptionController;
+use App\Http\Controllers\RestaurantFoodStoreController;
+use App\Http\Controllers\WorkspaceDashboardController;
 use App\Http\Middleware\EnsureTenantAdmin;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Middleware\InitializeTenancyByPath;
@@ -35,12 +38,42 @@ Route::middleware([
     'web',
     InitializeTenancyByPath::class,
 ])->group(function () {
+    Route::get('/billing/{tenant}/suspended', [TenantSubscriptionController::class, 'suspended'])
+        ->name('tenant.subscription.suspended');
+    Route::post('/billing/{tenant}/checkout', [TenantSubscriptionController::class, 'checkout'])
+        ->name('tenant.subscription.checkout');
+    Route::get('/billing/{tenant}/callback', [TenantSubscriptionController::class, 'callback'])
+        ->name('tenant.subscription.callback');
+    Route::get('/{tenant}/dashboard', [WorkspaceDashboardController::class, 'tenantDashboard'])
+        ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
+        ->name('tenant.dashboard');
+    Route::get('/foodstore/{tenant}', [RestaurantFoodStoreController::class, 'index'])
+        ->name('tenant.foodstore.index');
+    Route::get('/foodstore/{tenant}/menu', [RestaurantFoodStoreController::class, 'menu'])
+        ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class, 'feature:restaurant_foodstore'])
+        ->name('tenant.foodstore.menu.index');
+    Route::post('/foodstore/{tenant}/menu', [RestaurantFoodStoreController::class, 'storeMenuItem'])
+        ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class, 'feature:restaurant_foodstore'])
+        ->name('tenant.foodstore.menu.store');
+    Route::patch('/foodstore/{tenant}/menu/{menuItem}', [RestaurantFoodStoreController::class, 'updateMenuItem'])
+        ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class, 'feature:restaurant_foodstore'])
+        ->name('tenant.foodstore.menu.update');
+    Route::delete('/foodstore/{tenant}/menu/{menuItem}', [RestaurantFoodStoreController::class, 'destroyMenuItem'])
+        ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class, 'feature:restaurant_foodstore'])
+        ->name('tenant.foodstore.menu.destroy');
+    Route::post('/foodstore/{tenant}/sales', [RestaurantFoodStoreController::class, 'storeSale'])
+        ->middleware(['feature:restaurant_foodstore', \App\Http\Middleware\EnsureFoodStoreAccess::class])
+        ->name('tenant.foodstore.sales.store');
+    Route::post('/foodstore/{tenant}/orders', [RestaurantFoodStoreController::class, 'storeOrder'])
+        ->middleware(['feature:restaurant_foodstore', \App\Http\Middleware\EnsureFoodStoreAccess::class])
+        ->name('tenant.foodstore.orders.store');
+    Route::patch('/foodstore/{tenant}/orders/{order}/status', [RestaurantFoodStoreController::class, 'updateOrderStatus'])
+        ->middleware(['feature:restaurant_foodstore', \App\Http\Middleware\EnsureFoodStoreAccess::class])
+        ->name('tenant.foodstore.orders.status');
+
     Route::get('/onlinestore/{tenant}', [StorefrontController::class, 'index'])
         ->middleware(['feature:online_store'])
         ->name('tenant.home');
-    Route::get('/onlinestore/{tenant}/manifest.json', [StorefrontController::class, 'manifest'])
-        ->middleware(['feature:online_store'])
-        ->name('tenant.storefront.manifest');
     Route::post('/onlinestore/{tenant}/checkout', [TenantPaymentController::class, 'storefrontCheckout'])
         ->middleware(['feature:online_store'])
         ->name('tenant.storefront.checkout');
@@ -55,10 +88,10 @@ Route::middleware([
         ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
         ->name('tenant.products.index');
     Route::get('/client/{tenant}/categories', [TenantCategoryController::class, 'index'])
-        ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
+        ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class, 'feature:pos,restaurant_foodstore'])
         ->name('tenant.categories.index');
     Route::post('/client/{tenant}/categories', [TenantCategoryController::class, 'store'])
-        ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
+        ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class, 'feature:pos,restaurant_foodstore'])
         ->name('tenant.categories.store');
     Route::get('/client/{tenant}/settings', [TenantSettingsController::class, 'index'])
         ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])

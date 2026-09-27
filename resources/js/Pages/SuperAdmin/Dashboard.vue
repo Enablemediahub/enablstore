@@ -2,7 +2,7 @@
 import EnBadge from '@/Components/EnBadge.vue';
 import EnCard from '@/Components/EnCard.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
-import { ArrowRight, Image, Settings, ShoppingCart, Store, ShieldCheck, Trash2, Users } from '@lucide/vue';
+import { ArrowRight, Image, Plus, Settings, ShoppingCart, Store, ShieldCheck, Trash2, Users } from '@lucide/vue';
 import SuperAdminSidePanel from '@/Components/SuperAdminSidePanel.vue';
 
 const props = defineProps<{
@@ -132,10 +132,11 @@ const formatGhs = (minor: number): string =>
                     </div>
                     <p class="text-sm text-neutral-500">Choose a control area below.</p>
                 </div>
-                <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+                <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
                     <a href="#branding" class="group flex items-center gap-3 border border-neutral-200 px-4 py-3 text-left text-sm font-bold hover:border-[#e21b23] hover:text-[#e21b23]"><Image :size="19" aria-hidden="true" /><span>Branding settings</span><ArrowRight :size="16" class="ml-auto transition group-hover:translate-x-1" aria-hidden="true" /></a>
                     <Link :href="route('super-admin.tenants.index', { feature: 'online_store' })" class="group flex items-center gap-3 border border-neutral-200 px-4 py-3 text-left text-sm font-bold hover:border-[#e21b23] hover:text-[#e21b23]"><Store :size="19" aria-hidden="true" /><span>Online Store access</span><ArrowRight :size="16" class="ml-auto transition group-hover:translate-x-1" aria-hidden="true" /></Link>
                     <Link :href="route('super-admin.tenants.index', { feature: 'pos' })" class="group flex items-center gap-3 border border-neutral-200 px-4 py-3 text-left text-sm font-bold hover:border-[#e21b23] hover:text-[#e21b23]"><ShoppingCart :size="19" aria-hidden="true" /><span>POS access</span><ArrowRight :size="16" class="ml-auto transition group-hover:translate-x-1" aria-hidden="true" /></Link>
+                    <Link :href="route('super-admin.tenants.index', { feature: 'restaurant_foodstore' })" class="group flex items-center gap-3 border border-neutral-200 px-4 py-3 text-left text-sm font-bold hover:border-[#e21b23] hover:text-[#e21b23]"><Store :size="19" aria-hidden="true" /><span>FoodStore access</span><ArrowRight :size="16" class="ml-auto transition group-hover:translate-x-1" aria-hidden="true" /></Link>
                     <Link :href="route('super-admin.tenants.index')" class="group flex items-center gap-3 border border-neutral-200 px-4 py-3 text-left text-sm font-bold hover:border-[#e21b23] hover:text-[#e21b23]"><Users :size="19" aria-hidden="true" /><span>Subscribers & team</span><ArrowRight :size="16" class="ml-auto transition group-hover:translate-x-1" aria-hidden="true" /></Link>
                     <Link :href="route('super-admin.accounts.index')" class="group flex items-center gap-3 border border-neutral-200 px-4 py-3 text-left text-sm font-bold hover:border-[#e21b23] hover:text-[#e21b23]"><ShieldCheck :size="19" aria-hidden="true" /><span>Manage admins</span><ArrowRight :size="16" class="ml-auto transition group-hover:translate-x-1" aria-hidden="true" /></Link>
                 </div>
@@ -143,7 +144,7 @@ const formatGhs = (minor: number): string =>
             <EnCard id="tenants">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div><p class="text-primary-700 text-sm font-semibold">Workspace administration</p><h2 class="mt-1 text-lg font-semibold text-neutral-900">Enrolled tenants</h2></div>
-                    <Link :href="route('super-admin.tenants.index')" class="text-sm font-semibold text-[#e21b23] hover:text-[#b9151b]">Open tenant directory</Link>
+                    <div class="flex items-center gap-4"><Link :href="route('super-admin.tenants.index', { enrol: 1 })" class="inline-flex min-h-10 items-center gap-2 rounded-md bg-[#e21b23] px-4 text-sm font-bold text-white hover:bg-[#b9151b]"><Plus :size="17" aria-hidden="true" /> Add subscriber</Link><Link :href="route('super-admin.tenants.index')" class="text-sm font-semibold text-[#e21b23] hover:text-[#b9151b]">Open tenant directory</Link></div>
                 </div>
                 <div class="mt-5 overflow-x-auto"><table class="w-full text-left text-sm"><thead class="border-b border-neutral-100 text-xs text-neutral-500 uppercase"><tr><th class="px-3 py-3">Store</th><th class="px-3 py-3">Email</th><th class="px-3 py-3">Subscription</th><th class="px-3 py-3">Status</th><th class="px-3 py-3"><span class="sr-only">Manage</span></th></tr></thead><tbody><tr v-for="tenant in tenants.data" :key="tenant.id" class="border-b border-neutral-100 last:border-0"><td class="px-3 py-4 font-semibold">{{ tenant.name }}</td><td class="px-3 py-4">{{ tenant.email }}</td><td class="px-3 py-4"><p class="font-medium text-neutral-800">{{ tenant.subscription_plan ?? 'Not enrolled' }}</p><p v-if="tenant.subscription_status" class="mt-0.5 text-xs text-neutral-500">{{ tenant.subscription_status }}</p></td><td class="px-3 py-4"><EnBadge>{{ tenant.status }}</EnBadge></td><td class="px-3 py-4 text-right"><Link :href="route('super-admin.tenants.show', { tenant: tenant.id })" class="inline-flex items-center gap-2 font-semibold text-[#e21b23] hover:text-[#b9151b]"><Settings :size="16" aria-hidden="true" /> Manage</Link></td></tr></tbody></table></div>
             </EnCard>

@@ -45,10 +45,12 @@ class TenantAnalyticsController extends Controller
             'dailySales' => (clone $sales)->selectRaw('DATE(completed_at) as date, COUNT(*) as sales_count, COALESCE(SUM(total_minor), 0) as revenue_minor')->groupBy('date')->orderBy('date')->get(),
             'paymentMethods' => (clone $sales)->selectRaw('payment_method, COUNT(*) as sales_count, COALESCE(SUM(total_minor), 0) as revenue_minor')->groupBy('payment_method')->orderByDesc('revenue_minor')->get(),
             'topProducts' => SaleItem::query()
-                ->select('product_id', DB::raw('SUM(quantity) as quantity'), DB::raw('SUM(line_total_minor) as revenue_minor'))
+                ->selectRaw('COALESCE(sale_items.item_name, products.name, restaurant_menu_items.name, ?) as item_name', ['Archived product'])
+                ->selectRaw('SUM(sale_items.quantity) as quantity, SUM(sale_items.line_total_minor) as revenue_minor')
+                ->leftJoin('products', 'sale_items.product_id', '=', 'products.id')
+                ->leftJoin('restaurant_menu_items', 'sale_items.restaurant_menu_item_id', '=', 'restaurant_menu_items.id')
                 ->whereIn('sale_id', $saleIds)
-                ->with('product:id,name')
-                ->groupBy('product_id')
+                ->groupBy('sale_items.product_id', 'sale_items.restaurant_menu_item_id', 'sale_items.item_name', 'products.name', 'restaurant_menu_items.name')
                 ->orderByDesc('revenue_minor')
                 ->limit(8)
                 ->get(),

@@ -1,0 +1,31 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+class RestaurantOrder extends Model
+{
+    protected $fillable = [
+        'table_label',
+        'customer_name',
+        'notes',
+        'status',
+        'total_minor',
+        'created_by_name',
+    ];
+
+    protected function casts(): array
+    {
+        return ['total_minor' => 'integer'];
+    }
+
+    /** @return HasMany<RestaurantOrderItem, $this> */
+    public function items(): HasMany
+    {
+        return $this->hasMany(RestaurantOrderItem::class, 'restaurant_order_id');
+    }
+}

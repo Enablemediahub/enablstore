@@ -34,14 +34,16 @@ class TenantRegistrationService
                 ],
             ]);
 
-            $plan = Plan::query()->where('slug', 'starter')->where('is_active', true)->firstOrFail();
+            $plan = Plan::query()->where('is_active', true)->findOrFail((int) $request->input('plan_id'));
 
             $subscription = $tenant->subscriptions()->create([
                 'plan_id' => $plan->id,
+                'amount_minor' => $plan->price_minor,
                 'provider' => 'internal',
                 'status' => 'trialing',
                 'starts_at' => now(),
                 'renews_at' => now()->addDays(14),
+                'metadata' => ['trial_billing_interval_months' => $plan->billing_interval_months],
             ]);
 
             return compact('tenant', 'subscription');

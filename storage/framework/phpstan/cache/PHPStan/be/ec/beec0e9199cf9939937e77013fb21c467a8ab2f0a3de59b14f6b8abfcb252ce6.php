@@ -2,7 +2,7 @@
 
 // odsl-C:\xampp\htdocs\enablstore\app\Models\Tenant.php-PHPStan\BetterReflection\Reflection\ReflectionClass-App\Models\Tenant
 return \PHPStan\Cache\CacheItem::__set_state(array(
-   'variableKey' => 'v2-6.70.0.6-8.2.12-b1656beeae5bebd97abefc2245c81713f7482765f7470ad0c893df7dd4ecf076',
+   'variableKey' => 'v2-6.70.0.6-8.2.12-807889cb45f9df25a208d6e26b1c4809ac1991d40bf4b58edf3083e002b48567',
    'data' => 
   array (
     'locatedSource' => 
@@ -26,8 +26,8 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     'attributes' => 
     array (
     ),
-    'startLine' => 12,
-    'endLine' => 45,
+    'startLine' => 13,
+    'endLine' => 55,
     'startColumn' => 1,
     'endColumn' => 1,
     'parentClassName' => 'Stancl\\Tenancy\\Database\\Models\\Tenant',
@@ -53,23 +53,23 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         'type' => NULL,
         'default' => 
         array (
-          'code' => '[\'id\', \'name\', \'slug\', \'email\', \'phone\', \'status\', \'data\']',
+          'code' => '[\'id\', \'subscriber_code\', \'name\', \'slug\', \'email\', \'phone\', \'status\', \'data\']',
           'attributes' => 
           array (
-            'startLine' => 16,
-            'endLine' => 24,
-            'startTokenPos' => 64,
-            'startFilePos' => 377,
-            'endTokenPos' => 87,
-            'endFilePos' => 497,
+            'startLine' => 17,
+            'endLine' => 26,
+            'startTokenPos' => 69,
+            'startFilePos' => 398,
+            'endTokenPos' => 95,
+            'endFilePos' => 545,
           ),
         ),
         'docComment' => NULL,
         'attributes' => 
         array (
         ),
-        'startLine' => 16,
-        'endLine' => 24,
+        'startLine' => 17,
+        'endLine' => 26,
         'startColumn' => 5,
         'endColumn' => 6,
         'isPromoted' => false,
@@ -91,20 +91,20 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
           'code' => '[\'data\' => \'array\']',
           'attributes' => 
           array (
-            'startLine' => 26,
-            'endLine' => 28,
-            'startTokenPos' => 96,
-            'startFilePos' => 524,
-            'endTokenPos' => 105,
-            'endFilePos' => 557,
+            'startLine' => 28,
+            'endLine' => 30,
+            'startTokenPos' => 104,
+            'startFilePos' => 572,
+            'endTokenPos' => 113,
+            'endFilePos' => 605,
           ),
         ),
         'docComment' => NULL,
         'attributes' => 
         array (
         ),
-        'startLine' => 26,
-        'endLine' => 28,
+        'startLine' => 28,
+        'endLine' => 30,
         'startColumn' => 5,
         'endColumn' => 6,
         'isPromoted' => false,
@@ -139,8 +139,45 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         'docComment' => '/**
  * @return HasMany<Subscription, $this>
  */',
-        'startLine' => 33,
-        'endLine' => 36,
+        'startLine' => 35,
+        'endLine' => 38,
+        'startColumn' => 5,
+        'endColumn' => 5,
+        'couldThrow' => false,
+        'isClosure' => false,
+        'isGenerator' => false,
+        'isVariadic' => false,
+        'modifiers' => 1,
+        'namespace' => 'App\\Models',
+        'declaringClassName' => 'App\\Models\\Tenant',
+        'implementingClassName' => 'App\\Models\\Tenant',
+        'currentClassName' => 'App\\Models\\Tenant',
+        'aliasName' => NULL,
+      ),
+      'users' => 
+      array (
+        'name' => 'users',
+        'parameters' => 
+        array (
+        ),
+        'returnsReference' => false,
+        'returnType' => 
+        array (
+          'class' => 'PHPStan\\BetterReflection\\Reflection\\ReflectionNamedType',
+          'data' => 
+          array (
+            'name' => 'Illuminate\\Database\\Eloquent\\Relations\\HasMany',
+            'isIdentifier' => false,
+          ),
+        ),
+        'attributes' => 
+        array (
+        ),
+        'docComment' => '/**
+ * @return HasMany<User, $this>
+ */',
+        'startLine' => 43,
+        'endLine' => 46,
         'startColumn' => 5,
         'endColumn' => 5,
         'couldThrow' => false,
@@ -176,8 +213,8 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         'docComment' => '/**
  * @return HasMany<Payment, $this>
  */',
-        'startLine' => 41,
-        'endLine' => 44,
+        'startLine' => 51,
+        'endLine' => 54,
         'startColumn' => 5,
         'endColumn' => 5,
         'couldThrow' => false,

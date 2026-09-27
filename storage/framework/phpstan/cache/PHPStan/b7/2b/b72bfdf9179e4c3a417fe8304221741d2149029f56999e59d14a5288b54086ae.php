@@ -2,7 +2,7 @@
 
 // odsl-C:\xampp\htdocs\enablstore\app\Models\Product.php-PHPStan\BetterReflection\Reflection\ReflectionClass-App\Models\Product
 return \PHPStan\Cache\CacheItem::__set_state(array(
-   'variableKey' => 'v2-6.70.0.6-8.2.12-11464f72a5394bfa9dcfa4aeabd40bac707c776b77d707f7fc6198cd43c2da3c',
+   'variableKey' => 'v2-6.70.0.6-8.2.12-739c8d9a5bded0ae2bc156a10a8653c5d2c0e2c53805dbe8c687d83f28ee7b79',
    'data' => 
   array (
     'locatedSource' => 
@@ -26,8 +26,8 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     'attributes' => 
     array (
     ),
-    'startLine' => 11,
-    'endLine' => 48,
+    'startLine' => 12,
+    'endLine' => 70,
     'startColumn' => 1,
     'endColumn' => 1,
     'parentClassName' => 'Illuminate\\Database\\Eloquent\\Model',
@@ -51,23 +51,23 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         'type' => NULL,
         'default' => 
         array (
-          'code' => '[\'category_id\', \'name\', \'slug\', \'sku\', \'barcode\', \'price_minor\', \'cost_minor\', \'currency\', \'description\', \'image_path\', \'is_active\']',
+          'code' => '[\'category_id\', \'name\', \'slug\', \'sku\', \'barcode\', \'price_minor\', \'compare_at_price_minor\', \'cost_minor\', \'purchase_unit\', \'units_per_purchase\', \'currency\', \'description\', \'image_path\', \'image_gallery\', \'is_active\', \'available_in_pos\', \'available_online\', \'is_online_deal\']',
           'attributes' => 
           array (
-            'startLine' => 13,
-            'endLine' => 25,
-            'startTokenPos' => 46,
-            'startFilePos' => 258,
-            'endTokenPos' => 81,
-            'endFilePos' => 484,
+            'startLine' => 14,
+            'endLine' => 33,
+            'startTokenPos' => 51,
+            'startFilePos' => 310,
+            'endTokenPos' => 107,
+            'endFilePos' => 732,
           ),
         ),
         'docComment' => NULL,
         'attributes' => 
         array (
         ),
-        'startLine' => 13,
-        'endLine' => 25,
+        'startLine' => 14,
+        'endLine' => 33,
         'startColumn' => 5,
         'endColumn' => 6,
         'isPromoted' => false,
@@ -86,23 +86,23 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         'type' => NULL,
         'default' => 
         array (
-          'code' => '[\'price_minor\' => \'integer\', \'cost_minor\' => \'integer\', \'is_active\' => \'boolean\']',
+          'code' => '[\'price_minor\' => \'integer\', \'compare_at_price_minor\' => \'integer\', \'cost_minor\' => \'integer\', \'units_per_purchase\' => \'integer\', \'is_active\' => \'boolean\', \'available_in_pos\' => \'boolean\', \'available_online\' => \'boolean\', \'is_online_deal\' => \'boolean\', \'image_gallery\' => \'array\']',
           'attributes' => 
           array (
-            'startLine' => 27,
-            'endLine' => 31,
-            'startTokenPos' => 90,
-            'startFilePos' => 511,
-            'endTokenPos' => 113,
-            'endFilePos' => 622,
+            'startLine' => 35,
+            'endLine' => 45,
+            'startTokenPos' => 116,
+            'startFilePos' => 759,
+            'endTokenPos' => 181,
+            'endFilePos' => 1117,
           ),
         ),
         'docComment' => NULL,
         'attributes' => 
         array (
         ),
-        'startLine' => 27,
-        'endLine' => 31,
+        'startLine' => 35,
+        'endLine' => 45,
         'startColumn' => 5,
         'endColumn' => 6,
         'isPromoted' => false,
@@ -137,8 +137,8 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         'docComment' => '/**
  * @return BelongsTo<Category, $this>
  */',
-        'startLine' => 36,
-        'endLine' => 39,
+        'startLine' => 50,
+        'endLine' => 53,
         'startColumn' => 5,
         'endColumn' => 5,
         'couldThrow' => false,
@@ -174,8 +174,45 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         'docComment' => '/**
  * @return HasOne<InventoryStock, $this>
  */',
-        'startLine' => 44,
-        'endLine' => 47,
+        'startLine' => 58,
+        'endLine' => 61,
+        'startColumn' => 5,
+        'endColumn' => 5,
+        'couldThrow' => false,
+        'isClosure' => false,
+        'isGenerator' => false,
+        'isVariadic' => false,
+        'modifiers' => 1,
+        'namespace' => 'App\\Models',
+        'declaringClassName' => 'App\\Models\\Product',
+        'implementingClassName' => 'App\\Models\\Product',
+        'currentClassName' => 'App\\Models\\Product',
+        'aliasName' => NULL,
+      ),
+      'saleItems' => 
+      array (
+        'name' => 'saleItems',
+        'parameters' => 
+        array (
+        ),
+        'returnsReference' => false,
+        'returnType' => 
+        array (
+          'class' => 'PHPStan\\BetterReflection\\Reflection\\ReflectionNamedType',
+          'data' => 
+          array (
+            'name' => 'Illuminate\\Database\\Eloquent\\Relations\\HasMany',
+            'isIdentifier' => false,
+          ),
+        ),
+        'attributes' => 
+        array (
+        ),
+        'docComment' => '/**
+ * @return HasMany<SaleItem, $this>
+ */',
+        'startLine' => 66,
+        'endLine' => 69,
         'startColumn' => 5,
         'endColumn' => 5,
         'couldThrow' => false,

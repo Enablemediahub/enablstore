@@ -2,7 +2,7 @@
 
 // odsl-C:\xampp\htdocs\enablstore\app\Models\Sale.php-PHPStan\BetterReflection\Reflection\ReflectionClass-App\Models\Sale
 return \PHPStan\Cache\CacheItem::__set_state(array(
-   'variableKey' => 'v2-6.70.0.6-8.2.12-e88fc9d7570742420b8e7fabdae8e1289605a46bd0c9871b04dd43248311b503',
+   'variableKey' => 'v2-6.70.0.6-8.2.12-af9188314c8dd0d175d94422fa73159b7b65108980777d60204a519c3c86bbca',
    'data' => 
   array (
     'locatedSource' => 
@@ -27,7 +27,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
     array (
     ),
     'startLine' => 10,
-    'endLine' => 35,
+    'endLine' => 53,
     'startColumn' => 1,
     'endColumn' => 1,
     'parentClassName' => 'Illuminate\\Database\\Eloquent\\Model',
@@ -51,15 +51,15 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         'type' => NULL,
         'default' => 
         array (
-          'code' => '[\'transaction_uuid\', \'subtotal_minor\', \'total_minor\', \'currency\', \'payment_method\', \'status\', \'completed_at\']',
+          'code' => '[\'transaction_uuid\', \'cashier_name\', \'customer_name\', \'customer_phone\', \'customer_email\', \'subtotal_minor\', \'discount_minor\', \'discount_type\', \'discount_reason\', \'total_minor\', \'currency\', \'payment_method\', \'source\', \'delivery_location\', \'status\', \'completed_at\']',
           'attributes' => 
           array (
             'startLine' => 12,
-            'endLine' => 20,
+            'endLine' => 29,
             'startTokenPos' => 41,
             'startFilePos' => 202,
-            'endTokenPos' => 64,
-            'endFilePos' => 373,
+            'endTokenPos' => 91,
+            'endFilePos' => 599,
           ),
         ),
         'docComment' => NULL,
@@ -67,7 +67,7 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         array (
         ),
         'startLine' => 12,
-        'endLine' => 20,
+        'endLine' => 29,
         'startColumn' => 5,
         'endColumn' => 6,
         'isPromoted' => false,
@@ -86,23 +86,23 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         'type' => NULL,
         'default' => 
         array (
-          'code' => '[\'subtotal_minor\' => \'integer\', \'total_minor\' => \'integer\', \'completed_at\' => \'datetime\']',
+          'code' => '[\'subtotal_minor\' => \'integer\', \'discount_minor\' => \'integer\', \'total_minor\' => \'integer\', \'completed_at\' => \'datetime\']',
           'attributes' => 
           array (
-            'startLine' => 22,
-            'endLine' => 26,
-            'startTokenPos' => 73,
-            'startFilePos' => 400,
-            'endTokenPos' => 96,
-            'endFilePos' => 519,
+            'startLine' => 31,
+            'endLine' => 36,
+            'startTokenPos' => 100,
+            'startFilePos' => 626,
+            'endTokenPos' => 130,
+            'endFilePos' => 784,
           ),
         ),
         'docComment' => NULL,
         'attributes' => 
         array (
         ),
-        'startLine' => 22,
-        'endLine' => 26,
+        'startLine' => 31,
+        'endLine' => 36,
         'startColumn' => 5,
         'endColumn' => 6,
         'isPromoted' => false,
@@ -137,8 +137,45 @@ return \PHPStan\Cache\CacheItem::__set_state(array(
         'docComment' => '/**
  * @return HasMany<SaleItem, $this>
  */',
-        'startLine' => 31,
-        'endLine' => 34,
+        'startLine' => 41,
+        'endLine' => 44,
+        'startColumn' => 5,
+        'endColumn' => 5,
+        'couldThrow' => false,
+        'isClosure' => false,
+        'isGenerator' => false,
+        'isVariadic' => false,
+        'modifiers' => 1,
+        'namespace' => 'App\\Models',
+        'declaringClassName' => 'App\\Models\\Sale',
+        'implementingClassName' => 'App\\Models\\Sale',
+        'currentClassName' => 'App\\Models\\Sale',
+        'aliasName' => NULL,
+      ),
+      'payments' => 
+      array (
+        'name' => 'payments',
+        'parameters' => 
+        array (
+        ),
+        'returnsReference' => false,
+        'returnType' => 
+        array (
+          'class' => 'PHPStan\\BetterReflection\\Reflection\\ReflectionNamedType',
+          'data' => 
+          array (
+            'name' => 'Illuminate\\Database\\Eloquent\\Relations\\HasMany',
+            'isIdentifier' => false,
+          ),
+        ),
+        'attributes' => 
+        array (
+        ),
+        'docComment' => '/**
+ * @return HasMany<SalePayment, $this>
+ */',
+        'startLine' => 49,
+        'endLine' => 52,
         'startColumn' => 5,
         'endColumn' => 5,
         'couldThrow' => false,

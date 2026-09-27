@@ -12,6 +12,7 @@ class Subscription extends Model
     protected $fillable = [
         'tenant_id',
         'plan_id',
+        'amount_minor',
         'provider',
         'provider_reference',
         'status',
@@ -24,6 +25,7 @@ class Subscription extends Model
 
     protected $casts = [
         'metadata' => 'array',
+        'amount_minor' => 'integer',
         'starts_at' => 'datetime',
         'renews_at' => 'datetime',
         'ends_at' => 'datetime',
@@ -44,5 +46,10 @@ class Subscription extends Model
     public function plan(): BelongsTo
     {
         return $this->belongsTo(Plan::class);
+    }
+
+    public function getConnectionName(): ?string
+    {
+        return config('tenancy.database.central_connection', config('database.default'));
     }
 }
