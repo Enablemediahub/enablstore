@@ -3,17 +3,19 @@ import { BarChart3, ClipboardList, FileText, LayoutDashboard, LogOut, Package, S
 import { Link, useForm } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
-type PanelContext = 'workspace' | 'storefront' | 'pos' | 'foodstore' | 'food-menu' | 'products' | 'categories' | 'settings' | 'analytics' | 'suppliers' | 'reports' | 'audit' | 'team';
+type PanelContext = 'workspace' | 'storefront' | 'pos' | 'foodstore' | 'foodstore-online' | 'food-menu' | 'products' | 'categories' | 'settings' | 'analytics' | 'suppliers' | 'reports' | 'audit' | 'team';
 
 const props = withDefaults(
     defineProps<{
         tenant: string;
         mobileOpen?: boolean;
         current?: PanelContext;
+        overlayMode?: boolean;
     }>(),
     {
         mobileOpen: false,
         current: 'products',
+        overlayMode: false,
     },
 );
 
@@ -34,7 +36,8 @@ const groups = computed(() => [
             { label: 'Admin dashboard', href: route('tenant.dashboard', { tenant: props.tenant }), icon: LayoutDashboard, active: props.current === 'workspace' },
             { label: 'Storefront', href: route('tenant.home', { tenant: props.tenant }), icon: Store, active: props.current === 'storefront' },
             { label: 'Point of sale', href: route('tenant.pos', { tenant: props.tenant }), icon: ShoppingCart, active: props.current === 'pos' },
-            { label: 'FoodStore', href: route('tenant.foodstore.index', { tenant: props.tenant }), icon: Utensils, active: props.current === 'foodstore' },
+            { label: 'FoodStore POS', href: route('tenant.foodstore.index', { tenant: props.tenant }), icon: Utensils, active: props.current === 'foodstore' },
+            { label: 'FoodStore Online', href: route('tenant.foodstore.online', { tenant: props.tenant }), icon: Utensils, active: props.current === 'foodstore-online' },
         ],
     },
     {
@@ -65,7 +68,7 @@ const groups = computed(() => [
 </script>
 
 <template>
-    <form class="fixed top-4 right-4 z-30" @submit.prevent="logout">
+    <form v-if="!overlayMode && !mobileOpen" class="fixed top-4 right-4 z-30" @submit.prevent="logout">
         <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm transition" :class="isFoodStoreTheme ? 'hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800' : 'hover:border-red-300 hover:bg-red-50 hover:text-red-700'" :disabled="logoutForm.processing">
             <LogOut :size="18" aria-hidden="true" />
             <span>Log out</span>
@@ -73,14 +76,18 @@ const groups = computed(() => [
     </form>
     <div
         v-if="mobileOpen"
-        class="fixed inset-0 z-40 lg:hidden"
+        class="fixed inset-0 z-10"
         :class="isFoodStoreTheme ? 'bg-emerald-950/45' : 'bg-[#171717]/40'"
         aria-hidden="true"
         @click="emit('close')"
     />
     <aside
-        class="group/sidebar fixed inset-y-0 left-0 z-50 flex w-64 flex-col border-r text-white transition-[width,transform] duration-250 lg:static lg:z-auto lg:w-16 lg:translate-x-0 lg:hover:w-64"
-        :class="[mobileOpen ? 'translate-x-0' : '-translate-x-full', isFoodStoreTheme ? 'border-emerald-950/20 bg-emerald-900' : 'border-red-950/20 bg-[#8f1017]']"
+        class="group/sidebar pointer-events-auto fixed inset-y-0 left-0 z-30 flex flex-col border-r text-white transition-transform duration-250"
+        :class="[
+            isFoodStoreTheme ? 'border-emerald-950/20 bg-emerald-900' : 'border-red-950/20 bg-[#8f1017]',
+            mobileOpen ? 'translate-x-0' : '-translate-x-full',
+            overlayMode ? 'h-dvh w-[18rem] max-w-[calc(100vw-1rem)] shadow-2xl' : 'w-64 lg:w-64',
+        ]"
         aria-label="Admin center navigation"
     >
         <div class="flex min-h-24 items-center justify-between border-b border-white/15 px-5">
@@ -92,11 +99,12 @@ const groups = computed(() => [
                 <span class="flex size-10 items-center justify-center rounded-xl bg-white" :class="isFoodStoreTheme ? 'text-emerald-800' : 'text-[#8f1017]'">
                     <ShoppingCart :size="22" aria-hidden="true" />
                 </span>
-                <span class="whitespace-nowrap lg:opacity-0 lg:transition-opacity lg:group-hover/sidebar:opacity-100">Admin center</span>
+                <span class="whitespace-nowrap opacity-100">Admin center</span>
             </Link>
             <button
                 type="button"
-                class="rounded-md p-2 text-white/70 hover:bg-white/10 hover:text-white lg:hidden"
+                    class="rounded-md p-2 text-white/70 hover:bg-white/10 hover:text-white"
+                :class="overlayMode ? '' : 'lg:hidden'"
                 aria-label="Close navigation"
                 @click="emit('close')"
             >
@@ -104,22 +112,22 @@ const groups = computed(() => [
             </button>
         </div>
         <div class="border-b border-white/15 px-5 py-5">
-            <p class="whitespace-nowrap text-xs font-semibold tracking-wide uppercase lg:opacity-0 lg:transition-opacity lg:group-hover/sidebar:opacity-100" :class="isFoodStoreTheme ? 'text-emerald-100/70' : 'text-red-100/70'">Subscriber workspace</p>
-            <p class="mt-1 truncate font-semibold text-white lg:opacity-0 lg:transition-opacity lg:group-hover/sidebar:opacity-100">{{ tenant }}</p>
+            <p class="whitespace-nowrap text-xs font-semibold tracking-wide uppercase opacity-100" :class="isFoodStoreTheme ? 'text-emerald-100/70' : 'text-red-100/70'">Subscriber workspace</p>
+            <p class="mt-1 truncate font-semibold text-white opacity-100">{{ tenant }}</p>
         </div>
         <nav class="flex-1 space-y-5 overflow-y-auto px-3 py-5">
             <div v-for="group in groups" :key="group.label" class="space-y-1">
-                <p class="px-3 text-[10px] font-bold tracking-[0.18em] uppercase lg:opacity-0 lg:transition-opacity lg:group-hover/sidebar:opacity-100" :class="isFoodStoreTheme ? 'text-emerald-100/55' : 'text-red-100/50'">{{ group.label }}</p>
+                <p class="px-3 text-[10px] font-bold tracking-[0.18em] uppercase opacity-100" :class="isFoodStoreTheme ? 'text-emerald-100/55' : 'text-red-100/50'">{{ group.label }}</p>
                 <Link v-for="link in group.links" :key="link.label" :href="link.href" class="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition" :class="link.active ? (isFoodStoreTheme ? 'bg-white text-emerald-900' : 'bg-white text-[#8f1017]') : (isFoodStoreTheme ? 'text-emerald-50/85 hover:bg-white/10 hover:text-white' : 'text-red-50/80 hover:bg-white/10 hover:text-white')" :title="link.label" @click="emit('close')">
                     <component :is="link.icon" class="size-5 shrink-0" aria-hidden="true" />
-                    <span class="whitespace-nowrap lg:opacity-0 lg:transition-opacity lg:group-hover/sidebar:opacity-100">{{ link.label }}</span>
+                    <span class="whitespace-nowrap opacity-100">{{ link.label }}</span>
                 </Link>
             </div>
         </nav>
         <div class="border-t border-white/15 px-5 py-4 lg:px-3">
             <Link
                 href="/dashboard"
-                class="block truncate text-sm font-medium hover:text-white lg:opacity-0 lg:transition-opacity lg:group-hover/sidebar:opacity-100"
+                class="block truncate text-sm font-medium hover:text-white opacity-100"
                 :class="isFoodStoreTheme ? 'text-emerald-100/75' : 'text-red-100/75'"
                 @click="emit('close')"
             >
@@ -127,14 +135,14 @@ const groups = computed(() => [
             </Link>
             <button
                 type="button"
-                class="mt-4 flex w-full items-center gap-3 rounded-md border border-white/15 px-3 py-2.5 text-sm font-semibold transition hover:border-white/30 hover:bg-white/10 hover:text-white lg:justify-center lg:group-hover/sidebar:justify-start"
+                class="mt-4 flex w-full items-center gap-3 rounded-md border border-white/15 px-3 py-2.5 text-sm font-semibold transition hover:border-white/30 hover:bg-white/10 hover:text-white justify-start"
                 :class="isFoodStoreTheme ? 'text-emerald-50/85' : 'text-red-50/85'"
                 title="Log out of admin center"
                 aria-label="Log out of admin center"
                 @click="logout"
             >
                 <LogOut class="size-5 shrink-0" aria-hidden="true" />
-                <span class="whitespace-nowrap lg:opacity-0 lg:transition-opacity lg:group-hover/sidebar:opacity-100">Log out</span>
+                <span class="whitespace-nowrap opacity-100">Log out</span>
             </button>
         </div>
     </aside>

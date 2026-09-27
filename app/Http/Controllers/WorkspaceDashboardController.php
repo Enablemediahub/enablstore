@@ -48,7 +48,8 @@ class WorkspaceDashboardController extends Controller
                 'access' => [
                     'onlineStore' => in_array('online_store', $features, true),
                     'pos' => in_array('pos', $features, true),
-                    'restaurantFoodStore' => true,
+                    'restaurantFoodStore' => in_array('restaurant_foodstore', $features, true),
+                    'foodstoreOnline' => in_array('foodstore_online', $features, true),
                 ],
                 'wallpaperUrl' => PlatformSetting::dashboardWallpaperUrl($request),
             ]);
@@ -109,6 +110,7 @@ class WorkspaceDashboardController extends Controller
                 'onlineStore' => in_array('online_store', $features, true),
                 'pos' => in_array('pos', $features, true),
                 'restaurantFoodStore' => in_array('restaurant_foodstore', $features, true),
+                'foodstoreOnline' => in_array('foodstore_online', $features, true),
             ],
             'wallpaperUrl' => PlatformSetting::dashboardWallpaperUrl($request),
             'adminDashboard' => true,

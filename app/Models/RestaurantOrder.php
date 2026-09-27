@@ -12,6 +12,8 @@ class RestaurantOrder extends Model
     protected $fillable = [
         'table_label',
         'customer_name',
+        'customer_phone',
+        'customer_phone',
         'notes',
         'status',
         'total_minor',

@@ -33,6 +33,7 @@ class EnsureTenantFeature
                 $featureName = match (true) {
                     in_array('pos', $requiredFeatures, true) && in_array('restaurant_foodstore', $requiredFeatures, true) => 'POS and FoodStore features',
                     in_array('online_store', $requiredFeatures, true) => 'Online Store',
+                    in_array('foodstore_online', $requiredFeatures, true) => 'FoodStore Online',
                     in_array('restaurant_foodstore', $requiredFeatures, true) => 'FoodStore',
                     in_array('pos', $requiredFeatures, true) => 'Point of Sale',
                     default => 'this portal',

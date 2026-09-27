@@ -8,6 +8,7 @@ use App\Models\RestaurantMenuItem;
 use App\Models\Category;
 use App\Models\Plan;
 use App\Models\PlatformSetting;
+use App\Models\RestaurantOrder;
 use App\Models\Sale;
 use App\Models\StockMovement;
 use App\Models\Subscription;
@@ -149,6 +150,58 @@ class FoodStoreSaleCheckoutTest extends TestCase
             'amount_minor' => 4000,
             'externally_confirmed' => true,
         ]);
+    }
+
+    public function test_customer_can_place_a_foodstore_online_order(): void
+    {
+        $this->startTenant();
+        app(Tenancy::class)->end();
+        $plan = Plan::query()->create([
+            'name' => 'FoodStore online test plan',
+            'slug' => 'foodstore-online-test-plan',
+            'price_minor' => 0,
+            'currency' => 'GHS',
+            'billing_interval' => 'monthly',
+            'features' => ['restaurant_foodstore', 'foodstore_online'],
+            'is_active' => true,
+        ]);
+        Subscription::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'plan_id' => $plan->id,
+            'provider' => 'internal',
+            'status' => 'active',
+            'starts_at' => now(),
+            'metadata' => ['features' => ['restaurant_foodstore', 'foodstore_online']],
+        ]);
+        app(Tenancy::class)->initialize($this->tenant);
+        $menuItem = RestaurantMenuItem::query()->create([
+            'name' => 'Family meat box',
+            'category' => 'Grill',
+            'price_minor' => 12500,
+            'unit_label' => 'pack',
+            'is_available' => true,
+        ]);
+
+        $this->get(route('tenant.foodstore.online', ['tenant' => $this->tenant->id]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Tenant/Restaurant/Online')
+                ->where('menuItems.0.name', 'Family meat box'));
+
+        $this->post(route('tenant.foodstore.online.orders.store', ['tenant' => $this->tenant->id]), [
+            'customer_name' => 'Online Customer',
+            'customer_phone' => '+233201234567',
+            'notes' => 'Please call on arrival.',
+            'items' => [['menu_item_id' => $menuItem->id, 'quantity' => 2]],
+        ])->assertRedirect()->assertSessionHas('status', 'Your order has been sent to the restaurant.');
+
+        $order = RestaurantOrder::query()->with('items')->firstOrFail();
+        $this->assertSame('Online Customer', $order->customer_name);
+        $this->assertSame('+233201234567', $order->customer_phone);
+        $this->assertSame('Please call on arrival.', $order->notes);
+        $this->assertSame('Online customer', $order->created_by_name);
+        $this->assertSame(25000, $order->total_minor);
+        $this->assertSame('Family meat box', $order->items->first()->item_name);
     }
 
     public function test_pos_and_foodstore_heroes_show_separate_completed_sales_for_today(): void

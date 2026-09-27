@@ -71,7 +71,8 @@ const form = useForm({
 const portalOptions = [
     { key: 'online_store', label: 'Online Store' },
     { key: 'pos', label: 'Point of Sale' },
-    { key: 'restaurant_foodstore', label: 'FoodStore' },
+    { key: 'restaurant_foodstore', label: 'FoodStore POS' },
+    { key: 'foodstore_online', label: 'FoodStore Online' },
 ];
 const logoForm = useForm<{ storefront_logo: File | null }>({ storefront_logo: null });
 const paystackForm = useForm({

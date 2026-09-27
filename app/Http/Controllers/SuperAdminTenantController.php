@@ -132,7 +132,7 @@ class SuperAdminTenantController extends Controller
             'subscription_amount_ghs' => ['nullable', 'numeric', 'gt:0', 'max:1000000'],
             'catalogue_mode' => ['required', 'in:shared,separate_online'],
             'features' => ['required', 'array'],
-            'features.*' => ['string', 'in:pos,online_store,restaurant_foodstore'],
+            'features.*' => ['string', 'in:pos,online_store,restaurant_foodstore,foodstore_online'],
             'storefront_store_name' => ['nullable', 'string', 'max:80'],
             'storefront_delivery_message' => ['nullable', 'string', 'max:160'],
             'storefront_hero_delivery_message' => ['nullable', 'string', 'max:160'],

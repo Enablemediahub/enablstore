@@ -49,6 +49,12 @@ Route::middleware([
         ->name('tenant.dashboard');
     Route::get('/foodstore/{tenant}', [RestaurantFoodStoreController::class, 'index'])
         ->name('tenant.foodstore.index');
+    Route::get('/foodstore-online/{tenant}', [RestaurantFoodStoreController::class, 'online'])
+        ->middleware(['feature:foodstore_online'])
+        ->name('tenant.foodstore.online');
+    Route::post('/foodstore-online/{tenant}/orders', [RestaurantFoodStoreController::class, 'storeOnlineOrder'])
+        ->middleware(['feature:foodstore_online'])
+        ->name('tenant.foodstore.online.orders.store');
     Route::get('/foodstore/{tenant}/menu', [RestaurantFoodStoreController::class, 'menu'])
         ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class, 'feature:restaurant_foodstore'])
         ->name('tenant.foodstore.menu.index');

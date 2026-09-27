@@ -108,6 +108,18 @@ class RestaurantFoodStoreController extends Controller
         ]);
     }
 
+    public function online(): Response
+    {
+        return Inertia::render('Tenant/Restaurant/Online', [
+            'tenant' => (string) tenant()->getTenantKey(),
+            'restaurantName' => (string) (tenant()->name ?? 'Restaurant'),
+            'heroImageUrl' => PlatformSetting::foodStoreHeroImageUrl(request()),
+            'menuItems' => RestaurantMenuItem::query()->where('is_available', true)->orderBy('category')->orderBy('name')->get()
+                ->map(fn (RestaurantMenuItem $item): array => $this->menuItemPayload($item)),
+            'status' => session('status'),
+        ]);
+    }
+
     public function menu(Request $request): Response
     {
         return Inertia::render('Tenant/Restaurant/Menu', [
@@ -232,14 +244,36 @@ class RestaurantFoodStoreController extends Controller
         $data = $request->validate([
             'table_label' => ['nullable', 'string', 'max:40'],
             'customer_name' => ['nullable', 'string', 'max:120'],
+            'customer_phone' => ['nullable', 'string', 'max:40'],
             'notes' => ['nullable', 'string', 'max:500'],
             'items' => ['required', 'array', 'min:1', 'max:40'],
             'items.*.menu_item_id' => ['required', 'integer', 'exists:restaurant_menu_items,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:100'],
         ]);
 
+        return $this->createRestaurantOrder($data, $request);
+    }
+
+    public function storeOnlineOrder(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'customer_name' => ['required', 'string', 'max:120'],
+            'customer_phone' => ['required', 'string', 'max:40'],
+            'notes' => ['nullable', 'string', 'max:500'],
+            'items' => ['required', 'array', 'min:1', 'max:40'],
+            'items.*.menu_item_id' => ['required', 'integer', 'exists:restaurant_menu_items,id'],
+            'items.*.quantity' => ['required', 'integer', 'min:1', 'max:100'],
+        ]);
+
+        return $this->createRestaurantOrder($data, $request, true);
+    }
+
+    /** @param array<string, mixed> $data */
+    private function createRestaurantOrder(array $data, Request $request, bool $online = false): RedirectResponse
+    {
+
         try {
-            DB::transaction(function () use ($data, $request): void {
+            DB::transaction(function () use ($data, $request, $online): void {
                 $lineItems = [];
                 $totalMinor = 0;
 
@@ -267,14 +301,15 @@ class RestaurantFoodStoreController extends Controller
                 $order = RestaurantOrder::query()->create([
                     'table_label' => filled($data['table_label'] ?? null) ? trim($data['table_label']) : null,
                     'customer_name' => filled($data['customer_name'] ?? null) ? trim($data['customer_name']) : null,
+                    'customer_phone' => filled($data['customer_phone'] ?? null) ? trim($data['customer_phone']) : null,
                     'notes' => filled($data['notes'] ?? null) ? trim($data['notes']) : null,
                     'status' => 'queued',
                     'total_minor' => $totalMinor,
-                    'created_by_name' => $request->user()?->name ?? User::query()
+                    'created_by_name' => $online ? 'Online customer' : ($request->user()?->name ?? User::query()
                         ->whereKey($request->session()->get('pos_cashier_id'))
                         ->where('tenant_id', tenant()->getTenantKey())
                         ->where('role', 'cashier')
-                        ->value('name'),
+                        ->value('name')),
                 ]);
                 $order->items()->createMany($lineItems);
             });
@@ -282,7 +317,7 @@ class RestaurantFoodStoreController extends Controller
             throw ValidationException::withMessages(['items' => $exception->getMessage()]);
         }
 
-        return back()->with('status', 'Order sent to the kitchen queue.');
+        return back()->with('status', $online ? 'Your order has been sent to the restaurant.' : 'Order sent to the kitchen queue.');
     }
 
     public function updateOrderStatus(Request $request, RestaurantOrder $order): RedirectResponse

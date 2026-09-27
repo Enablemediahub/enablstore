@@ -211,7 +211,7 @@ class WorkspaceDashboardTest extends TestCase
             'provider' => 'internal',
             'status' => 'active',
             'starts_at' => now(),
-            'metadata' => ['features' => ['pos', 'online_store', 'restaurant_foodstore']],
+            'metadata' => ['features' => ['pos', 'online_store', 'restaurant_foodstore', 'foodstore_online']],
         ]);
 
         $admin = User::factory()->create([
@@ -233,6 +233,7 @@ class WorkspaceDashboardTest extends TestCase
                 ->where('user.role', 'admin')
                 ->where('access.onlineStore', true)
                 ->where('access.pos', true)
-                ->where('access.restaurantFoodStore', true));
+                ->where('access.restaurantFoodStore', true)
+                ->where('access.foodstoreOnline', true));
     }
 }
