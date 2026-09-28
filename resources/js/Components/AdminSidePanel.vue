@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { BarChart3, ClipboardList, FileText, LayoutDashboard, LogOut, Package, Settings, ShoppingCart, Store, Tags, Truck, Utensils, Users, X } from '@lucide/vue';
-import { Link, useForm } from '@inertiajs/vue3';
+import { ArrowLeft, BarChart3, ClipboardList, FileText, LayoutDashboard, LogOut, Package, Settings, ShoppingCart, Store, Tags, Truck, Utensils, Users, Wallet, X } from '@lucide/vue';
+import { Link, useForm, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
 
-type PanelContext = 'workspace' | 'storefront' | 'pos' | 'foodstore' | 'foodstore-online' | 'food-menu' | 'products' | 'categories' | 'settings' | 'analytics' | 'suppliers' | 'reports' | 'audit' | 'team';
+type PanelContext = 'workspace' | 'storefront' | 'pos' | 'foodstore' | 'foodstore-online' | 'food-menu' | 'kitchen-orders' | 'products' | 'categories' | 'settings' | 'analytics' | 'suppliers' | 'reports' | 'sales-expenses' | 'audit' | 'team';
 
 const props = withDefaults(
     defineProps<{
@@ -24,7 +24,18 @@ const emit = defineEmits<{
 }>();
 
 const logoutForm = useForm({});
+const page = usePage();
+const hasSalesExpensesAccess = computed(() => ((page.props.tenantFeatures as string[] | undefined) ?? []).includes('sales_expenses'));
+const hasAuditLogAccess = computed(() => ((page.props.tenantFeatures as string[] | undefined) ?? []).includes('audit_log'));
 const isFoodStoreTheme = computed(() => props.current === 'foodstore' || props.current === 'food-menu');
+const goBack = (): void => {
+    if (window.history.length > 1) {
+        window.history.back();
+        return;
+    }
+
+    window.location.assign(route('tenant.dashboard', { tenant: props.tenant }));
+};
 const logout = (): void => {
     logoutForm.post(route('logout'));
 };
@@ -38,6 +49,7 @@ const groups = computed(() => [
             { label: 'Point of sale', href: route('tenant.pos', { tenant: props.tenant }), icon: ShoppingCart, active: props.current === 'pos' },
             { label: 'FoodStore POS', href: route('tenant.foodstore.index', { tenant: props.tenant }), icon: Utensils, active: props.current === 'foodstore' },
             { label: 'FoodStore Online', href: route('tenant.foodstore.online', { tenant: props.tenant }), icon: Utensils, active: props.current === 'foodstore-online' },
+            { label: 'Kitchen orders', href: route('tenant.foodstore.orders.index', { tenant: props.tenant }), icon: ClipboardList, active: props.current === 'kitchen-orders' },
         ],
     },
     {
@@ -54,7 +66,8 @@ const groups = computed(() => [
             { label: 'Suppliers', href: route('tenant.suppliers.index', { tenant: props.tenant }), icon: Truck, active: props.current === 'suppliers' },
             { label: 'Team', href: route('tenant.team.index', { tenant: props.tenant }), icon: Users, active: props.current === 'team' },
             { label: 'Reports', href: route('tenant.reports', { tenant: props.tenant }), icon: FileText, active: props.current === 'reports' },
-            { label: 'Audit log', href: route('tenant.audit', { tenant: props.tenant }), icon: ClipboardList, active: props.current === 'audit' },
+            ...(hasSalesExpensesAccess.value ? [{ label: 'Sales & expenses', href: route('tenant.sales-expenses.index', { tenant: props.tenant }), icon: Wallet, active: props.current === 'sales-expenses' }] : []),
+            ...(hasAuditLogAccess.value ? [{ label: 'Audit log', href: route('tenant.audit', { tenant: props.tenant }), icon: ClipboardList, active: props.current === 'audit' }] : []),
         ],
     },
     {
@@ -68,12 +81,18 @@ const groups = computed(() => [
 </script>
 
 <template>
-    <form v-if="!overlayMode && !mobileOpen" class="fixed top-4 right-4 z-30" @submit.prevent="logout">
-        <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm transition" :class="isFoodStoreTheme ? 'hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800' : 'hover:border-red-300 hover:bg-red-50 hover:text-red-700'" :disabled="logoutForm.processing">
-            <LogOut :size="18" aria-hidden="true" />
-            <span>Log out</span>
+    <div v-if="!overlayMode && !mobileOpen" class="fixed top-4 right-4 z-30 flex items-center gap-2">
+        <button type="button" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-neutral-300 hover:bg-neutral-50" title="Back to the previous page" @click="goBack">
+            <ArrowLeft :size="17" aria-hidden="true" />
+            <span>Back</span>
         </button>
-    </form>
+        <form @submit.prevent="logout">
+            <button type="submit" class="inline-flex min-h-11 items-center gap-2 rounded-md border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm transition" :class="isFoodStoreTheme ? 'hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-800' : 'hover:border-red-300 hover:bg-red-50 hover:text-red-700'" :disabled="logoutForm.processing">
+                <LogOut :size="18" aria-hidden="true" />
+                <span>Log out</span>
+            </button>
+        </form>
+    </div>
     <div
         v-if="mobileOpen"
         class="fixed inset-0 z-10"

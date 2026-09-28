@@ -8,7 +8,7 @@ use App\Models\Subscription;
 
 class TenantPortalFeatures
 {
-    public const AVAILABLE = ['pos', 'online_store', 'restaurant_foodstore', 'foodstore_online'];
+    public const AVAILABLE = ['pos', 'online_store', 'restaurant_foodstore', 'foodstore_online', 'sales_expenses', 'audit_log', 'whatsapp_orders'];
 
     /** @return list<string> */
     public static function forSubscription(?Subscription $subscription): array

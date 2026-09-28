@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Support\TenantPortalFeatures;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -37,6 +38,9 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'status' => fn () => $request->session()->get('status'),
             ],
+            'tenantFeatures' => fn (): array => ($tenant = tenant()) === null
+                ? []
+                : TenantPortalFeatures::forSubscription($tenant->subscriptions()->with('plan')->latest()->first()),
         ];
     }
 }

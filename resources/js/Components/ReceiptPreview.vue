@@ -20,7 +20,7 @@ withDefaults(
     defineProps<{
         open?: boolean;
         tenant: string;
-        items: Array<{ name: string; quantity: number; priceMinor: number }>;
+        items: Array<{ name: string; quantity: number; priceMinor: number; selectedOptions?: Array<{ group: string; name: string; price_minor: number; quantity?: number }> }>;
         totalMinor: number;
         paymentMethod: string;
         transactionUuid: string;
@@ -121,7 +121,7 @@ const printReceipt = (): void => {
                         :key="`${item.name}-${item.priceMinor}`"
                         class="grid grid-cols-[1fr_auto] gap-3"
                     >
-                        <div class="min-w-0"><p class="break-words font-semibold leading-5">{{ item.name }}</p><p class="text-xs text-neutral-500">{{ item.quantity }} × {{ formatPrice(item.priceMinor) }}</p></div>
+                        <div class="min-w-0"><p class="break-words font-semibold leading-5">{{ item.name }}</p><p v-for="(option, index) in item.selectedOptions ?? []" :key="`${option.group}-${option.name}-${index}`" class="text-[10px] text-neutral-500">{{ option.group }}: {{ option.quantity ?? 1 }} × {{ option.name }}<span v-if="option.price_minor"> (+{{ formatPrice(option.price_minor) }} each)</span></p><p class="text-xs text-neutral-500">{{ item.quantity }} × {{ formatPrice(item.priceMinor) }}</p></div>
                         <span class="self-start whitespace-nowrap font-semibold">{{ formatPrice(item.priceMinor * item.quantity) }}</span>
                     </div>
                 </div>

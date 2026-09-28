@@ -9,13 +9,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class RestaurantMenuItem extends Model
 {
-    protected $fillable = ['name', 'category', 'description', 'price_minor', 'unit_label', 'image_path', 'is_available'];
+    protected $fillable = ['name', 'category', 'description', 'price_minor', 'unit_label', 'image_path', 'is_available', 'option_groups'];
 
     protected function casts(): array
     {
         return [
             'price_minor' => 'integer',
             'is_available' => 'boolean',
+            'option_groups' => 'array',
         ];
     }
 

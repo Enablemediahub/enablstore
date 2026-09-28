@@ -13,6 +13,7 @@ type Tenant = {
     slug: string;
     email: string | null;
     phone: string | null;
+    whatsapp_phone: string | null;
     status: 'active' | 'suspended';
     created_at: string;
 };
@@ -61,6 +62,7 @@ const form = useForm({
     name: props.tenant.name,
     email: props.tenant.email ?? '',
     phone: props.tenant.phone ?? '',
+    whatsapp_phone: props.tenant.whatsapp_phone ?? '',
     status: props.tenant.status,
     subscription_plan_id: props.subscription?.plan_id ?? '',
     subscription_status: props.subscription?.status ?? '',
@@ -73,6 +75,9 @@ const portalOptions = [
     { key: 'pos', label: 'Point of Sale' },
     { key: 'restaurant_foodstore', label: 'FoodStore POS' },
     { key: 'foodstore_online', label: 'FoodStore Online' },
+    { key: 'sales_expenses', label: 'Sales & Expenses' },
+    { key: 'audit_log', label: 'Audit Log' },
+    { key: 'whatsapp_orders', label: 'WhatsApp Ordering' },
 ];
 const logoForm = useForm<{ storefront_logo: File | null }>({ storefront_logo: null });
 const paystackForm = useForm({
@@ -162,6 +167,9 @@ const deleteMember = (member: TeamMember): void => {
                             <EnInput id="tenant-name" v-model="form.name" label="Tenant / business name" required />
                             <EnInput id="tenant-email" v-model="form.email" type="email" label="Contact email" />
                             <EnInput id="tenant-phone" v-model="form.phone" label="Contact phone" />
+                            <EnInput id="tenant-whatsapp-phone" v-model="form.whatsapp_phone" type="tel" label="WhatsApp order and contact number" placeholder="+233 20 123 4567" />
+                            <p class="-mt-3 text-xs text-neutral-500">Enter the number in international format with its country code, for example +233 20 123 4567.</p>
+                            <p v-if="form.errors.whatsapp_phone" class="text-sm text-red-700">{{ form.errors.whatsapp_phone }}</p>
                             <label class="block text-sm font-medium text-neutral-700">Workspace status<select v-model="form.status" class="mt-1.5 min-h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm"><option value="active">Active</option><option value="suspended">Suspended</option></select></label>
                         </div>
                         <p class="mt-4 text-xs text-neutral-500">Subscriber code: <strong class="font-mono text-neutral-700">{{ tenant.subscriber_code }}</strong> · Tenant ID: {{ tenant.id }} · Store URL: /onlinestore/{{ tenant.slug }}</p>

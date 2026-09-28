@@ -21,6 +21,7 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'slug',
         'email',
         'phone',
+        'whatsapp_phone',
         'status',
         'data',
     ];

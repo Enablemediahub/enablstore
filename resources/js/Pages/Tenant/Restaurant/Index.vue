@@ -15,10 +15,18 @@ type MenuItem = {
     unit_label: string;
     image_url: string | null;
     is_available: boolean;
+    option_groups: Array<{
+        id: string;
+        name: string;
+        required: boolean;
+        multiple: boolean;
+        options: Array<{ id: string; name: string; price_minor: number }>;
+    }>;
 };
 
 type TenderMethod = 'cash' | 'mobile_money' | 'card';
-type CartItem = MenuItem & { quantity: number };
+type SelectedOption = { id: string; quantity: number };
+type CartItem = MenuItem & { cartLineId: string; quantity: number; selectedOptions: SelectedOption[] };
 type Tender = { id: string; method: TenderMethod; amountGhs: number | null; cashReceivedGhs: number | null; externallyConfirmed: boolean };
 type HeldSale = { id: string; items: CartItem[]; tenders: Tender[]; discountType: 'fixed' | 'percentage' | ''; discountValue: number; discountReason: string; customerName: string; customerPhone: string };
 type Receipt = {
@@ -67,7 +75,7 @@ const checkoutForm = useForm({
     discount_type: null as 'fixed' | 'percentage' | null,
     discount_value: 0,
     discount_reason: '',
-    items: [] as Array<{ menu_item_id: number; quantity: number }>,
+    items: [] as Array<{ menu_item_id: number; quantity: number; selected_options: SelectedOption[] }>,
     tenders: [] as Array<{ method: TenderMethod; amount_minor: number; cash_received_minor: number | null; externally_confirmed: boolean }>,
 });
 const logoutForm = useForm({});
@@ -79,7 +87,13 @@ const filteredMenu = computed(() => {
     return props.menuItems.filter((item) => `${item.name} ${item.category}`.toLowerCase().includes(term));
 });
 const heroImage = computed(() => props.heroImageUrl ?? props.menuItems.find((item) => item.image_url)?.image_url ?? '/images/storefront/hero-default.svg');
-const subtotalMinor = computed(() => cart.value.reduce((total, item) => total + item.price_minor * item.quantity, 0));
+const optionQuantity = (item: CartItem, optionId: string): number => item.selectedOptions.find((option) => option.id === optionId)?.quantity ?? 0;
+const selectedOptionPrice = (item: CartItem): number => item.option_groups
+    .flatMap((group) => group.options)
+    .reduce((total, option) => total + option.price_minor * optionQuantity(item, option.id), 0);
+const itemUnitPrice = (item: CartItem): number => item.price_minor + selectedOptionPrice(item);
+const cartOptionsValid = computed(() => cart.value.every((item) => item.option_groups.every((group) => !group.required || group.options.some((option) => optionQuantity(item, option.id) > 0))));
+const subtotalMinor = computed(() => cart.value.reduce((total, item) => total + itemUnitPrice(item) * item.quantity, 0));
 const discountMinor = computed(() => discountType.value === 'percentage'
     ? Math.min(subtotalMinor.value, Math.round(subtotalMinor.value * Math.min(Math.max(discountValue.value, 0), 100) / 100))
     : Math.min(subtotalMinor.value, Math.round(Math.max(discountValue.value, 0) * 100)));
@@ -93,7 +107,7 @@ const changeMinor = computed(() => Math.max(0, cashReceivedMinor.value - cashAll
 const tenderTotalMatches = computed(() => appliedTenderTotalMinor.value === totalMinor.value);
 const cashIsCovered = computed(() => tenders.value.filter((tender) => tender.method === 'cash').every((tender) => tender.cashReceivedGhs !== null && tenderAmountMinor(tender.cashReceivedGhs) >= tenderAmountMinor(tender.amountGhs)));
 const externalPaymentsConfirmed = computed(() => tenders.value.every((tender) => tender.method === 'cash' || tender.externallyConfirmed));
-const canCompleteSale = computed(() => cart.value.length > 0 && totalMinor.value > 0 && tenderTotalMatches.value && cashIsCovered.value && externalPaymentsConfirmed.value && tenders.value.every((tender) => tenderAmountMinor(tender.amountGhs) > 0));
+const canCompleteSale = computed(() => cart.value.length > 0 && cartOptionsValid.value && totalMinor.value > 0 && tenderTotalMatches.value && cashIsCovered.value && externalPaymentsConfirmed.value && tenders.value.every((tender) => tenderAmountMinor(tender.amountGhs) > 0));
 
 watch(totalMinor, (total) => {
     if (tenders.value.length === 1 && tenders.value[0].method === 'cash') tenders.value[0].amountGhs = total > 0 ? total / 100 : null;
@@ -108,17 +122,39 @@ const formatPrice = (minor: number): string => new Intl.NumberFormat('en-GH', {
 const addToCart = (item: MenuItem): void => {
     if (!item.is_available) return;
 
-    const line = cart.value.find((entry) => entry.id === item.id);
+    const line = cart.value.find((entry) => entry.id === item.id && entry.selectedOptions.length === 0);
     if (line) line.quantity += 1;
-    else cart.value.push({ ...item, quantity: 1 });
+    else cart.value.push({ ...item, cartLineId: crypto.randomUUID(), quantity: 1, selectedOptions: [] });
 };
 
-const adjustQuantity = (itemId: number, amount: number): void => {
-    const line = cart.value.find((item) => item.id === itemId);
+const adjustQuantity = (cartLineId: string, amount: number): void => {
+    const line = cart.value.find((item) => item.cartLineId === cartLineId);
     if (!line) return;
 
     line.quantity += amount;
-    if (line.quantity <= 0) cart.value = cart.value.filter((item) => item.id !== itemId);
+    if (line.quantity <= 0) cart.value = cart.value.filter((item) => item.cartLineId !== cartLineId);
+};
+
+const setSingleOption = (item: CartItem, group: MenuItem['option_groups'][number], optionId: string): void => {
+    const groupOptionIds = group.options.map((option) => option.id);
+    item.selectedOptions = item.selectedOptions.filter((selection) => !groupOptionIds.includes(selection.id));
+    if (optionId) item.selectedOptions.push({ id: optionId, quantity: 1 });
+};
+
+const toggleMultipleOption = (item: CartItem, optionId: string, checked: boolean): void => {
+    setOptionQuantity(item, optionId, checked ? 1 : 0);
+};
+
+const setOptionQuantity = (item: CartItem, optionId: string, quantity: number): void => {
+    const boundedQuantity = Math.max(0, Math.min(99, Math.trunc(quantity)));
+    const existing = item.selectedOptions.find((selection) => selection.id === optionId);
+    if (boundedQuantity === 0) {
+        item.selectedOptions = item.selectedOptions.filter((selection) => selection.id !== optionId);
+    } else if (existing) {
+        existing.quantity = boundedQuantity;
+    } else {
+        item.selectedOptions.push({ id: optionId, quantity: boundedQuantity });
+    }
 };
 
 const addTender = (): void => {
@@ -181,7 +217,7 @@ const placeSale = (): void => {
     checkoutForm.discount_type = discountType.value || null;
     checkoutForm.discount_value = discountValue.value;
     checkoutForm.discount_reason = discountReason.value;
-    checkoutForm.items = cart.value.map((item) => ({ menu_item_id: item.id, quantity: item.quantity }));
+    checkoutForm.items = cart.value.map((item) => ({ menu_item_id: item.id, quantity: item.quantity, selected_options: item.selectedOptions }));
     checkoutForm.tenders = paymentTenders;
     checkoutForm.post(route('tenant.foodstore.sales.store', { tenant: props.tenant }), {
         preserveScroll: true,
@@ -284,11 +320,29 @@ const logout = (): void => logoutForm.post(route('tenant.pos.logout', { tenant: 
                                     <div class="mt-2 space-y-2"><button v-for="(heldSale, index) in heldSales" :key="heldSale.id" type="button" class="flex w-full items-center justify-between rounded-md bg-white/10 px-3 py-2 text-left text-sm transition hover:bg-white/20" @click="resumeSale(heldSale)"><span>Sale {{ index + 1 }} · {{ heldSale.items.length }} lines</span><Play :size="15" aria-hidden="true" /></button></div>
                                 </div>
                                 <div v-if="cart.length" class="mt-4 divide-y divide-white/15">
-                                    <div v-for="item in cart" :key="item.id" class="flex items-center gap-2 py-3">
-                                        <div class="min-w-0 flex-1"><p class="truncate text-sm font-semibold">{{ item.name }}</p><p class="mt-1 text-xs text-white/65">{{ formatPrice(item.price_minor) }} / {{ item.unit_label }}</p></div>
-                                        <div class="flex items-center gap-1"><button type="button" class="grid size-8 place-items-center rounded-md border border-white/20 hover:bg-white/10" :aria-label="`Remove one ${item.name}`" @click="adjustQuantity(item.id, -1)"><Minus :size="14" aria-hidden="true" /></button><span class="w-6 text-center text-sm font-bold">{{ item.quantity }}</span><button type="button" class="grid size-8 place-items-center rounded-md border border-white/20 hover:bg-white/10" :aria-label="`Add one ${item.name}`" @click="adjustQuantity(item.id, 1)"><Plus :size="14" aria-hidden="true" /></button></div>
-                                        <strong class="w-20 text-right font-mono text-xs">{{ formatPrice(item.price_minor * item.quantity) }}</strong>
-                                        <button type="button" class="grid size-8 place-items-center rounded-md text-white/60 hover:bg-white/10 hover:text-white" :aria-label="`Remove ${item.name} from sale`" @click="cart = cart.filter((line) => line.id !== item.id)"><Trash2 :size="15" aria-hidden="true" /></button>
+                                    <div v-for="item in cart" :key="item.cartLineId" class="py-3">
+                                        <div class="flex items-center gap-2">
+                                            <div class="min-w-0 flex-1"><p class="truncate text-sm font-semibold">{{ item.name }}</p><p class="mt-1 text-xs text-white/65">{{ formatPrice(itemUnitPrice(item)) }} / {{ item.unit_label }}</p></div>
+                                            <div class="flex items-center gap-1"><button type="button" class="grid size-8 place-items-center rounded-md border border-white/20 hover:bg-white/10" :aria-label="`Remove one ${item.name}`" @click="adjustQuantity(item.cartLineId, -1)"><Minus :size="14" aria-hidden="true" /></button><span class="w-6 text-center text-sm font-bold">{{ item.quantity }}</span><button type="button" class="grid size-8 place-items-center rounded-md border border-white/20 hover:bg-white/10" :aria-label="`Add one ${item.name}`" @click="adjustQuantity(item.cartLineId, 1)"><Plus :size="14" aria-hidden="true" /></button></div>
+                                            <strong class="w-20 text-right font-mono text-xs">{{ formatPrice(itemUnitPrice(item) * item.quantity) }}</strong>
+                                            <button type="button" class="grid size-8 place-items-center rounded-md text-white/60 hover:bg-white/10 hover:text-white" :aria-label="`Remove ${item.name} from sale`" @click="cart = cart.filter((line) => line.cartLineId !== item.cartLineId)"><Trash2 :size="15" aria-hidden="true" /></button>
+                                        </div>
+                                        <div v-if="item.option_groups.length" class="mt-3 space-y-2 pl-1">
+                                            <fieldset v-for="group in item.option_groups" :key="group.id" class="rounded-md border border-white/10 bg-black/10 p-2.5">
+                                                <legend class="px-1 text-[11px] font-bold text-white/80">{{ group.name }}{{ group.required ? ' · required' : ' · optional' }}</legend>
+                                                <select v-if="!group.multiple" :value="group.options.find((option) => optionQuantity(item, option.id) > 0)?.id ?? ''" class="min-h-9 w-full rounded-md border border-neutral-300 bg-white px-2 text-xs" @change="setSingleOption(item, group, ($event.target as HTMLSelectElement).value)">
+                                                    <option value="">{{ group.required ? 'Choose one' : `No ${group.name.toLowerCase()}` }}</option>
+                                                    <option v-for="option in group.options" :key="option.id" :value="option.id">{{ option.name }} · {{ formatPrice(option.price_minor) }}</option>
+                                                </select>
+                                                <label v-if="!group.multiple && group.options.some((option) => optionQuantity(item, option.id) > 0)" class="mt-2 flex items-center justify-between gap-3 text-xs text-white/90">Portions<input type="number" min="1" max="99" :value="optionQuantity(item, group.options.find((option) => optionQuantity(item, option.id) > 0)?.id ?? '')" class="min-h-8 w-20 rounded-md border border-neutral-300 bg-white px-2 text-right" @input="setOptionQuantity(item, group.options.find((option) => optionQuantity(item, option.id) > 0)?.id ?? '', Number(($event.target as HTMLInputElement).value))" /></label>
+                                                <div v-if="group.multiple" class="mt-1 space-y-1">
+                                                    <div v-for="option in group.options" :key="option.id" class="flex min-h-9 items-center justify-between gap-2 text-xs text-white/90">
+                                                        <label class="flex items-center gap-2"><input type="checkbox" :checked="optionQuantity(item, option.id) > 0" class="rounded border-white/40 text-emerald-700" @change="toggleMultipleOption(item, option.id, ($event.target as HTMLInputElement).checked)" />{{ option.name }} · {{ formatPrice(option.price_minor) }} each</label>
+                                                        <input v-if="optionQuantity(item, option.id) > 0" type="number" min="1" max="99" :value="optionQuantity(item, option.id)" :aria-label="`${option.name} portions`" class="min-h-8 w-16 rounded-md border border-neutral-300 bg-white px-2 text-right text-neutral-900" @input="setOptionQuantity(item, option.id, Number(($event.target as HTMLInputElement).value))" />
+                                                    </div>
+                                                </div>
+                                            </fieldset>
+                                        </div>
                                     </div>
                                 </div>
                                 <p v-else class="mt-4 rounded-md border border-dashed border-white/30 px-4 py-7 text-center text-sm text-white/70">Choose food from the menu to start a sale.</p>
@@ -313,7 +367,8 @@ const logout = (): void => logoutForm.post(route('tenant.pos.logout', { tenant: 
                                     <div class="grid gap-3 sm:grid-cols-2"><label class="block text-xs font-bold text-white/80">Customer (optional)<input v-model="customerName" maxlength="120" class="mt-1.5 min-h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm font-normal" /></label><label class="block text-xs font-bold text-white/80">Phone (optional)<input v-model="customerPhone" maxlength="40" class="mt-1.5 min-h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm font-normal" /></label></div>
                                     <p v-if="checkoutError" class="text-sm font-semibold text-red-200">{{ checkoutError }}</p>
                                     <button type="button" class="inline-flex min-h-11 w-full items-center justify-center rounded-md bg-emerald-300 px-4 text-sm font-black text-emerald-950 hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50" :disabled="!canCompleteSale || checkoutForm.processing" @click="placeSale">{{ checkoutForm.processing ? 'Processing sale...' : 'Complete sale' }}</button>
-                                    <p v-if="!canCompleteSale && cart.length" class="text-center text-xs text-white/65">Match payment amounts to the balance, cover any cash payment, and confirm external payments.</p>
+                                    <p v-if="!cartOptionsValid && cart.length" class="text-center text-xs font-semibold text-amber-200">Choose an option in each required group before completing the sale.</p>
+                                    <p v-if="!canCompleteSale && cart.length && cartOptionsValid" class="text-center text-xs text-white/65">Match payment amounts to the balance, cover any cash payment, and confirm external payments.</p>
                                 </div>
                             </div>
                         </section>

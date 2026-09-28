@@ -38,7 +38,7 @@ class SuperAdminUserController extends Controller
             'business_name' => ['required', 'string', 'max:120'],
             'plan_id' => ['required', Rule::exists('plans', 'id')->where('is_active', true)],
             'features' => ['present', 'array'],
-            'features.*' => ['string', 'in:pos,online_store,restaurant_foodstore'],
+            'features.*' => ['string', 'in:pos,online_store,restaurant_foodstore,sales_expenses,audit_log,whatsapp_orders'],
         ]);
 
         $slug = $this->uniqueTenantSlug($data['business_name']);

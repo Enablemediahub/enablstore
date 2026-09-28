@@ -15,6 +15,7 @@ class RestaurantOrderItem extends Model
         'quantity',
         'unit_price_minor',
         'line_total_minor',
+        'selected_options',
     ];
 
     protected function casts(): array
@@ -23,6 +24,7 @@ class RestaurantOrderItem extends Model
             'quantity' => 'integer',
             'unit_price_minor' => 'integer',
             'line_total_minor' => 'integer',
+            'selected_options' => 'array',
         ];
     }
 

@@ -17,6 +17,8 @@ use Illuminate\Support\Str;
 
 class CheckoutService
 {
+    public function __construct(private readonly RestaurantMenuPricing $restaurantMenuPricing) {}
+
     /** @param array{items: array<int, array{product_id: int, quantity: int}>, source?: string, discount_type?: string|null, discount_value?: float|int|null} $payload
      *  @return array{subtotal_minor: int, discount_minor: int, total_minor: int}
      */
@@ -86,15 +88,20 @@ class CheckoutService
                         throw new \DomainException('A food item is no longer available. Refresh and review the cart.');
                     }
 
-                    $lineTotalMinor = $menuItem->price_minor * $item['quantity'];
+                    $price = $this->restaurantMenuPricing->forSelection(
+                        $menuItem,
+                        $item['selected_options'] ?? $item['selected_option_ids'] ?? [],
+                    );
+                    $lineTotalMinor = $price['unit_price_minor'] * $item['quantity'];
                     $subtotalMinor += $lineTotalMinor;
                     $lineItems[] = [
                         'product_id' => null,
                         'restaurant_menu_item_id' => $menuItem->id,
                         'item_name' => $menuItem->name,
                         'quantity' => $item['quantity'],
-                        'unit_price_minor' => $menuItem->price_minor,
+                        'unit_price_minor' => $price['unit_price_minor'],
                         'line_total_minor' => $lineTotalMinor,
+                        'selected_options' => $price['selected_options'],
                     ];
 
                     continue;

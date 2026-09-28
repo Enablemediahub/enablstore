@@ -23,6 +23,7 @@ class StorefrontController extends Controller
         return Inertia::render('Storefront/Index', [
             'hero' => TenantSettingsController::heroSettingsForStorefront($request),
             'logoUrl' => PlatformSetting::storefrontLogoUrl($request),
+            'whatsappPhone' => tenant()->whatsapp_phone,
             'paystackEnabled' => $this->tenantPaystackIsEnabled(),
             'checkoutStatus' => session('checkout_status'),
             'checkoutStatusError' => (bool) session('checkout_status_error', false),

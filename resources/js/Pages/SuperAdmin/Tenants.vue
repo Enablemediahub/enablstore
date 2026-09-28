@@ -22,6 +22,9 @@ const portalOptions = [
     { key: 'online_store', label: 'Online Store' },
     { key: 'pos', label: 'Point of Sale' },
     { key: 'restaurant_foodstore', label: 'FoodStore' },
+    { key: 'sales_expenses', label: 'Sales & Expenses' },
+    { key: 'audit_log', label: 'Audit Log' },
+    { key: 'whatsapp_orders', label: 'WhatsApp Ordering' },
 ];
 const enrollment = useForm({ name: '', username: '', email: '', password: '', business_name: '', plan_id: props.plans[0]?.id ?? '', features: props.plans[0]?.features.filter((feature) => portalOptions.some((option) => option.key === feature)) ?? [] });
 const enrollmentErrors = computed(() => [...new Set(Object.values(enrollment.errors).filter((message): message is string => typeof message === 'string' && message !== ''))]);

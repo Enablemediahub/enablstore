@@ -13,7 +13,7 @@ use Inertia\Response;
 
 class SuperAdminSubscriptionController extends Controller
 {
-    private const FEATURES = ['products', 'inventory', 'pos', 'online_store', 'restaurant_foodstore'];
+    private const FEATURES = ['products', 'inventory', 'pos', 'online_store', 'restaurant_foodstore', 'sales_expenses', 'audit_log', 'whatsapp_orders'];
 
     public function index(): Response
     {

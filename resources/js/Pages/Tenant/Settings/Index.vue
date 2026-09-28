@@ -3,8 +3,8 @@ import AdminSidePanel from '@/Components/AdminSidePanel.vue';
 import EnButton from '@/Components/EnButton.vue';
 import EnCard from '@/Components/EnCard.vue';
 import EnInput from '@/Components/EnInput.vue';
-import { Head, useForm } from '@inertiajs/vue3';
-import { Image, Trash2 } from '@lucide/vue';
+import { Head, Link, useForm } from '@inertiajs/vue3';
+import { ArrowLeft, Image, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
 
 type StorefrontHero = {
@@ -97,12 +97,21 @@ const removeHeroImage = (): void => {
                 </button>
 
                 <div class="mx-auto max-w-3xl space-y-8">
-                    <header>
-                        <p class="text-sm font-semibold text-red-700">Admin center</p>
-                        <h1 class="mt-1 text-3xl font-bold text-neutral-900">Store settings</h1>
-                        <p class="mt-2 text-sm text-neutral-500">
-                            Manage your online storefront appearance and catalogue behaviour.
-                        </p>
+                    <header class="flex flex-wrap items-start justify-between gap-4">
+                        <div>
+                            <p class="text-sm font-semibold text-red-700">Admin center</p>
+                            <h1 class="mt-1 text-3xl font-bold text-neutral-900">Store settings</h1>
+                            <p class="mt-2 text-sm text-neutral-500">
+                                Manage your online storefront appearance and catalogue behaviour.
+                            </p>
+                        </div>
+                        <Link
+                            :href="route('tenant.dashboard', { tenant })"
+                            class="inline-flex min-h-11 items-center gap-2 rounded-md border border-neutral-200 bg-white px-4 text-sm font-semibold text-neutral-700 shadow-sm transition hover:border-red-300 hover:bg-red-50 hover:text-red-700"
+                        >
+                            <ArrowLeft :size="16" aria-hidden="true" />
+                            Back to admin dashboard
+                        </Link>
                     </header>
 
                     <EnCard>

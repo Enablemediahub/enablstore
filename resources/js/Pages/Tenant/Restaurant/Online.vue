@@ -1,7 +1,8 @@
 ﻿<script setup lang="ts">
 import EnEmptyState from '@/Components/EnEmptyState.vue';
-import { Head, useForm } from '@inertiajs/vue3';
-import { Image, LayoutGrid, Minus, Plus, Rows3, Search, ShoppingCart, Sparkles, Trash2, Utensils, X } from '@lucide/vue';
+import WhatsAppContactButton from '@/Components/WhatsAppContactButton.vue';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
+import { Image, LayoutGrid, MessageCircle, Minus, Plus, Rows3, Search, ShoppingCart, Sparkles, Trash2, Utensils, X } from '@lucide/vue';
 import { computed, ref } from 'vue';
 
 type MenuItem = {
@@ -13,28 +14,43 @@ type MenuItem = {
     unit_label: string;
     image_url: string | null;
     is_available: boolean;
+    option_groups: Array<{
+        id: string;
+        name: string;
+        required: boolean;
+        multiple: boolean;
+        options: Array<{ id: string; name: string; price_minor: number }>;
+    }>;
 };
 
-type CartItem = MenuItem & { quantity: number };
+type SelectedOption = { id: string; quantity: number };
+type CartItem = MenuItem & { cartLineId: string; quantity: number; selectedOptions: SelectedOption[] };
 type DisplayMode = 'list' | 'grid' | 'thumb';
 
 const props = defineProps<{
     tenant: string;
     restaurantName: string;
+    whatsappPhone: string | null;
     heroImageUrl: string | null;
     menuItems: MenuItem[];
     status?: string | null;
 }>();
 
+const page = usePage();
+const hasWhatsAppOrderAccess = computed(() => ((page.props.tenantFeatures as string[] | undefined) ?? []).includes('whatsapp_orders'));
 const cart = ref<CartItem[]>([]);
 const searchQuery = ref('');
 const selectedCategory = ref('All');
 const displayMode = ref<DisplayMode>('grid');
+const selectedAllergies = ref<string[]>([]);
+const otherAllergy = ref('');
+const allergyChoices = ['Peanuts', 'Tree nuts', 'Dairy', 'Eggs', 'Fish', 'Shellfish', 'Soy', 'Gluten'];
 const form = useForm({
     customer_name: '',
     customer_phone: '',
     notes: '',
-    items: [] as Array<{ menu_item_id: number; quantity: number }>,
+    channel: 'website' as 'website' | 'whatsapp',
+    items: [] as Array<{ menu_item_id: number; quantity: number; selected_options: SelectedOption[] }>,
 });
 
 const categories = computed<string[]>(() => ['All', ...Array.from(new Set(props.menuItems.map((item) => item.category).filter(Boolean)))]);
@@ -47,10 +63,48 @@ const filteredItems = computed(() => {
         return matchesCategory && matchesQuery;
     });
 });
-const totalMinor = computed(() => cart.value.reduce((total, item) => total + item.price_minor * item.quantity, 0));
-const canSubmit = computed(() => cart.value.length > 0 && form.customer_name.trim().length > 0 && form.customer_phone.trim().length > 0);
+const optionQuantity = (item: CartItem, optionId: string): number => item.selectedOptions.find((option) => option.id === optionId)?.quantity ?? 0;
+const selectedOptionPrice = (item: CartItem): number => item.option_groups
+    .flatMap((group) => group.options)
+    .reduce((total, option) => total + option.price_minor * optionQuantity(item, option.id), 0);
+const itemUnitPrice = (item: CartItem): number => item.price_minor + selectedOptionPrice(item);
+const cartOptionsValid = computed(() => cart.value.every((item) => item.option_groups.every((group) => !group.required || group.options.some((option) => optionQuantity(item, option.id) > 0))));
+const totalMinor = computed(() => cart.value.reduce((total, item) => total + itemUnitPrice(item) * item.quantity, 0));
+const canSubmit = computed(() => cart.value.length > 0 && cartOptionsValid.value && form.customer_name.trim().length > 0 && form.customer_phone.trim().length > 0);
 const heroImage = computed(() => props.heroImageUrl ?? props.menuItems.find((item) => item.image_url)?.image_url ?? '/images/storefront/hero-default.svg');
 const hasItems = computed(() => filteredItems.value.length > 0);
+const allergyNote = computed(() => [...selectedAllergies.value, ...(otherAllergy.value.trim() ? [otherAllergy.value.trim()] : [])].join(', '));
+const orderNotes = computed(() => [allergyNote.value ? `ALLERGY ALERT: ${allergyNote.value}` : '', form.notes.trim()].filter(Boolean).join('\n'));
+const whatsappOrderUrl = computed(() => {
+    if (!hasWhatsAppOrderAccess.value) return null;
+    const phone = (props.whatsappPhone ?? '').replace(/\D/g, '');
+    if (phone.length < 8 || !canSubmit.value) return null;
+
+    const lines = cart.value.map((item, index) => {
+        const options = item.option_groups.flatMap((group) => group.options
+            .filter((option) => optionQuantity(item, option.id) > 0)
+            .map((option) => `  ${group.name}: ${optionQuantity(item, option.id)} x ${option.name} (+${formatPrice(option.price_minor)} each) = ${formatPrice(option.price_minor * optionQuantity(item, option.id))}`));
+        return [
+            `*${index + 1}. ${item.quantity} x ${item.name}*`,
+            `  Food: ${formatPrice(item.price_minor)} each`,
+            ...options,
+            `  Unit total: ${formatPrice(itemUnitPrice(item))}`,
+            `  Line total: ${formatPrice(itemUnitPrice(item) * item.quantity)}`,
+        ].join('\n');
+    });
+    const message = [
+        `*FoodStore order - ${props.restaurantName}*`,
+        '------------------------------',
+        ...lines,
+        '------------------------------',
+        `*Total: ${formatPrice(totalMinor.value)}*`,
+        `Customer: ${form.customer_name.trim()}`,
+        `Phone: ${form.customer_phone.trim()}`,
+        orderNotes.value ? `Notes: ${orderNotes.value}` : '',
+    ].filter(Boolean).join('\n');
+
+    return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+});
 
 const formatPrice = (minor: number): string => new Intl.NumberFormat('en-GH', {
     style: 'currency',
@@ -59,16 +113,39 @@ const formatPrice = (minor: number): string => new Intl.NumberFormat('en-GH', {
 
 const addItem = (item: MenuItem): void => {
     if (!item.is_available) return;
-    const existing = cart.value.find((line) => line.id === item.id);
+    const existing = cart.value.find((line) => line.id === item.id && line.selectedOptions.length === 0);
     if (existing) existing.quantity += 1;
-    else cart.value.push({ ...item, quantity: 1 });
+    else cart.value.push({ ...item, cartLineId: crypto.randomUUID(), quantity: 1, selectedOptions: [] });
 };
 
-const adjustQuantity = (itemId: number, amount: number): void => {
-    const line = cart.value.find((item) => item.id === itemId);
+const adjustQuantity = (cartLineId: string, amount: number): void => {
+    const line = cart.value.find((item) => item.cartLineId === cartLineId);
     if (!line) return;
     line.quantity += amount;
-    if (line.quantity <= 0) cart.value = cart.value.filter((item) => item.id !== itemId);
+    if (line.quantity <= 0) cart.value = cart.value.filter((item) => item.cartLineId !== cartLineId);
+};
+
+const setSingleOption = (item: CartItem, group: MenuItem['option_groups'][number], optionId: string): void => {
+    const groupOptionIds = group.options.map((option) => option.id);
+    item.selectedOptions = item.selectedOptions.filter((selection) => !groupOptionIds.includes(selection.id));
+    if (optionId) item.selectedOptions.push({ id: optionId, quantity: 1 });
+};
+
+const toggleMultipleOption = (item: CartItem, optionId: string, checked: boolean): void => {
+    const quantity = checked ? 1 : 0;
+    setOptionQuantity(item, optionId, quantity);
+};
+
+const setOptionQuantity = (item: CartItem, optionId: string, quantity: number): void => {
+    const boundedQuantity = Math.max(0, Math.min(99, Math.trunc(quantity)));
+    const existing = item.selectedOptions.find((selection) => selection.id === optionId);
+    if (boundedQuantity === 0) {
+        item.selectedOptions = item.selectedOptions.filter((selection) => selection.id !== optionId);
+    } else if (existing) {
+        existing.quantity = boundedQuantity;
+    } else {
+        item.selectedOptions.push({ id: optionId, quantity: boundedQuantity });
+    }
 };
 
 const clearSearch = (): void => {
@@ -76,17 +153,35 @@ const clearSearch = (): void => {
     selectedCategory.value = 'All';
 };
 
-const submitOrder = (): void => {
+const submitOrder = (channel: 'website' | 'whatsapp' = 'website'): void => {
     if (!canSubmit.value) return;
-    form.items = cart.value.map((item) => ({ menu_item_id: item.id, quantity: item.quantity }));
+    const whatsappUrl = channel === 'whatsapp' ? whatsappOrderUrl.value : null;
+    if (channel === 'whatsapp' && !whatsappUrl) return;
+    const whatsappWindow = channel === 'whatsapp' ? window.open('about:blank', '_blank') : null;
+
+    form.items = cart.value.map((item) => ({ menu_item_id: item.id, quantity: item.quantity, selected_options: item.selectedOptions }));
+    form.notes = orderNotes.value;
+    form.channel = channel;
     form.post(route('tenant.foodstore.online.orders.store', { tenant: props.tenant }), {
         preserveScroll: true,
         onSuccess: () => {
+            if (whatsappUrl) {
+                if (whatsappWindow) {
+                    whatsappWindow.opener = null;
+                    whatsappWindow.location.href = whatsappUrl;
+                } else {
+                    window.location.href = whatsappUrl;
+                }
+            }
             cart.value = [];
             form.customer_name = '';
             form.customer_phone = '';
             form.notes = '';
+            selectedAllergies.value = [];
+            otherAllergy.value = '';
+            form.channel = 'website';
         },
+        onError: () => whatsappWindow?.close(),
     });
 };
 </script>
@@ -234,7 +329,7 @@ const submitOrder = (): void => {
                         </div>
 
                         <div v-if="cart.length" class="mt-4 space-y-3">
-                            <div v-for="item in cart" :key="item.id" class="rounded-2xl border border-white/10 bg-white/5 p-3">
+                            <div v-for="item in cart" :key="item.cartLineId" class="rounded-2xl border border-white/10 bg-white/5 p-3">
                                 <div class="flex items-start gap-3">
                                     <div class="h-12 w-12 overflow-hidden rounded-xl bg-white/10">
                                         <img v-if="item.image_url" :src="item.image_url" :alt="item.name" class="h-full w-full object-cover" />
@@ -246,21 +341,37 @@ const submitOrder = (): void => {
                                                 <p class="truncate text-sm font-bold">{{ item.name }}</p>
                                                 <p class="mt-1 text-[11px] text-white/65">{{ formatPrice(item.price_minor) }} · {{ item.unit_label }}</p>
                                             </div>
-                                            <button type="button" class="grid size-7 place-items-center rounded-md text-white/60 hover:bg-white/10 hover:text-white" :aria-label="`Remove ${item.name} from order`" @click="cart = cart.filter((line) => line.id !== item.id)">
+                                            <button type="button" class="grid size-7 place-items-center rounded-md text-white/60 hover:bg-white/10 hover:text-white" :aria-label="`Remove ${item.name} from order`" @click="cart = cart.filter((line) => line.cartLineId !== item.cartLineId)">
                                                 <Trash2 :size="14" aria-hidden="true" />
                                             </button>
                                         </div>
                                         <div class="mt-3 flex items-center justify-between gap-2">
                                             <div class="flex items-center gap-1">
-                                                <button type="button" class="grid size-8 place-items-center rounded-md border border-white/20 hover:bg-white/10" :aria-label="`Remove one ${item.name}`" @click="adjustQuantity(item.id, -1)">
+                                                <button type="button" class="grid size-8 place-items-center rounded-md border border-white/20 hover:bg-white/10" :aria-label="`Remove one ${item.name}`" @click="adjustQuantity(item.cartLineId, -1)">
                                                     <Minus :size="14" aria-hidden="true" />
                                                 </button>
                                                 <span class="w-6 text-center text-sm font-bold">{{ item.quantity }}</span>
-                                                <button type="button" class="grid size-8 place-items-center rounded-md border border-white/20 hover:bg-white/10" :aria-label="`Add one ${item.name}`" @click="adjustQuantity(item.id, 1)">
+                                                <button type="button" class="grid size-8 place-items-center rounded-md border border-white/20 hover:bg-white/10" :aria-label="`Add one ${item.name}`" @click="adjustQuantity(item.cartLineId, 1)">
                                                     <Plus :size="14" aria-hidden="true" />
                                                 </button>
                                             </div>
-                                            <strong class="font-mono text-sm">{{ formatPrice(item.price_minor * item.quantity) }}</strong>
+                                            <strong class="font-mono text-sm">{{ formatPrice(itemUnitPrice(item) * item.quantity) }}</strong>
+                                        </div>
+                                        <div v-if="item.option_groups.length" class="mt-3 space-y-2 border-t border-white/10 pt-3">
+                                            <fieldset v-for="group in item.option_groups" :key="group.id" class="rounded-md border border-white/10 bg-black/10 p-2.5">
+                                                <legend class="px-1 text-[11px] font-bold text-white/80">{{ group.name }}{{ group.required ? ' · required' : ' · optional' }}</legend>
+                                                <select v-if="!group.multiple" :value="group.options.find((option) => optionQuantity(item, option.id) > 0)?.id ?? ''" class="min-h-9 w-full rounded-md border border-neutral-300 bg-white px-2 text-xs text-neutral-900" @change="setSingleOption(item, group, ($event.target as HTMLSelectElement).value)">
+                                                    <option value="">{{ group.required ? 'Choose one' : `No ${group.name.toLowerCase()}` }}</option>
+                                                    <option v-for="option in group.options" :key="option.id" :value="option.id">{{ option.name }} · {{ formatPrice(option.price_minor) }}</option>
+                                                </select>
+                                                <label v-if="!group.multiple && group.options.some((option) => optionQuantity(item, option.id) > 0)" class="mt-2 flex items-center justify-between gap-3 text-xs text-white/90">Portions<input type="number" min="1" max="99" :value="optionQuantity(item, group.options.find((option) => optionQuantity(item, option.id) > 0)?.id ?? '')" class="min-h-8 w-20 rounded-md border border-neutral-300 bg-white px-2 text-right text-neutral-900" @input="setOptionQuantity(item, group.options.find((option) => optionQuantity(item, option.id) > 0)?.id ?? '', Number(($event.target as HTMLInputElement).value))" /></label>
+                                                <div v-if="group.multiple" class="mt-1 space-y-1">
+                                                    <div v-for="option in group.options" :key="option.id" class="flex min-h-9 items-center justify-between gap-2 text-xs text-white/90">
+                                                        <label class="flex items-center gap-2"><input type="checkbox" :checked="optionQuantity(item, option.id) > 0" class="rounded border-white/40 text-emerald-700" @change="toggleMultipleOption(item, option.id, ($event.target as HTMLInputElement).checked)" />{{ option.name }} · {{ formatPrice(option.price_minor) }} each</label>
+                                                        <input v-if="optionQuantity(item, option.id) > 0" type="number" min="1" max="99" :value="optionQuantity(item, option.id)" :aria-label="`${option.name} portions`" class="min-h-8 w-16 rounded-md border border-neutral-300 bg-white px-2 text-right text-neutral-900" @input="setOptionQuantity(item, option.id, Number(($event.target as HTMLInputElement).value))" />
+                                                    </div>
+                                                </div>
+                                            </fieldset>
                                         </div>
                                     </div>
                                 </div>
@@ -274,7 +385,7 @@ const submitOrder = (): void => {
                                 <span class="font-mono">{{ formatPrice(totalMinor) }}</span>
                             </div>
 
-                            <form class="mt-4 space-y-3" @submit.prevent="submitOrder">
+                            <form class="mt-4 space-y-3" @submit.prevent="submitOrder('website')">
                                 <label class="block text-xs font-bold text-white/85">Your name
                                     <input v-model="form.customer_name" required maxlength="120" autocomplete="name" class="mt-1.5 min-h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm font-normal text-neutral-900" />
                                 </label>
@@ -282,13 +393,23 @@ const submitOrder = (): void => {
                                     <input v-model="form.customer_phone" required maxlength="40" type="tel" autocomplete="tel" class="mt-1.5 min-h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm font-normal text-neutral-900" />
                                 </label>
                                 <label class="block text-xs font-bold text-white/85">Order notes (optional)
-                                    <textarea v-model="form.notes" maxlength="500" rows="2" class="mt-1.5 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-normal text-neutral-900" />
+                                    <textarea v-model="form.notes" maxlength="300" rows="2" class="mt-1.5 w-full rounded-md border border-neutral-300 bg-white px-3 py-2 text-sm font-normal text-neutral-900" />
                                 </label>
+                                <fieldset class="rounded-md border border-white/15 bg-white/5 p-3">
+                                    <legend class="px-1 text-xs font-bold text-white/90">Food allergies or dietary alerts</legend>
+                                    <p class="mb-2 text-[11px] text-white/65">Selected allergies are highlighted for the kitchen.</p>
+                                    <div class="grid grid-cols-2 gap-1.5">
+                                        <label v-for="allergy in allergyChoices" :key="allergy" class="flex items-center gap-2 text-xs text-white/90"><input v-model="selectedAllergies" type="checkbox" :value="allergy" class="rounded border-white/40 text-emerald-700" />{{ allergy }}</label>
+                                    </div>
+                                    <input v-model="otherAllergy" maxlength="100" placeholder="Other allergy or dietary warning" class="mt-2 min-h-9 w-full rounded-md border border-neutral-300 bg-white px-2.5 text-xs text-neutral-900" />
+                                </fieldset>
                                 <p v-if="form.errors.items || form.errors.customer_name || form.errors.customer_phone" class="text-sm font-semibold text-red-100">{{ form.errors.items || form.errors.customer_name || form.errors.customer_phone }}</p>
                                 <p v-if="form.errors.notes" class="text-sm font-semibold text-red-100">{{ form.errors.notes }}</p>
+                                <p v-if="!cartOptionsValid && cart.length" class="text-xs font-semibold text-amber-200">Choose an option in each required group before sending the order.</p>
                                 <button type="submit" class="min-h-11 w-full rounded-xl bg-emerald-300 px-4 text-sm font-black text-emerald-950 hover:bg-emerald-200 disabled:cursor-not-allowed disabled:opacity-50" :disabled="!canSubmit || form.processing">
                                     {{ form.processing ? 'Sending order...' : 'Send order' }}
                                 </button>
+                                <button v-if="whatsappOrderUrl" type="button" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-white px-4 text-sm font-bold text-emerald-900 hover:bg-emerald-50 disabled:opacity-60" :disabled="form.processing" @click="submitOrder('whatsapp')"><MessageCircle :size="17" aria-hidden="true" />{{ form.processing && form.channel === 'whatsapp' ? 'Saving order...' : 'Send order via WhatsApp' }}</button>
                                 <p class="text-center text-xs text-white/65">The restaurant will contact you to confirm your order.</p>
                             </form>
                         </div>
@@ -296,5 +417,6 @@ const submitOrder = (): void => {
                 </aside>
             </div>
         </div>
+        <WhatsAppContactButton :phone="whatsappPhone" :message="`Hello ${restaurantName}, I have a question about your menu.`" />
     </main>
 </template>

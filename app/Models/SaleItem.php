@@ -17,12 +17,14 @@ class SaleItem extends Model
         'quantity',
         'unit_price_minor',
         'line_total_minor',
+        'selected_options',
     ];
 
     protected $casts = [
         'quantity' => 'integer',
         'unit_price_minor' => 'integer',
         'line_total_minor' => 'integer',
+        'selected_options' => 'array',
     ];
 
     /**

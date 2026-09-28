@@ -12,11 +12,22 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
+use Stancl\Tenancy\Tenancy;
 use Tests\TestCase;
 
 class SubscriptionPlanSettingsTest extends TestCase
 {
     use RefreshDatabase;
+
+    private ?Tenant $whatsappTenant = null;
+
+    protected function tearDown(): void
+    {
+        app(Tenancy::class)->end();
+        $this->whatsappTenant?->delete();
+
+        parent::tearDown();
+    }
 
     public function test_superadmin_can_create_and_update_month_based_subscription_plans(): void
     {
@@ -32,7 +43,7 @@ class SubscriptionPlanSettingsTest extends TestCase
             'description' => 'Three months of service.',
             'price_ghs' => '180.50',
             'billing_interval_months' => 3,
-            'features' => ['pos', 'online_store'],
+            'features' => ['pos', 'online_store', 'sales_expenses', 'audit_log', 'whatsapp_orders'],
             'is_active' => true,
         ])->assertRedirect();
 
@@ -40,13 +51,14 @@ class SubscriptionPlanSettingsTest extends TestCase
         $this->assertSame(18050, $plan->price_minor);
         $this->assertSame(3, $plan->billing_interval_months);
         $this->assertSame('quarterly', $plan->billing_interval);
+        $this->assertSame(['pos', 'online_store', 'sales_expenses', 'audit_log', 'whatsapp_orders'], $plan->features);
 
         $this->actingAs($admin, 'super_admin')->patch(route('super-admin.subscriptions.plans.update', ['plan' => $plan->id]), [
             'name' => 'Half-year Retail',
             'description' => null,
             'price_ghs' => '300',
             'billing_interval_months' => 6,
-            'features' => ['restaurant_foodstore'],
+            'features' => ['restaurant_foodstore', 'sales_expenses', 'audit_log', 'whatsapp_orders'],
             'is_active' => false,
         ])->assertRedirect();
 
@@ -54,6 +66,7 @@ class SubscriptionPlanSettingsTest extends TestCase
         $this->assertSame('Half-year Retail', $plan->name);
         $this->assertSame(30000, $plan->price_minor);
         $this->assertSame(6, $plan->billing_interval_months);
+        $this->assertSame(['restaurant_foodstore', 'sales_expenses', 'audit_log', 'whatsapp_orders'], $plan->features);
         $this->assertFalse($plan->is_active);
     }
 
@@ -114,7 +127,7 @@ class SubscriptionPlanSettingsTest extends TestCase
                 'password' => 'correct-password',
                 'business_name' => $businessName,
                 'plan_id' => $plan->id,
-                'features' => [],
+                'features' => ['sales_expenses', 'audit_log', 'whatsapp_orders'],
             ])
             ->assertRedirect()
             ->assertSessionHas('status', 'Workspace user created.');
@@ -130,7 +143,7 @@ class SubscriptionPlanSettingsTest extends TestCase
         $subscription = Subscription::query()->where('tenant_id', $tenant->id)->firstOrFail();
         $this->assertSame(120000, $subscription->amount_minor);
         $this->assertSame('active', $subscription->status);
-        $this->assertSame([], $subscription->metadata['features']);
+        $this->assertSame(['sales_expenses', 'audit_log', 'whatsapp_orders'], $subscription->metadata['features']);
         $this->assertTrue($subscription->renews_at->greaterThan(now()->addMonthsNoOverflow(11)));
         $this->assertDatabaseHas('payments', [
             'tenant_id' => $tenant->id,
@@ -140,6 +153,61 @@ class SubscriptionPlanSettingsTest extends TestCase
             'status' => 'paid',
         ]);
         $tenant->delete();
+    }
+
+    public function test_superadmin_can_register_a_tenant_whatsapp_number(): void
+    {
+        $admin = $this->createSuperAdmin();
+        $tenantId = 'whatsapp-'.Str::lower(Str::random(8));
+        $this->whatsappTenant = Tenant::query()->create([
+            'id' => $tenantId,
+            'subscriber_code' => 'ES907',
+            'name' => 'WhatsApp Store',
+            'slug' => $tenantId,
+            'email' => 'whatsapp-store@example.test',
+            'status' => 'active',
+            'data' => ['name' => 'WhatsApp Store', 'slug' => $tenantId],
+        ]);
+        $plan = Plan::query()->create([
+            'name' => 'WhatsApp Store plan',
+            'slug' => 'whatsapp-store-plan',
+            'price_minor' => 10000,
+            'currency' => 'GHS',
+            'billing_interval' => 'monthly',
+            'features' => [],
+            'is_active' => true,
+        ]);
+        $subscription = Subscription::query()->create([
+            'tenant_id' => $this->whatsappTenant->id,
+            'plan_id' => $plan->id,
+            'provider' => 'internal',
+            'status' => 'active',
+            'starts_at' => now(),
+            'metadata' => ['features' => ['online_store']],
+        ]);
+
+        $this->actingAs($admin, 'super_admin')
+            ->patch(route('super-admin.tenants.update', ['tenant' => $this->whatsappTenant->id]), [
+                'name' => 'WhatsApp Store',
+                'email' => 'whatsapp-store@example.test',
+                'phone' => '+233201111111',
+                'whatsapp_phone' => '+233 20 222 3333',
+                'status' => 'active',
+                'catalogue_mode' => 'shared',
+                'features' => ['online_store', 'sales_expenses', 'audit_log', 'whatsapp_orders'],
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame('+233 20 222 3333', $this->whatsappTenant->fresh()->whatsapp_phone);
+        $this->assertSame(['online_store', 'sales_expenses', 'audit_log', 'whatsapp_orders'], $subscription->fresh()->metadata['features']);
+        $this->actingAs($admin, 'super_admin')
+            ->get(route('super-admin.tenants.show', ['tenant' => $this->whatsappTenant->id]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('SuperAdmin/Tenant')
+                ->where('tenant.whatsapp_phone', '+233 20 222 3333'));
+
     }
 
     private function createSuperAdmin(): SuperAdmin

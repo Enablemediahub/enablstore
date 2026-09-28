@@ -83,6 +83,60 @@ class FoodStoreSaleCheckoutTest extends TestCase
         $this->assertDatabaseCount('restaurant_orders', 0);
     }
 
+    public function test_foodstore_checkout_calculates_and_snapshots_selected_options(): void
+    {
+        $this->startTenant();
+        $menuItem = RestaurantMenuItem::query()->create([
+            'name' => 'Peanut soup bowl',
+            'category' => 'Soup',
+            'price_minor' => 4000,
+            'is_available' => true,
+            'option_groups' => [[
+                'id' => 'protein',
+                'name' => 'Protein',
+                'required' => true,
+                'multiple' => false,
+                'options' => [
+                    ['id' => 'goat', 'name' => 'Goat meat', 'price_minor' => 2500],
+                    ['id' => 'chicken', 'name' => 'Chicken', 'price_minor' => 1500],
+                ],
+            ], [
+                'id' => 'extras',
+                'name' => 'Extras',
+                'required' => false,
+                'multiple' => true,
+                'options' => [['id' => 'egg', 'name' => 'Boiled egg', 'price_minor' => 700]],
+            ]],
+        ]);
+
+        $sale = app(CheckoutService::class)->checkout([
+            'transaction_uuid' => (string) Str::uuid(),
+            'payment_method' => 'cash',
+            'source' => 'foodstore',
+            'items' => [[
+                'menu_item_id' => $menuItem->id,
+                'quantity' => 2,
+                'selected_options' => [
+                    ['id' => 'goat', 'quantity' => 2],
+                    ['id' => 'egg', 'quantity' => 1],
+                ],
+            ]],
+            'tenders' => [[
+                'method' => 'cash',
+                'amount_minor' => 19400,
+                'cash_received_minor' => 19400,
+            ]],
+        ]);
+
+        $saleItem = $sale->items()->firstOrFail();
+        $this->assertSame(19400, $sale->total_minor);
+        $this->assertSame(9700, $saleItem->unit_price_minor);
+        $this->assertSame([
+            ['group' => 'Protein', 'name' => 'Goat meat', 'price_minor' => 2500, 'quantity' => 2],
+            ['group' => 'Extras', 'name' => 'Boiled egg', 'price_minor' => 700, 'quantity' => 1],
+        ], $saleItem->selected_options);
+    }
+
     public function test_foodstore_checkout_rejects_a_paused_menu_item(): void
     {
         $this->startTenant();
@@ -173,6 +227,7 @@ class FoodStoreSaleCheckoutTest extends TestCase
             'starts_at' => now(),
             'metadata' => ['features' => ['restaurant_foodstore', 'foodstore_online']],
         ]);
+        $this->tenant->update(['whatsapp_phone' => '+233 20 123 4567']);
         app(Tenancy::class)->initialize($this->tenant);
         $menuItem = RestaurantMenuItem::query()->create([
             'name' => 'Family meat box',
@@ -186,6 +241,7 @@ class FoodStoreSaleCheckoutTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Tenant/Restaurant/Online')
+                ->where('whatsappPhone', '+233 20 123 4567')
                 ->where('menuItems.0.name', 'Family meat box'));
 
         $this->post(route('tenant.foodstore.online.orders.store', ['tenant' => $this->tenant->id]), [
@@ -202,6 +258,141 @@ class FoodStoreSaleCheckoutTest extends TestCase
         $this->assertSame('Online customer', $order->created_by_name);
         $this->assertSame(25000, $order->total_minor);
         $this->assertSame('Family meat box', $order->items->first()->item_name);
+    }
+
+    public function test_online_order_requires_configured_choices_and_prices_them_on_the_server(): void
+    {
+        $this->startTenant();
+        app(Tenancy::class)->end();
+        $plan = Plan::query()->create([
+            'name' => 'FoodStore options test plan',
+            'slug' => 'foodstore-options-test-plan',
+            'price_minor' => 0,
+            'currency' => 'GHS',
+            'billing_interval' => 'monthly',
+            'features' => ['restaurant_foodstore', 'foodstore_online'],
+            'is_active' => true,
+        ]);
+        Subscription::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'plan_id' => $plan->id,
+            'provider' => 'internal',
+            'status' => 'active',
+            'starts_at' => now(),
+            'metadata' => ['features' => ['restaurant_foodstore', 'foodstore_online']],
+        ]);
+        app(Tenancy::class)->initialize($this->tenant);
+        $menuItem = RestaurantMenuItem::query()->create([
+            'name' => 'Rice plate',
+            'category' => 'Meals',
+            'price_minor' => 3000,
+            'is_available' => true,
+            'option_groups' => [[
+                'id' => 'protein',
+                'name' => 'Protein',
+                'required' => true,
+                'multiple' => false,
+                'options' => [
+                    ['id' => 'chicken', 'name' => 'Chicken', 'price_minor' => 2000],
+                    ['id' => 'goat', 'name' => 'Goat meat', 'price_minor' => 3500],
+                ],
+            ], [
+                'id' => 'extras',
+                'name' => 'Extras',
+                'required' => false,
+                'multiple' => true,
+                'options' => [['id' => 'salad', 'name' => 'Salad', 'price_minor' => 500]],
+            ]],
+        ]);
+        $url = route('tenant.foodstore.online.orders.store', ['tenant' => $this->tenant->id]);
+        $payload = [
+            'customer_name' => 'Online Customer',
+            'customer_phone' => '+233201234567',
+            'notes' => 'ALLERGY ALERT: Peanuts',
+            'items' => [['menu_item_id' => $menuItem->id, 'quantity' => 1]],
+        ];
+
+        $this->post($url, $payload)->assertSessionHasErrors('items');
+        $this->assertDatabaseCount('restaurant_orders', 0);
+
+        $payload['items'][0]['selected_options'] = [
+            ['id' => 'chicken', 'quantity' => 2],
+            ['id' => 'salad', 'quantity' => 1],
+        ];
+        $this->post($url, $payload)->assertRedirect();
+
+        $order = RestaurantOrder::query()->with('items')->firstOrFail();
+        $orderItem = $order->items->firstOrFail();
+        $this->assertSame('ALLERGY ALERT: Peanuts', $order->notes);
+        $this->assertSame(7500, $order->total_minor);
+        $this->assertSame(7500, $orderItem->line_total_minor);
+        $this->assertSame([
+            ['group' => 'Protein', 'name' => 'Chicken', 'price_minor' => 2000, 'quantity' => 2],
+            ['group' => 'Extras', 'name' => 'Salad', 'price_minor' => 500, 'quantity' => 1],
+        ], $orderItem->selected_options);
+    }
+
+    public function test_whatsapp_order_is_saved_to_the_kitchen_queue_and_can_be_prepared(): void
+    {
+        $this->startTenant();
+        app(Tenancy::class)->end();
+        $plan = Plan::query()->create([
+            'name' => 'Kitchen queue test plan',
+            'slug' => 'kitchen-queue-test-plan',
+            'price_minor' => 0,
+            'currency' => 'GHS',
+            'billing_interval' => 'monthly',
+            'features' => ['restaurant_foodstore', 'foodstore_online'],
+            'is_active' => true,
+        ]);
+        $subscription = Subscription::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'plan_id' => $plan->id,
+            'provider' => 'internal',
+            'status' => 'active',
+            'starts_at' => now(),
+            'metadata' => ['features' => ['restaurant_foodstore', 'foodstore_online']],
+        ]);
+        $admin = User::factory()->create([
+            'tenant_id' => $this->tenant->id,
+            'role' => 'admin',
+        ]);
+        app(Tenancy::class)->initialize($this->tenant);
+        $menuItem = RestaurantMenuItem::query()->create([
+            'name' => 'Chicken rice plate',
+            'category' => 'Meals',
+            'price_minor' => 4500,
+            'is_available' => true,
+        ]);
+
+        $orderUrl = route('tenant.foodstore.online.orders.store', ['tenant' => $this->tenant->id]);
+        $orderData = [
+            'customer_name' => 'WhatsApp Customer',
+            'customer_phone' => '+233201234567',
+            'channel' => 'whatsapp',
+            'items' => [['menu_item_id' => $menuItem->id, 'quantity' => 2]],
+        ];
+        $this->post($orderUrl, $orderData)->assertStatus(402);
+        $subscription->update(['metadata' => ['features' => ['restaurant_foodstore', 'foodstore_online', 'whatsapp_orders']]]);
+        $this->post($orderUrl, $orderData)->assertRedirect();
+
+        $order = RestaurantOrder::query()->firstOrFail();
+        $this->assertSame('Online customer via WhatsApp', $order->created_by_name);
+        $this->actingAs($admin)
+            ->get(route('tenant.foodstore.orders.index', ['tenant' => $this->tenant->id]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Tenant/Restaurant/Orders')
+                ->where('orders.0.customerName', 'WhatsApp Customer')
+                ->where('orders.0.createdByName', 'Online customer via WhatsApp')
+                ->where('orders.0.items.0.name', 'Chicken rice plate'));
+
+        $this->actingAs($admin)
+            ->patch(route('tenant.foodstore.orders.status', ['tenant' => $this->tenant->id, 'order' => $order->id]), [
+                'status' => 'preparing',
+            ])
+            ->assertRedirect();
+        $this->assertSame('preparing', $order->fresh()->status);
     }
 
     public function test_pos_and_foodstore_heroes_show_separate_completed_sales_for_today(): void
@@ -351,6 +542,13 @@ class FoodStoreSaleCheckoutTest extends TestCase
                 'description' => 'Family size pack',
                 'price_ghs' => '95.50',
                 'unit_label' => 'pack',
+                'option_groups' => [[
+                    'id' => 'protein',
+                    'name' => 'Protein',
+                    'required' => true,
+                    'multiple' => false,
+                    'options' => [['id' => 'chicken', 'name' => 'Chicken', 'price_ghs' => '12.00']],
+                ]],
                 'image' => UploadedFile::fake()->image('jollof.jpg'),
             ])
             ->assertRedirect();
@@ -358,6 +556,7 @@ class FoodStoreSaleCheckoutTest extends TestCase
         $menuItem = RestaurantMenuItem::query()->where('name', 'Family jollof pack')->firstOrFail();
         $this->assertSame(9550, $menuItem->price_minor);
         $this->assertSame('pack', $menuItem->unit_label);
+        $this->assertSame(1200, $menuItem->option_groups[0]['options'][0]['price_minor']);
         $this->assertNotEmpty($menuItem->image_path);
         Storage::disk('public')->assertExists($menuItem->image_path);
         $categoryNames = Category::query()->orderBy('name')->pluck('name')->values()->all();
@@ -370,6 +569,7 @@ class FoodStoreSaleCheckoutTest extends TestCase
                 ->component('Tenant/Restaurant/Menu')
                 ->where('categories', $categoryNames)
                 ->where('menuItems.0.unit_label', 'pack')
+                ->where('menuItems.0.option_groups.0.name', 'Protein')
                 ->where('menuItems.0.image_url', route('tenant.media', [
                     'tenant' => $this->tenant->id,
                     'path' => $menuItem->image_path,

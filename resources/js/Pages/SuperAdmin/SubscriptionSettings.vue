@@ -27,6 +27,9 @@ const featureOptions = [
     { value: 'restaurant_foodstore', label: 'FoodStore' },
     { value: 'products', label: 'Products' },
     { value: 'inventory', label: 'Inventory' },
+    { value: 'sales_expenses', label: 'Sales & Expenses' },
+    { value: 'audit_log', label: 'Audit Log' },
+    { value: 'whatsapp_orders', label: 'WhatsApp Ordering' },
 ];
 
 const billingLabel = (months: number): string => ({ 1: 'Monthly', 3: 'Quarterly', 6: 'Every 6 months', 12: 'Yearly' })[months] ?? `Every ${months} months`;

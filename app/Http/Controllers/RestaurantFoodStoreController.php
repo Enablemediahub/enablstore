@@ -11,6 +11,7 @@ use App\Models\PlatformSetting;
 use App\Models\Sale;
 use App\Models\User;
 use App\Services\CheckoutService;
+use App\Services\RestaurantMenuPricing;
 use App\Support\TenantPortalFeatures;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -89,6 +90,7 @@ class RestaurantFoodStoreController extends Controller
                     'name' => $item->item_name ?? $item->product->name ?? $item->restaurantMenuItem->name ?? 'Food item',
                     'quantity' => $item->quantity,
                     'priceMinor' => $item->unit_price_minor,
+                    'selectedOptions' => $item->selected_options ?? [],
                 ])->values(),
                 'totalMinor' => $completedSale->total_minor,
                 'paymentMethod' => $completedSale->payment_method,
@@ -113,6 +115,7 @@ class RestaurantFoodStoreController extends Controller
         return Inertia::render('Tenant/Restaurant/Online', [
             'tenant' => (string) tenant()->getTenantKey(),
             'restaurantName' => (string) (tenant()->name ?? 'Restaurant'),
+            'whatsappPhone' => tenant()->whatsapp_phone,
             'heroImageUrl' => PlatformSetting::foodStoreHeroImageUrl(request()),
             'menuItems' => RestaurantMenuItem::query()->where('is_available', true)->orderBy('category')->orderBy('name')->get()
                 ->map(fn (RestaurantMenuItem $item): array => $this->menuItemPayload($item)),
@@ -132,6 +135,36 @@ class RestaurantFoodStoreController extends Controller
         ]);
     }
 
+    public function orders(): Response
+    {
+        return Inertia::render('Tenant/Restaurant/Orders', [
+            'tenant' => (string) tenant()->getTenantKey(),
+            'restaurantName' => (string) (tenant()->name ?? 'Restaurant'),
+            'orders' => RestaurantOrder::query()
+                ->with('items')
+                ->latest()
+                ->limit(100)
+                ->get()
+                ->map(static fn (RestaurantOrder $order): array => [
+                    'id' => $order->id,
+                    'customerName' => $order->customer_name,
+                    'customerPhone' => $order->customer_phone,
+                    'notes' => $order->notes,
+                    'status' => $order->status,
+                    'totalMinor' => $order->total_minor,
+                    'createdByName' => $order->created_by_name,
+                    'createdAt' => $order->created_at?->toIso8601String(),
+                    'items' => $order->items->map(static fn ($item): array => [
+                        'name' => $item->item_name,
+                        'quantity' => $item->quantity,
+                        'unitPriceMinor' => $item->unit_price_minor,
+                        'lineTotalMinor' => $item->line_total_minor,
+                        'selectedOptions' => $item->selected_options ?? [],
+                    ])->values(),
+                ])->values(),
+        ]);
+    }
+
     public function storeMenuItem(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -141,6 +174,7 @@ class RestaurantFoodStoreController extends Controller
             'price_ghs' => ['required', 'numeric', 'gt:0', 'max:1000000'],
             'unit_label' => ['required', 'string', 'max:32'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            ...$this->optionGroupRules(),
         ]);
 
         RestaurantMenuItem::query()->create([
@@ -151,6 +185,7 @@ class RestaurantFoodStoreController extends Controller
             'unit_label' => trim($data['unit_label']),
             'image_path' => $request->file('image')?->store('foodstore/'.tenant()->getTenantKey().'/menu', 'public'),
             'is_available' => true,
+            'option_groups' => $this->normalizeOptionGroups($data['option_groups'] ?? []),
         ]);
 
         return back()->with('status', 'Menu item added.');
@@ -166,6 +201,7 @@ class RestaurantFoodStoreController extends Controller
             'unit_label' => ['sometimes', 'required', 'string', 'max:32'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'is_available' => ['sometimes', 'boolean'],
+            ...$this->optionGroupRules('sometimes'),
         ]);
 
         $attributes = [];
@@ -182,6 +218,9 @@ class RestaurantFoodStoreController extends Controller
         }
         if (array_key_exists('is_available', $data)) {
             $attributes['is_available'] = (bool) $data['is_available'];
+        }
+        if (array_key_exists('option_groups', $data)) {
+            $attributes['option_groups'] = $this->normalizeOptionGroups($data['option_groups'] ?? []);
         }
 
         $previousImage = $menuItem->image_path;
@@ -221,6 +260,11 @@ class RestaurantFoodStoreController extends Controller
             'items' => ['required', 'array', 'min:1', 'max:40'],
             'items.*.menu_item_id' => ['required', 'integer', 'exists:restaurant_menu_items,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:100'],
+            'items.*.selected_option_ids' => ['sometimes', 'array', 'max:120'],
+            'items.*.selected_option_ids.*' => ['string', 'max:64', 'distinct'],
+            'items.*.selected_options' => ['sometimes', 'array', 'max:120'],
+            'items.*.selected_options.*.id' => ['required', 'string', 'max:64', 'distinct'],
+            'items.*.selected_options.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
             'tenders' => ['required', 'array', 'min:1', 'max:3'],
             'tenders.*.method' => ['required', 'in:cash,mobile_money,card'],
             'tenders.*.amount_minor' => ['required', 'integer', 'min:1'],
@@ -239,7 +283,7 @@ class RestaurantFoodStoreController extends Controller
         return back()->with('status', 'Sale completed successfully.');
     }
 
-    public function storeOrder(Request $request): RedirectResponse
+    public function storeOrder(Request $request, RestaurantMenuPricing $pricing): RedirectResponse
     {
         $data = $request->validate([
             'table_label' => ['nullable', 'string', 'max:40'],
@@ -249,12 +293,17 @@ class RestaurantFoodStoreController extends Controller
             'items' => ['required', 'array', 'min:1', 'max:40'],
             'items.*.menu_item_id' => ['required', 'integer', 'exists:restaurant_menu_items,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:100'],
+            'items.*.selected_option_ids' => ['sometimes', 'array', 'max:120'],
+            'items.*.selected_option_ids.*' => ['string', 'max:64', 'distinct'],
+            'items.*.selected_options' => ['sometimes', 'array', 'max:120'],
+            'items.*.selected_options.*.id' => ['required', 'string', 'max:64', 'distinct'],
+            'items.*.selected_options.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
         ]);
 
-        return $this->createRestaurantOrder($data, $request);
+        return $this->createRestaurantOrder($data, $request, $pricing);
     }
 
-    public function storeOnlineOrder(Request $request): RedirectResponse
+    public function storeOnlineOrder(Request $request, RestaurantMenuPricing $pricing): RedirectResponse
     {
         $data = $request->validate([
             'customer_name' => ['required', 'string', 'max:120'],
@@ -263,17 +312,28 @@ class RestaurantFoodStoreController extends Controller
             'items' => ['required', 'array', 'min:1', 'max:40'],
             'items.*.menu_item_id' => ['required', 'integer', 'exists:restaurant_menu_items,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:100'],
+            'items.*.selected_option_ids' => ['sometimes', 'array', 'max:120'],
+            'items.*.selected_option_ids.*' => ['string', 'max:64', 'distinct'],
+            'items.*.selected_options' => ['sometimes', 'array', 'max:120'],
+            'items.*.selected_options.*.id' => ['required', 'string', 'max:64', 'distinct'],
+            'items.*.selected_options.*.quantity' => ['required', 'integer', 'min:1', 'max:99'],
+            'channel' => ['sometimes', 'in:website,whatsapp'],
         ]);
 
-        return $this->createRestaurantOrder($data, $request, true);
+        if (($data['channel'] ?? 'website') === 'whatsapp') {
+            $subscription = tenant()->subscriptions()->with('plan')->latest()->first();
+            abort_unless(in_array('whatsapp_orders', TenantPortalFeatures::forSubscription($subscription), true), 402, 'WhatsApp ordering is not enabled for this workspace.');
+        }
+
+        return $this->createRestaurantOrder($data, $request, $pricing, true);
     }
 
     /** @param array<string, mixed> $data */
-    private function createRestaurantOrder(array $data, Request $request, bool $online = false): RedirectResponse
+    private function createRestaurantOrder(array $data, Request $request, RestaurantMenuPricing $pricing, bool $online = false): RedirectResponse
     {
 
         try {
-            DB::transaction(function () use ($data, $request, $online): void {
+            DB::transaction(function () use ($data, $request, $pricing, $online): void {
                 $lineItems = [];
                 $totalMinor = 0;
 
@@ -287,14 +347,19 @@ class RestaurantFoodStoreController extends Controller
                         throw new \DomainException('A menu item is no longer available. Refresh and review the order.');
                     }
 
-                    $lineTotal = $menuItem->price_minor * $item['quantity'];
+                    $price = $pricing->forSelection(
+                        $menuItem,
+                        $item['selected_options'] ?? $item['selected_option_ids'] ?? [],
+                    );
+                    $lineTotal = $price['unit_price_minor'] * $item['quantity'];
                     $totalMinor += $lineTotal;
                     $lineItems[] = [
                         'restaurant_menu_item_id' => $menuItem->id,
                         'item_name' => $menuItem->name,
                         'quantity' => $item['quantity'],
-                        'unit_price_minor' => $menuItem->price_minor,
+                        'unit_price_minor' => $price['unit_price_minor'],
                         'line_total_minor' => $lineTotal,
+                        'selected_options' => $price['selected_options'],
                     ];
                 }
 
@@ -305,7 +370,9 @@ class RestaurantFoodStoreController extends Controller
                     'notes' => filled($data['notes'] ?? null) ? trim($data['notes']) : null,
                     'status' => 'queued',
                     'total_minor' => $totalMinor,
-                    'created_by_name' => $online ? 'Online customer' : ($request->user()?->name ?? User::query()
+                    'created_by_name' => $online
+                        ? (($data['channel'] ?? null) === 'whatsapp' ? 'Online customer via WhatsApp' : 'Online customer')
+                        : ($request->user()?->name ?? User::query()
                         ->whereKey($request->session()->get('pos_cashier_id'))
                         ->where('tenant_id', tenant()->getTenantKey())
                         ->where('role', 'cashier')
@@ -345,6 +412,7 @@ class RestaurantFoodStoreController extends Controller
     {
         return [
             ...$item->toArray(),
+            'option_groups' => $item->option_groups ?? [],
             'image_url' => filled($item->image_path)
                 ? route('tenant.media', [
                     'tenant' => tenant()->getTenantKey(),
@@ -352,5 +420,39 @@ class RestaurantFoodStoreController extends Controller
                 ])
                 : null,
         ];
+    }
+
+    /** @return array<string, array<int, string>> */
+    private function optionGroupRules(string $presence = 'sometimes'): array
+    {
+        return [
+            'option_groups' => [$presence, 'array', 'max:8'],
+            'option_groups.*.id' => ['required', 'string', 'max:64', 'distinct'],
+            'option_groups.*.name' => ['required', 'string', 'max:60'],
+            'option_groups.*.required' => ['required', 'boolean'],
+            'option_groups.*.multiple' => ['required', 'boolean'],
+            'option_groups.*.options' => ['required', 'array', 'min:1', 'max:15'],
+            'option_groups.*.options.*.id' => ['required', 'string', 'max:64', 'distinct'],
+            'option_groups.*.options.*.name' => ['required', 'string', 'max:60'],
+            'option_groups.*.options.*.price_ghs' => ['required', 'numeric', 'min:0', 'max:1000000'],
+        ];
+    }
+
+    /** @param array<int, array<string, mixed>> $groups
+     *  @return array<int, array{id: string, name: string, required: bool, multiple: bool, options: array<int, array{id: string, name: string, price_minor: int}>}>
+     */
+    private function normalizeOptionGroups(array $groups): array
+    {
+        return array_map(static fn (array $group): array => [
+            'id' => $group['id'],
+            'name' => trim($group['name']),
+            'required' => (bool) $group['required'],
+            'multiple' => (bool) $group['multiple'],
+            'options' => array_map(static fn (array $option): array => [
+                'id' => $option['id'],
+                'name' => trim($option['name']),
+                'price_minor' => (int) round((float) $option['price_ghs'] * 100),
+            ], $group['options']),
+        ], $groups);
     }
 }

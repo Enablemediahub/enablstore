@@ -4,7 +4,7 @@ import EnInput from '@/Components/EnInput.vue';
 import Modal from '@/Components/Modal.vue';
 import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import { ImagePlus, LayoutGrid, List, Pencil, Plus, Rows3, Tags, Trash2, Utensils } from '@lucide/vue';
-import { computed, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 type MenuItem = {
     id: number;
@@ -15,6 +15,27 @@ type MenuItem = {
     unit_label: string;
     image_url: string | null;
     is_available: boolean;
+    option_groups: Array<{
+        id: string;
+        name: string;
+        required: boolean;
+        multiple: boolean;
+        options: Array<{ id: string; name: string; price_minor: number }>;
+    }>;
+};
+
+type EditableOptionGroup = {
+    id: string;
+    name: string;
+    required: boolean;
+    multiple: boolean;
+    options: Array<{ id: string; name: string; price_ghs: number | string }>;
+};
+
+type OptionTemplate = {
+    id: string;
+    name: string;
+    groups: EditableOptionGroup[];
 };
 
 const props = defineProps<{
@@ -31,13 +52,19 @@ const modalOpen = ref(false);
 const editingItem = ref<MenuItem | null>(null);
 const imagePreview = ref<string | null>(null);
 const imageInput = ref<HTMLInputElement | null>(null);
+const optionTemplateInput = ref<HTMLInputElement | null>(null);
 let objectUrl: string | null = null;
+const optionTemplates = ref<OptionTemplate[]>([]);
+const selectedTemplateId = ref('');
+const optionTemplateName = ref('');
+const optionTemplateStorageKey = `enablstore-food-option-templates-${props.tenant}`;
 const form = useForm({
     name: '',
     category: '',
     description: '',
     price_ghs: '' as number | string,
     unit_label: 'plate',
+    option_groups: [] as EditableOptionGroup[],
     image: null as File | null,
 });
 const availableCategories = computed(() => [...new Set([
@@ -96,9 +123,136 @@ const editItem = (item: MenuItem): void => {
     form.description = item.description ?? '';
     form.price_ghs = item.price_minor / 100;
     form.unit_label = item.unit_label;
+    form.option_groups = item.option_groups.map((group) => ({
+        ...group,
+        options: group.options.map((option) => ({
+            ...option,
+            price_ghs: option.price_minor / 100,
+        })),
+    }));
     imagePreview.value = item.image_url;
     modalOpen.value = true;
 };
+
+const addOptionGroup = (): void => {
+    form.option_groups.push({
+        id: crypto.randomUUID(),
+        name: '',
+        required: false,
+        multiple: false,
+        options: [{ id: crypto.randomUUID(), name: '', price_ghs: 0 }],
+    });
+};
+
+const addOption = (group: EditableOptionGroup): void => {
+    group.options.push({ id: crypto.randomUUID(), name: '', price_ghs: 0 });
+};
+
+const parseOptionTemplate = (value: unknown): OptionTemplate | null => {
+    if (!value || typeof value !== 'object') return null;
+    const candidate = value as Partial<OptionTemplate>;
+    if (typeof candidate.name !== 'string' || !candidate.name.trim() || !Array.isArray(candidate.groups) || !candidate.groups.length || candidate.groups.length > 8) return null;
+
+    const groups: EditableOptionGroup[] = [];
+    for (const group of candidate.groups) {
+        if (!group || typeof group.name !== 'string' || !group.name.trim() || !Array.isArray(group.options) || !group.options.length || group.options.length > 15) return null;
+        const options = group.options.map((option) => ({
+            id: typeof option.id === 'string' ? option.id : crypto.randomUUID(),
+            name: typeof option.name === 'string' ? option.name.trim() : '',
+            price_ghs: option.price_ghs,
+        }));
+        if (options.some((option) => !option.name || !Number.isFinite(Number(option.price_ghs)) || Number(option.price_ghs) < 0)) return null;
+        groups.push({
+            id: typeof group.id === 'string' ? group.id : crypto.randomUUID(),
+            name: group.name.trim(),
+            required: Boolean(group.required),
+            multiple: Boolean(group.multiple),
+            options,
+        });
+    }
+
+    return {
+        id: typeof candidate.id === 'string' ? candidate.id : crypto.randomUUID(),
+        name: candidate.name.trim(),
+        groups,
+    };
+};
+
+const persistOptionTemplates = (): void => {
+    localStorage.setItem(optionTemplateStorageKey, JSON.stringify(optionTemplates.value));
+};
+
+const saveOptionTemplate = (): void => {
+    const name = optionTemplateName.value.trim();
+    const template = parseOptionTemplate({ name, groups: form.option_groups });
+    if (!template) return;
+
+    const existingIndex = optionTemplates.value.findIndex((entry) => entry.name.toLowerCase() === name.toLowerCase());
+    if (existingIndex >= 0) {
+        template.id = optionTemplates.value[existingIndex].id;
+        optionTemplates.value[existingIndex] = template;
+    } else {
+        optionTemplates.value.push(template);
+    }
+    selectedTemplateId.value = template.id;
+    optionTemplateName.value = '';
+    persistOptionTemplates();
+};
+
+const applyOptionTemplate = (): void => {
+    const template = optionTemplates.value.find((entry) => entry.id === selectedTemplateId.value);
+    if (!template) return;
+    form.option_groups = template.groups.map((group) => ({
+        ...group,
+        id: crypto.randomUUID(),
+        options: group.options.map((option) => ({ ...option, id: crypto.randomUUID() })),
+    }));
+};
+
+const exportOptionTemplates = (): void => {
+    if (!optionTemplates.value.length) return;
+    const file = new Blob([JSON.stringify(optionTemplates.value, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'foodstore-option-templates.json';
+    link.click();
+    URL.revokeObjectURL(url);
+};
+
+const importOptionTemplates = async (event: Event): Promise<void> => {
+    const input = event.currentTarget as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    try {
+        const parsed: unknown = JSON.parse(await file.text());
+        const entries = Array.isArray(parsed) ? parsed : [parsed];
+        const imported = entries.map(parseOptionTemplate).filter((template): template is OptionTemplate => template !== null);
+        if (!imported.length) throw new Error('No valid option templates were found in that file.');
+
+        for (const template of imported) {
+            const existingIndex = optionTemplates.value.findIndex((entry) => entry.name.toLowerCase() === template.name.toLowerCase());
+            if (existingIndex >= 0) optionTemplates.value[existingIndex] = template;
+            else optionTemplates.value.push(template);
+        }
+        selectedTemplateId.value = imported[0].id;
+        persistOptionTemplates();
+    } catch (error) {
+        window.alert(error instanceof Error ? error.message : 'Unable to import option templates.');
+    } finally {
+        input.value = '';
+    }
+};
+
+onMounted(() => {
+    try {
+        const stored: unknown = JSON.parse(localStorage.getItem(optionTemplateStorageKey) ?? '[]');
+        if (Array.isArray(stored)) optionTemplates.value = stored.map(parseOptionTemplate).filter((template): template is OptionTemplate => template !== null);
+    } catch {
+        optionTemplates.value = [];
+    }
+});
 
 const submit = (): void => {
     form.transform((data) => editingItem.value ? { ...data, _method: 'patch' } : data);
@@ -163,6 +317,7 @@ onUnmounted(clearPreview);
                                     <div class="min-w-0 flex-1" :class="displayMode === 'list' ? '' : 'p-4'"><div class="flex items-start justify-between gap-3"><div class="min-w-0"><p class="text-xs font-bold uppercase text-emerald-800">{{ item.category }}</p><h3 class="mt-1 truncate font-bold">{{ item.name }}</h3></div><span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold" :class="item.is_available ? 'bg-emerald-50 text-emerald-800' : 'bg-neutral-100 text-neutral-600'">{{ item.is_available ? 'Available' : 'Paused' }}</span></div>
                                         <p v-if="item.description" class="mt-2 line-clamp-2 text-sm text-neutral-500">{{ item.description }}</p>
                                         <p class="mt-3 font-mono text-sm font-semibold">{{ formatPrice(item.price_minor) }} <span class="font-sans font-normal text-neutral-500">/ {{ item.unit_label }}</span></p>
+                                        <p v-if="item.option_groups.length" class="mt-1 text-xs text-neutral-500">{{ item.option_groups.length }} option group{{ item.option_groups.length === 1 ? '' : 's' }}</p>
                                         <div class="mt-4 flex flex-wrap gap-2 border-t border-neutral-100 pt-3"><button type="button" class="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-neutral-200 px-2.5 text-xs font-semibold text-neutral-700 hover:border-emerald-300 hover:text-emerald-800" @click="editItem(item)"><Pencil :size="14" aria-hidden="true" /> Edit</button><button type="button" class="min-h-9 rounded-md border border-neutral-200 px-2.5 text-xs font-semibold text-neutral-700 hover:border-emerald-300 hover:text-emerald-800" @click="toggleAvailability(item)">{{ item.is_available ? 'Pause' : 'Enable' }}</button><button type="button" class="ml-auto grid size-9 place-items-center rounded-md text-neutral-500 hover:bg-red-50 hover:text-red-700" :aria-label="`Remove ${item.name}`" @click="removeItem(item)"><Trash2 :size="15" aria-hidden="true" /></button></div>
                                     </div>
                                 </article>
@@ -194,6 +349,44 @@ onUnmounted(clearPreview);
                 <EnInput id="food-unit" v-model="form.unit_label" label="Sold as" placeholder="plate, pack, bottle" required />
                 <EnInput id="food-price" v-model="form.price_ghs" type="number" min="0.01" step="0.01" label="Price per unit (GHS)" required />
                 <label class="block text-sm font-medium text-neutral-700 sm:col-span-2">Description (optional)<textarea v-model="form.description" maxlength="500" rows="2" class="mt-1.5 w-full rounded-md border border-neutral-300 px-3 py-2 text-sm" /></label>
+                <section class="space-y-4 border-t border-neutral-100 pt-4 sm:col-span-2">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div><h3 class="font-semibold text-neutral-900">Choices and extras</h3><p class="mt-1 text-xs text-neutral-500">Optional groups add no choices by default. Leave this empty for a fixed-price item.</p></div>
+                        <button type="button" class="inline-flex min-h-9 items-center gap-1.5 rounded-md border border-emerald-200 px-3 text-xs font-semibold text-emerald-800 hover:bg-emerald-50" @click="addOptionGroup"><Plus :size="14" aria-hidden="true" /> Add choice group</button>
+                    </div>
+                    <div class="grid gap-2 rounded-md border border-neutral-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_auto_auto] sm:items-end">
+                        <label class="block text-xs font-semibold text-neutral-700">Reusable template
+                            <select v-model="selectedTemplateId" class="mt-1.5 min-h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm font-normal" :disabled="!optionTemplates.length">
+                                <option value="">{{ optionTemplates.length ? 'Choose a saved template' : 'No saved templates yet' }}</option>
+                                <option v-for="template in optionTemplates" :key="template.id" :value="template.id">{{ template.name }}</option>
+                            </select>
+                        </label>
+                        <button type="button" class="min-h-10 rounded-md border border-emerald-200 px-3 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50" :disabled="!selectedTemplateId" @click="applyOptionTemplate">Use template</button>
+                        <button type="button" class="min-h-10 rounded-md border border-neutral-300 px-3 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50" :disabled="!optionTemplates.length" @click="exportOptionTemplates">Export templates</button>
+                        <div class="flex flex-wrap gap-2 sm:col-span-3">
+                            <input v-model="optionTemplateName" type="text" maxlength="60" placeholder="Name these choices, e.g. Rice plate proteins" class="min-h-10 min-w-48 flex-1 rounded-md border border-neutral-300 px-3 text-sm" />
+                            <button type="button" class="min-h-10 rounded-md border border-emerald-200 px-3 text-xs font-semibold text-emerald-800 hover:bg-emerald-50 disabled:opacity-50" :disabled="!form.option_groups.length || !optionTemplateName.trim()" @click="saveOptionTemplate">Save choices as template</button>
+                            <button type="button" class="min-h-10 rounded-md border border-neutral-300 px-3 text-xs font-semibold text-neutral-700 hover:bg-neutral-50" @click="optionTemplateInput?.click()">Import templates</button>
+                            <input ref="optionTemplateInput" type="file" accept="application/json,.json" class="hidden" @change="importOptionTemplates" />
+                        </div>
+                        <p class="text-xs text-neutral-500 sm:col-span-3">Templates are saved in this browser. Export a JSON file to use them on another device.</p>
+                    </div>
+                    <div v-for="(group, groupIndex) in form.option_groups" :key="group.id" class="space-y-3 rounded-md border border-neutral-200 bg-neutral-50 p-4">
+                        <div class="grid gap-3 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end">
+                            <label class="block text-xs font-semibold text-neutral-700">Group name<input v-model="group.name" required maxlength="60" placeholder="Protein, Extras" class="mt-1.5 min-h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm font-normal" /></label>
+                            <label class="flex min-h-10 items-center gap-2 text-xs font-medium text-neutral-700"><input v-model="group.required" type="checkbox" class="rounded border-neutral-300 text-emerald-700 focus:ring-emerald-600" /> Required</label>
+                            <label class="flex min-h-10 items-center gap-2 text-xs font-medium text-neutral-700"><input v-model="group.multiple" type="checkbox" class="rounded border-neutral-300 text-emerald-700 focus:ring-emerald-600" /> Allow multiple</label>
+                            <button type="button" class="min-h-9 rounded-md px-2 text-xs font-semibold text-red-700 hover:bg-red-50" @click="form.option_groups.splice(groupIndex, 1)">Remove group</button>
+                        </div>
+                        <div v-for="(option, optionIndex) in group.options" :key="option.id" class="grid gap-2 sm:grid-cols-[1fr_150px_auto]">
+                            <label class="block text-xs font-medium text-neutral-600">Choice<input v-model="option.name" required maxlength="60" placeholder="Chicken" class="mt-1.5 min-h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm font-normal text-neutral-900" /></label>
+                            <label class="block text-xs font-medium text-neutral-600">Extra price (GHS)<input v-model="option.price_ghs" type="number" min="0" step="0.01" required class="mt-1.5 min-h-10 w-full rounded-md border border-neutral-300 bg-white px-3 text-right font-mono text-sm text-neutral-900" /></label>
+                            <button v-if="group.options.length > 1" type="button" class="mt-5 min-h-10 rounded-md px-2 text-xs font-semibold text-neutral-600 hover:bg-white" :aria-label="`Remove choice ${optionIndex + 1}`" @click="group.options.splice(optionIndex, 1)">Remove</button>
+                        </div>
+                        <button type="button" class="text-xs font-semibold text-emerald-800 hover:underline" @click="addOption(group)">Add another choice</button>
+                    </div>
+                    <p v-if="form.errors.option_groups" class="text-sm text-red-700">{{ form.errors.option_groups }}</p>
+                </section>
                 <div class="sm:col-span-2">
                     <label for="food-image" class="block text-sm font-medium text-neutral-700">Food photo</label>
                     <input id="food-image" ref="imageInput" type="file" accept="image/*" capture="environment" class="mt-1.5 block w-full text-sm text-neutral-600 file:mr-3 file:rounded-md file:border-0 file:bg-emerald-700 file:px-3 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-emerald-800" @change="selectImage" />

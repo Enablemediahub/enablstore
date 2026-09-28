@@ -78,6 +78,46 @@ class TenantProductCatalogueTest extends TestCase
                 ->where('filters.stock_status', 'low_stock'));
     }
 
+    public function test_online_store_receives_the_tenant_whatsapp_number(): void
+    {
+        $tenantId = 'whatsapp-store-'.Str::lower(Str::random(6));
+        $this->tenant = Tenant::query()->create([
+            'id' => $tenantId,
+            'subscriber_code' => 'ES908',
+            'name' => 'WhatsApp Store',
+            'slug' => $tenantId,
+            'email' => 'whatsapp@example.test',
+            'whatsapp_phone' => '+233 20 123 4567',
+            'status' => 'active',
+            'data' => ['subscriber_code' => 'ES908'],
+        ]);
+        app(Tenancy::class)->end();
+        $plan = Plan::query()->create([
+            'name' => 'WhatsApp Store plan',
+            'slug' => $tenantId.'-plan',
+            'price_minor' => 0,
+            'currency' => 'GHS',
+            'billing_interval' => 'monthly',
+            'features' => ['online_store'],
+            'is_active' => true,
+        ]);
+        Subscription::query()->create([
+            'tenant_id' => $this->tenant->id,
+            'plan_id' => $plan->id,
+            'provider' => 'internal',
+            'status' => 'active',
+            'starts_at' => now(),
+            'metadata' => ['features' => ['online_store']],
+        ]);
+        app(Tenancy::class)->initialize($this->tenant);
+
+        $this->get(route('tenant.home', ['tenant' => $tenantId]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Storefront/Index')
+                ->where('whatsappPhone', '+233 20 123 4567'));
+    }
+
     private function createProduct(string $name, string $sku, int $categoryId, int $priceMinor, int $costMinor, int $quantity, int $threshold): void
     {
         $product = Product::query()->create([

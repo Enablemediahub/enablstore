@@ -3,7 +3,8 @@ import EnCard from '@/Components/EnCard.vue';
 import EnEmptyState from '@/Components/EnEmptyState.vue';
 import Modal from '@/Components/Modal.vue';
 import ProductArtwork from '@/Components/ProductArtwork.vue';
-import { Head, useForm } from '@inertiajs/vue3';
+import WhatsAppContactButton from '@/Components/WhatsAppContactButton.vue';
+import { Head, useForm, usePage } from '@inertiajs/vue3';
 import {
     Apple,
     Baby,
@@ -16,6 +17,7 @@ import {
     HeartPulse,
     House,
     Mail,
+    MessageCircle,
     MapPin,
     Minus,
     Package,
@@ -88,6 +90,7 @@ const props = defineProps<{
     logoUrl: string;
     tenantDisplay: TenantDisplay;
     storefront: StorefrontConfig;
+    whatsappPhone: string | null;
     categories: Category[];
     products: Product[];
     paystackEnabled: boolean;
@@ -95,6 +98,8 @@ const props = defineProps<{
     checkoutStatusError?: boolean;
 }>();
 
+const page = usePage();
+const hasWhatsAppOrderAccess = computed(() => ((page.props.tenantFeatures as string[] | undefined) ?? []).includes('whatsapp_orders'));
 const productsSection = ref<HTMLElement | null>(null);
 const basketAside = ref<HTMLElement | null>(null);
 const searchInput = ref<HTMLInputElement | null>(null);
@@ -281,6 +286,21 @@ const openCustomerService = (): void => {
 const totalMinor = computed(() =>
     cart.value.reduce((total, item) => total + item.price_minor * item.quantity, 0),
 );
+const whatsappOrderUrl = computed(() => {
+    if (!hasWhatsAppOrderAccess.value) return null;
+    const phone = (props.whatsappPhone ?? '').replace(/\D/g, '');
+    if (phone.length < 8 || cart.value.length === 0) return null;
+
+    const lines = cart.value.map((item) => `- ${item.quantity} x ${item.name} (SKU ${item.sku}) = ${formatPrice(item.price_minor * item.quantity)}`);
+    const message = [
+        `Hello ${props.storefront.storeName || props.storefront.subscribedTenantName}, I would like to order:`,
+        ...lines,
+        `Subtotal: ${formatPrice(totalMinor.value)}`,
+        `Delivery area: ${deliveryLocation.value || 'Please confirm'}`,
+    ].join('\n');
+
+    return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+});
 
 const addToCart = (product: Product): void => {
     const existing = cart.value.find((item) => item.id === product.id);
@@ -588,6 +608,7 @@ const formatPrice = (minor: number): string =>
                                 </div>
                             </div>
                             <div class="flex items-center justify-between pt-1 text-lg font-black"><span>Subtotal</span><span>{{ formatPrice(totalMinor) }}</span></div>
+                            <a v-if="whatsappOrderUrl" :href="whatsappOrderUrl" target="_blank" rel="noopener noreferrer" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-full border border-[#25D366] bg-white px-4 text-sm font-bold text-[#128C7E] transition hover:bg-emerald-50"><MessageCircle :size="17" aria-hidden="true" /> Order via WhatsApp</a>
                             <button type="button" class="flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#e21b23] px-4 text-sm font-bold text-white hover:bg-[#b9151b] disabled:cursor-not-allowed disabled:bg-neutral-400" :disabled="!paystackEnabled" @click="checkoutModalOpen = true"><span>Proceed to checkout</span><ChevronRight :size="18" aria-hidden="true" /></button>
                             <p v-if="!paystackEnabled" class="mt-2 text-xs text-neutral-500">Online payment is not available yet. Contact the store administrator.</p>
                         </div>
@@ -698,5 +719,6 @@ const formatPrice = (minor: number): string =>
             </Modal>
 
         </div>
+        <WhatsAppContactButton :phone="whatsappPhone" :message="`Hello ${storefront.storeName || storefront.subscribedTenantName}, I have a question about your store.`" />
     </main>
 </template>

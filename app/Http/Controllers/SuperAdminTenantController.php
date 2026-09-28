@@ -93,7 +93,7 @@ class SuperAdminTenantController extends Controller
         $team = $tenant->users()->orderByRaw("CASE WHEN role = 'admin' THEN 0 ELSE 1 END")->oldest()->get();
 
         return Inertia::render('SuperAdmin/Tenant', [
-            'tenant' => $tenant->only(['id', 'subscriber_code', 'name', 'slug', 'email', 'phone', 'status', 'created_at']),
+            'tenant' => $tenant->only(['id', 'subscriber_code', 'name', 'slug', 'email', 'phone', 'whatsapp_phone', 'status', 'created_at']),
             'storefrontLogoUrl' => \App\Models\PlatformSetting::storefrontLogoUrl(request(), $tenant),
             'hasCustomStorefrontLogo' => filled($tenant->data['storefront_logo'] ?? null),
             'paystackSettings' => $this->paystackSettingsForAdmin($tenant),
@@ -126,13 +126,28 @@ class SuperAdminTenantController extends Controller
             'name' => ['required', 'string', 'max:120'],
             'email' => ['nullable', 'email', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
+            'whatsapp_phone' => [
+                'nullable',
+                'string',
+                'max:40',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (! filled($value)) {
+                        return;
+                    }
+
+                    $digits = preg_replace('/\D+/', '', (string) $value);
+                    if (! str_starts_with(trim((string) $value), '+') || strlen($digits) < 8 || strlen($digits) > 15) {
+                        $fail('Enter a WhatsApp number in international format, including its country code.');
+                    }
+                },
+            ],
             'status' => ['required', 'in:active,suspended'],
             'subscription_plan_id' => ['nullable', 'exists:plans,id'],
             'subscription_status' => ['nullable', 'in:trialing,active,past_due,disabled,cancelled'],
             'subscription_amount_ghs' => ['nullable', 'numeric', 'gt:0', 'max:1000000'],
             'catalogue_mode' => ['required', 'in:shared,separate_online'],
             'features' => ['required', 'array'],
-            'features.*' => ['string', 'in:pos,online_store,restaurant_foodstore,foodstore_online'],
+            'features.*' => ['string', 'in:pos,online_store,restaurant_foodstore,foodstore_online,sales_expenses,audit_log,whatsapp_orders'],
             'storefront_store_name' => ['nullable', 'string', 'max:80'],
             'storefront_delivery_message' => ['nullable', 'string', 'max:160'],
             'storefront_hero_delivery_message' => ['nullable', 'string', 'max:160'],
@@ -144,6 +159,7 @@ class SuperAdminTenantController extends Controller
             'name' => $data['name'],
             'email' => $data['email'] ?: null,
             'phone' => $data['phone'] ?: null,
+            'whatsapp_phone' => filled($data['whatsapp_phone'] ?? null) ? trim($data['whatsapp_phone']) : null,
             'status' => $data['status'],
         ]);
         $request->session()->put('workspace_tenant_id', $tenant->id);

@@ -236,4 +236,46 @@ class WorkspaceDashboardTest extends TestCase
                 ->where('access.restaurantFoodStore', true)
                 ->where('access.foodstoreOnline', true));
     }
+
+    public function test_authenticated_cashier_dashboard_includes_foodstore_online_entitlement(): void
+    {
+        $this->createdTenant = Tenant::query()->create([
+            'id' => 'cashier-foodstore-online',
+            'subscriber_code' => 'ES906',
+            'name' => 'Cashier FoodStore',
+            'slug' => 'cashier-foodstore-online',
+            'email' => 'cashier-foodstore@example.test',
+            'status' => 'active',
+            'data' => ['name' => 'Cashier FoodStore', 'slug' => 'cashier-foodstore-online'],
+        ]);
+        $plan = Plan::query()->create([
+            'name' => 'Cashier FoodStore plan',
+            'slug' => 'cashier-foodstore-plan',
+            'price_minor' => 0,
+            'currency' => 'GHS',
+            'billing_interval' => 'monthly',
+            'features' => [],
+            'is_active' => true,
+        ]);
+        Subscription::query()->create([
+            'tenant_id' => $this->createdTenant->id,
+            'plan_id' => $plan->id,
+            'provider' => 'internal',
+            'status' => 'active',
+            'starts_at' => now(),
+            'metadata' => ['features' => ['foodstore_online']],
+        ]);
+        $cashier = User::factory()->create([
+            'username' => 'ES906-cashier',
+            'tenant_id' => $this->createdTenant->id,
+            'role' => 'cashier',
+        ]);
+
+        $this->actingAs($cashier)
+            ->get('/dashboard')
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Dashboard')
+                ->where('access.foodstoreOnline', true));
+    }
 }

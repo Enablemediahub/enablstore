@@ -11,6 +11,7 @@ use App\Http\Controllers\TenantCategoryController;
 use App\Http\Controllers\TenantSettingsController;
 use App\Http\Controllers\TenantSupplierController;
 use App\Http\Controllers\TenantReportsController;
+use App\Http\Controllers\TenantSalesExpensesController;
 use App\Http\Controllers\TenantAuditController;
 use App\Http\Controllers\TenantTeamController;
 use App\Http\Controllers\TenantPosAccessController;
@@ -73,6 +74,9 @@ Route::middleware([
     Route::post('/foodstore/{tenant}/orders', [RestaurantFoodStoreController::class, 'storeOrder'])
         ->middleware(['feature:restaurant_foodstore', \App\Http\Middleware\EnsureFoodStoreAccess::class])
         ->name('tenant.foodstore.orders.store');
+    Route::get('/foodstore/{tenant}/orders', [RestaurantFoodStoreController::class, 'orders'])
+        ->middleware(['feature:restaurant_foodstore', \App\Http\Middleware\EnsureFoodStoreAccess::class])
+        ->name('tenant.foodstore.orders.index');
     Route::patch('/foodstore/{tenant}/orders/{order}/status', [RestaurantFoodStoreController::class, 'updateOrderStatus'])
         ->middleware(['feature:restaurant_foodstore', \App\Http\Middleware\EnsureFoodStoreAccess::class])
         ->name('tenant.foodstore.orders.status');
@@ -118,7 +122,9 @@ Route::middleware([
     Route::post('/client/{tenant}/suppliers', [TenantSupplierController::class, 'store'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.suppliers.store');
     Route::post('/client/{tenant}/suppliers/receive', [TenantSupplierController::class, 'receive'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.suppliers.receive');
     Route::get('/client/{tenant}/reports', [TenantReportsController::class, 'index'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.reports');
-    Route::get('/client/{tenant}/audit', [TenantAuditController::class, 'index'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.audit');
+    Route::get('/client/{tenant}/sales-expenses', [TenantSalesExpensesController::class, 'index'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class, 'feature:sales_expenses'])->name('tenant.sales-expenses.index');
+    Route::post('/client/{tenant}/sales-expenses', [TenantSalesExpensesController::class, 'storeExpense'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class, 'feature:sales_expenses'])->name('tenant.sales-expenses.store');
+    Route::get('/client/{tenant}/audit', [TenantAuditController::class, 'index'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class, 'feature:audit_log'])->name('tenant.audit');
     Route::get('/client/{tenant}/team', [TenantTeamController::class, 'index'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.team.index');
     Route::post('/client/{tenant}/team', [TenantTeamController::class, 'store'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.team.store');
     Route::patch('/client/{tenant}/team/{user}', [TenantTeamController::class, 'update'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.team.update');
