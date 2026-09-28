@@ -93,7 +93,9 @@ class SuperAdminTenantController extends Controller
         $team = $tenant->users()->orderByRaw("CASE WHEN role = 'admin' THEN 0 ELSE 1 END")->oldest()->get();
 
         return Inertia::render('SuperAdmin/Tenant', [
-            'tenant' => $tenant->only(['id', 'subscriber_code', 'name', 'slug', 'email', 'phone', 'whatsapp_phone', 'status', 'created_at']),
+            'tenant' => array_merge($tenant->only(['id', 'subscriber_code', 'name', 'slug', 'email', 'phone', 'whatsapp_phone', 'status', 'created_at']), [
+                'team_management_enabled' => $tenant->teamManagementEnabled(),
+            ]),
             'storefrontLogoUrl' => \App\Models\PlatformSetting::storefrontLogoUrl(request(), $tenant),
             'hasCustomStorefrontLogo' => filled($tenant->data['storefront_logo'] ?? null),
             'paystackSettings' => $this->paystackSettingsForAdmin($tenant),
@@ -142,6 +144,7 @@ class SuperAdminTenantController extends Controller
                 },
             ],
             'status' => ['required', 'in:active,suspended'],
+            'team_management_enabled' => ['sometimes', 'boolean'],
             'subscription_plan_id' => ['nullable', 'exists:plans,id'],
             'subscription_status' => ['nullable', 'in:trialing,active,past_due,disabled,cancelled'],
             'subscription_amount_ghs' => ['nullable', 'numeric', 'gt:0', 'max:1000000'],
@@ -155,13 +158,17 @@ class SuperAdminTenantController extends Controller
             'storefront_customer_service_email' => ['nullable', 'string', 'max:120'],
         ]);
 
-        $tenant->update([
+        $tenantAttributes = [
             'name' => $data['name'],
             'email' => $data['email'] ?: null,
             'phone' => $data['phone'] ?: null,
             'whatsapp_phone' => filled($data['whatsapp_phone'] ?? null) ? trim($data['whatsapp_phone']) : null,
             'status' => $data['status'],
-        ]);
+        ];
+        if (array_key_exists('team_management_enabled', $data)) {
+            $tenantAttributes['team_management_enabled'] = (bool) $data['team_management_enabled'];
+        }
+        $tenant->update($tenantAttributes);
         $request->session()->put('workspace_tenant_id', $tenant->id);
 
         $subscription = $tenant->subscriptions()->latest()->first();

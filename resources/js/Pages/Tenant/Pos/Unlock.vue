@@ -5,10 +5,14 @@ import { Eye, EyeOff, LockKeyhole } from '@lucide/vue';
 import { ref } from 'vue';
 
 const props = defineProps<{ tenant: string; subscriberCode: string; usernameHint: string; workspace: 'store' | 'pos' | 'foodstore'; wallpaperUrl?: string | null }>();
+const usernamePrefix = props.subscriberCode ? `${props.subscriberCode}-` : '';
+const usernameSuffix = ref('');
+const usernamePlaceholder = props.usernameHint.startsWith(usernamePrefix) ? props.usernameHint.slice(usernamePrefix.length) : props.usernameHint;
 const form = useForm({ username: '', pin: '' });
 const pinVisible = ref(false);
 
 const unlock = (): void => {
+    form.username = usernamePrefix ? `${usernamePrefix}${usernameSuffix.value.trim()}` : form.username.trim();
     form.post(route('tenant.pos.unlock', { tenant: props.tenant }));
 };
 </script>
@@ -33,7 +37,11 @@ const unlock = (): void => {
             <form class="mt-8 space-y-5" @submit.prevent="unlock">
                 <div>
                     <label for="pos-name" class="mb-2 block text-sm font-semibold text-neutral-700">Username</label>
-                    <input id="pos-name" v-model="form.username" type="text" autocomplete="username" required autofocus class="min-h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2" :class="workspace === 'foodstore' ? 'focus:border-emerald-700 focus:ring-emerald-700/20' : 'focus:border-[#e21b23] focus:ring-[#e21b23]/20'" :placeholder="usernameHint" />
+                    <div v-if="usernamePrefix" class="flex min-h-12 overflow-hidden rounded-xl border border-neutral-300 bg-white focus-within:ring-2" :class="workspace === 'foodstore' ? 'focus-within:border-emerald-700 focus-within:ring-emerald-700/20' : 'focus-within:border-[#e21b23] focus-within:ring-[#e21b23]/20'">
+                        <span class="inline-flex items-center border-r border-neutral-300 bg-neutral-50 px-3 font-mono text-sm text-neutral-700">{{ usernamePrefix }}</span>
+                        <input id="pos-name" v-model="usernameSuffix" type="text" autocomplete="username" required autofocus class="min-w-0 flex-1 border-0 bg-transparent px-3 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-0" :placeholder="usernamePlaceholder" />
+                    </div>
+                    <input v-else id="pos-name" v-model="form.username" type="text" autocomplete="username" required autofocus class="min-h-12 w-full rounded-xl border border-neutral-300 bg-white px-4 text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2" :class="workspace === 'foodstore' ? 'focus:border-emerald-700 focus:ring-emerald-700/20' : 'focus:border-[#e21b23] focus:ring-[#e21b23]/20'" :placeholder="usernameHint" />
                     <p v-if="form.errors.username" class="mt-2 text-sm text-red-700">{{ form.errors.username }}</p>
                 </div>
                 <div>

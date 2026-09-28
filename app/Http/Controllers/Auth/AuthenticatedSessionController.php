@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\Tenant;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -22,10 +23,33 @@ class AuthenticatedSessionController extends Controller
         return Inertia::render('Auth/Login', [
             'canResetPassword' => Route::has('password.request'),
             'status' => session('status'),
+            'subscriberCode' => $this->subscriberCodeForIntendedTenant($request),
             'wallpaperUrl' => ($path = PlatformSetting::value('login_wallpaper'))
                 ? $request->getSchemeAndHttpHost().'/storage/'.ltrim($path, '/')
                 : null,
         ]);
+    }
+
+    private function subscriberCodeForIntendedTenant(Request $request): ?string
+    {
+        $intendedPath = parse_url((string) $request->session()->get('url.intended', ''), PHP_URL_PATH);
+        $segments = array_values(array_filter(explode('/', trim((string) $intendedPath, '/'))));
+        $tenantIdentifier = match (true) {
+            ($segments[0] ?? null) === 'dashboard' && isset($segments[1]) => $segments[1],
+            ($segments[1] ?? null) === 'dashboard' => $segments[0],
+            default => null,
+        };
+
+        if ($tenantIdentifier === null) {
+            return null;
+        }
+
+        $tenant = Tenant::query()
+            ->where('id', $tenantIdentifier)
+            ->orWhere('slug', $tenantIdentifier)
+            ->first();
+
+        return $tenant?->subscriber_code ?: data_get($tenant?->data, 'subscriber_code');
     }
 
     /**
@@ -39,8 +63,8 @@ class AuthenticatedSessionController extends Controller
 
         $user = $request->user();
         if ($user !== null && $user->role === 'admin' && $user->tenant_id !== null) {
-            return redirect(route('tenant.dashboard', [
-                'tenant' => $user->tenant->slug,
+            return redirect(route('tenant.dashboard.direct', [
+                'tenant' => $user->tenant_id,
             ], absolute: false));
         }
 

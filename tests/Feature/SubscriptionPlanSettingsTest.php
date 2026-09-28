@@ -193,6 +193,7 @@ class SubscriptionPlanSettingsTest extends TestCase
                 'phone' => '+233201111111',
                 'whatsapp_phone' => '+233 20 222 3333',
                 'status' => 'active',
+                'team_management_enabled' => false,
                 'catalogue_mode' => 'shared',
                 'features' => ['online_store', 'sales_expenses', 'audit_log', 'whatsapp_orders'],
             ])
@@ -200,13 +201,17 @@ class SubscriptionPlanSettingsTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertSame('+233 20 222 3333', $this->whatsappTenant->fresh()->whatsapp_phone);
+        $this->assertFalse($this->whatsappTenant->fresh()->teamManagementEnabled());
         $this->assertSame(['online_store', 'sales_expenses', 'audit_log', 'whatsapp_orders'], $subscription->fresh()->metadata['features']);
         $this->actingAs($admin, 'super_admin')
             ->get(route('super-admin.tenants.show', ['tenant' => $this->whatsappTenant->id]))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('SuperAdmin/Tenant')
-                ->where('tenant.whatsapp_phone', '+233 20 222 3333'));
+                ->where('tenant.whatsapp_phone', '+233 20 222 3333')
+                ->where('tenant.team_management_enabled', false)
+                ->where('plans.0.price_minor', 10000)
+                ->where('plans.0.currency', 'GHS'));
 
     }
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\PlatformSetting;
+use App\Models\User;
 use App\Models\TenantSetting;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,8 +19,13 @@ class TenantSettingsController extends Controller
     {
         $hero = $this->heroSettings();
         $storefront = $this->storefrontSettings();
+        $tenant = $request->user()->tenant;
 
         return Inertia::render('Tenant/Settings/Index', [
+            'teamUsers' => User::query()->where('tenant_id', $request->user()->tenant_id)->orderByRaw("CASE WHEN role = 'admin' THEN 0 ELSE 1 END")->oldest()->get(['id', 'name', 'username', 'email', 'role']),
+            'subscriberCode' => $tenant?->subscriber_code,
+            'teamManagementEnabled' => $tenant?->teamManagementEnabled() ?? false,
+            'status' => session('status'),
             'catalogueMode' => TenantSetting::query()->where('key', 'catalogue_mode')->value('value') ?? PlatformSetting::value('catalogue_mode_default', 'shared'),
             'storefrontHero' => [
                 'title' => $hero['title'],

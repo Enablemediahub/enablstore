@@ -18,14 +18,15 @@ class WorkspaceDashboardController extends Controller
     {
         $user = $request->user();
         if ($user !== null && $user->role === 'admin' && $user->tenant_id !== null) {
-            return redirect()->route('tenant.dashboard', [
-                'tenant' => $user->tenant->slug,
+            return redirect()->route('tenant.dashboard.direct', [
+                'tenant' => $user->tenant_id,
             ], 302);
         }
 
         $selectedTenantId = $request->session()->get('workspace_tenant_id');
         $tenant = $user !== null ? $user->tenant : null;
         $tenant ??= $selectedTenantId ? Tenant::query()->find($selectedTenantId) : null;
+        $tenant ??= Tenant::query()->where('id', 'demo')->orWhere('slug', 'demo')->first();
         $tenant ??= Tenant::query()->first();
         if ($user === null && $selectedTenantId && $tenant?->status === 'suspended') {
             return redirect()->route('tenant.subscription.suspended', ['tenant' => $tenant->getTenantKey()]);

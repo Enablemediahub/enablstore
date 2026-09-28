@@ -11,16 +11,25 @@ const props = defineProps<{
     canResetPassword?: boolean;
     status?: string;
     wallpaperUrl?: string | null;
+    subscriberCode?: string | null;
 }>();
 
+const usernamePrefix = props.subscriberCode ? `${props.subscriberCode}-` : '';
+const usernameSuffix = ref('');
 const form = useForm({
-    username: '',
+    username: usernamePrefix,
     password: '',
     remember: false,
 });
 const passwordRevealed = ref(false);
 
 const submit = () => {
+    if (usernamePrefix) {
+        form.username = `${usernamePrefix}${usernameSuffix.value.trim()}`;
+    } else {
+        form.username = form.username.trim();
+    }
+
     form.post(route('login'), {
         onFinish: () => {
             form.reset('password');
@@ -49,7 +58,15 @@ const submit = () => {
                 <h2 class="mt-3 text-3xl font-black tracking-tight text-[#171717]">Sign in to continue</h2>
                 <div v-if="status" class="mt-4 text-sm font-medium text-green-600">{{ status }}</div>
                 <form class="mt-7" @submit.prevent="submit">
-                    <div><InputLabel for="username" value="Username" /><TextInput id="username" v-model="form.username" type="text" class="mt-1 block w-full" required autofocus autocomplete="username" /><InputError class="mt-2" :message="form.errors.username" /></div>
+                    <div>
+                        <InputLabel for="username" value="Username" />
+                        <div v-if="usernamePrefix" class="mt-1 flex min-h-11 overflow-hidden rounded-md border border-gray-300 bg-white focus-within:border-[#e21b23] focus-within:ring-1 focus-within:ring-[#e21b23]">
+                            <span class="inline-flex items-center border-r border-gray-300 bg-gray-50 px-3 font-mono text-sm text-gray-700">{{ usernamePrefix }}</span>
+                            <input id="username" v-model="usernameSuffix" type="text" class="min-w-0 flex-1 border-0 bg-transparent px-3 py-2 text-gray-900 shadow-none focus:outline-none focus:ring-0" required autofocus autocomplete="username" />
+                        </div>
+                        <TextInput v-else id="username" v-model="form.username" type="text" class="mt-1 block w-full" required autofocus autocomplete="username" />
+                        <InputError class="mt-2" :message="form.errors.username" />
+                    </div>
                     <div class="mt-4"><InputLabel for="password" value="Password" /><div class="relative"><TextInput id="password" v-model="form.password" :type="passwordRevealed ? 'text' : 'password'" class="mt-1 block w-full pr-12" required autocomplete="current-password" /><button type="button" class="absolute top-1/2 right-3 -translate-y-1/2 text-neutral-500" :aria-label="passwordRevealed ? 'Hide password' : 'Show password'" @click="passwordRevealed = !passwordRevealed"><EyeOff v-if="passwordRevealed" :size="18" /><Eye v-else :size="18" /></button></div><InputError class="mt-2" :message="form.errors.password" /></div>
                     <p class="mt-4 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">Use the username and password assigned to your store administrator account.</p>
                     <div class="mt-5 flex items-center justify-between gap-4"><Link v-if="canResetPassword" :href="route('password.request')" class="text-sm text-gray-600 underline">Forgot password?</Link><EnButton type="submit" class="ml-auto" :loading="form.processing">Log in</EnButton></div>

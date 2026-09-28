@@ -57,7 +57,9 @@ class RestaurantFoodStoreController extends Controller
         }
 
         $subscription = tenant()->subscriptions()->with('plan')->latest()->first();
-        if (! in_array('restaurant_foodstore', TenantPortalFeatures::forSubscription($subscription), true)) {
+        if ($subscription === null
+            || ! in_array($subscription->status, ['trialing', 'active'], true)
+            || ! in_array('restaurant_foodstore', TenantPortalFeatures::forSubscription($subscription), true)) {
             return Inertia::render('Tenant/FeatureDenied', [
                 'tenantName' => (string) (tenant()->name ?? 'your workspace'),
                 'featureName' => 'FoodStore',

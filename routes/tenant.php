@@ -48,6 +48,9 @@ Route::middleware([
     Route::get('/{tenant}/dashboard', [WorkspaceDashboardController::class, 'tenantDashboard'])
         ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
         ->name('tenant.dashboard');
+    Route::get('/dashboard/{tenant}', [WorkspaceDashboardController::class, 'tenantDashboard'])
+        ->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])
+        ->name('tenant.dashboard.direct');
     Route::get('/foodstore/{tenant}', [RestaurantFoodStoreController::class, 'index'])
         ->name('tenant.foodstore.index');
     Route::get('/foodstore-online/{tenant}', [RestaurantFoodStoreController::class, 'online'])
@@ -128,6 +131,8 @@ Route::middleware([
     Route::get('/client/{tenant}/team', [TenantTeamController::class, 'index'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.team.index');
     Route::post('/client/{tenant}/team', [TenantTeamController::class, 'store'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.team.store');
     Route::patch('/client/{tenant}/team/{user}', [TenantTeamController::class, 'update'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.team.update');
+    Route::delete('/client/{tenant}/team/{user}', [TenantTeamController::class, 'destroy'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.team.destroy');
+    Route::patch('/client/{tenant}/team/{user}/reset-access', [TenantTeamController::class, 'resetAccess'])->middleware(['auth', 'tenant.access', EnsureTenantAdmin::class])->name('tenant.team.reset-access');
     Route::get('/onlinestore/{tenant}/media/{path}', [TenantProductController::class, 'media'])
         ->where('path', '.*')
         ->middleware([])

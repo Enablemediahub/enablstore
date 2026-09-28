@@ -23,11 +23,13 @@ class Tenant extends BaseTenant implements TenantWithDatabase
         'phone',
         'whatsapp_phone',
         'status',
+        'team_management_enabled',
         'data',
     ];
 
     protected $casts = [
         'data' => 'array',
+        'team_management_enabled' => 'boolean',
     ];
 
     /**
@@ -52,6 +54,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class);
+    }
+
+    public function teamManagementEnabled(): bool
+    {
+        return $this->team_management_enabled;
     }
 
     public function getConnectionName(): ?string

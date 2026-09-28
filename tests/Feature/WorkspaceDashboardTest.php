@@ -30,6 +30,37 @@ class WorkspaceDashboardTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_central_dashboard_defaults_to_the_demo_tenant(): void
+    {
+        DB::table('tenants')->insert([
+            'id' => 'the-meat-box',
+            'name' => 'The Meat Box',
+            'slug' => 'the-meat-box',
+            'email' => 'meatbox@example.test',
+            'status' => 'active',
+            'data' => json_encode(['name' => 'The Meat Box', 'slug' => 'the-meat-box']),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('tenants')->insert([
+            'id' => 'demo',
+            'name' => 'Demo Store',
+            'slug' => 'demo',
+            'email' => 'demo@example.test',
+            'status' => 'active',
+            'data' => json_encode(['name' => 'Demo Store', 'slug' => 'demo']),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Dashboard')
+                ->where('tenant.id', 'demo')
+                ->where('tenant.slug', 'demo'));
+    }
+
     public function test_categories_are_available_with_either_pos_or_foodstore_access(): void
     {
         $this->createdTenant = Tenant::query()->create([
@@ -222,10 +253,10 @@ class WorkspaceDashboardTest extends TestCase
 
         $this->actingAs($admin)
             ->get('/dashboard')
-            ->assertRedirect('/sample-foodstore/dashboard');
+            ->assertRedirect('/dashboard/sample-foodstore');
 
         $this->actingAs($admin)
-            ->get('/sample-foodstore/dashboard')
+            ->get('/dashboard/sample-foodstore')
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Dashboard')
@@ -235,6 +266,10 @@ class WorkspaceDashboardTest extends TestCase
                 ->where('access.pos', true)
                 ->where('access.restaurantFoodStore', true)
                 ->where('access.foodstoreOnline', true));
+
+        $this->actingAs($admin)
+            ->get('/sample-foodstore/dashboard')
+            ->assertOk();
     }
 
     public function test_authenticated_cashier_dashboard_includes_foodstore_online_entitlement(): void

@@ -4,7 +4,7 @@ import EnInput from '@/Components/EnInput.vue';
 import SuperAdminSidePanel from '@/Components/SuperAdminSidePanel.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ArrowLeft, CheckCircle2, ExternalLink, KeyRound, Pencil, Store, Trash2, Users } from '@lucide/vue';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 
 type Tenant = {
     id: string;
@@ -15,6 +15,7 @@ type Tenant = {
     phone: string | null;
     whatsapp_phone: string | null;
     status: 'active' | 'suspended';
+    team_management_enabled: boolean;
     created_at: string;
 };
 
@@ -41,7 +42,7 @@ type TeamMember = { id: number; name: string; username: string; email: string | 
 const props = defineProps<{
     tenant: Tenant;
     subscription: Subscription;
-    plans: Array<{ id: number; name: string }>;
+    plans: Array<{ id: number; name: string; price_minor: number; currency: string }>;
     storefrontSettings: StorefrontSettings;
     team: TeamMember[];
     status?: string | null;
@@ -64,11 +65,16 @@ const form = useForm({
     phone: props.tenant.phone ?? '',
     whatsapp_phone: props.tenant.whatsapp_phone ?? '',
     status: props.tenant.status,
+    team_management_enabled: props.tenant.team_management_enabled,
     subscription_plan_id: props.subscription?.plan_id ?? '',
     subscription_status: props.subscription?.status ?? '',
     subscription_amount_ghs: props.subscription ? props.subscription.amount_minor / 100 : '',
     features: [...props.portalFeatures],
     ...props.storefrontSettings,
+});
+watch(() => form.subscription_plan_id, (planId) => {
+    const selectedPlan = props.plans.find((plan) => plan.id === Number(planId));
+    if (selectedPlan) form.subscription_amount_ghs = selectedPlan.price_minor / 100;
 });
 const portalOptions = [
     { key: 'online_store', label: 'Online Store' },
@@ -113,17 +119,27 @@ const savePaystackSettings = (): void => {
 const editingMember = ref<TeamMember | null>(null);
 const resettingMember = ref<TeamMember | null>(null);
 const teamActions = useForm({});
+const teamUsernamePrefix = props.tenant.subscriber_code ? `${props.tenant.subscriber_code}-` : '';
+const teamUsernameSuffix = ref('');
 const teamEdit = useForm<{ name: string; username: string; email: string; role: 'admin' | 'cashier' }>({ name: '', username: '', email: '', role: 'cashier' });
 const resetAccess = useForm({ password: '', pin: '' });
 const beginEdit = (member: TeamMember): void => {
     editingMember.value = member;
     teamEdit.name = member.name;
     teamEdit.username = member.username;
+    teamUsernameSuffix.value = teamUsernamePrefix && member.username.startsWith(teamUsernamePrefix)
+        ? member.username.slice(teamUsernamePrefix.length)
+        : member.username;
     teamEdit.email = member.email ?? '';
     teamEdit.role = member.role;
 };
 const saveMember = (): void => {
-    if (editingMember.value) teamEdit.patch(route('super-admin.users.update', { user: editingMember.value.id }), { onSuccess: () => { editingMember.value = null; } });
+    if (!editingMember.value) return;
+
+    teamEdit.username = teamUsernamePrefix
+        ? `${teamUsernamePrefix}${teamUsernameSuffix.value.trim()}`
+        : teamEdit.username.trim();
+    teamEdit.patch(route('super-admin.users.update', { user: editingMember.value.id }), { onSuccess: () => { editingMember.value = null; } });
 };
 const beginReset = (member: TeamMember): void => { resettingMember.value = member; resetAccess.reset(); };
 const saveReset = (): void => {
@@ -179,6 +195,12 @@ const deleteMember = (member: TeamMember): void => {
                         <div class="flex items-start gap-3"><Users :size="22" class="mt-0.5 text-[#e21b23]" aria-hidden="true" /><div><h2 class="text-lg font-bold">Subscriber team</h2><p class="mt-1 text-sm text-neutral-500">The first administrator is the main administrator created when this subscriber was enrolled. Other administrators and cashiers are enrolled by that main administrator.</p></div></div>
                         <div v-if="team.length" class="mt-6 overflow-x-auto"><table class="w-full min-w-[760px] text-left text-sm"><thead class="border-b border-neutral-200 text-xs font-semibold tracking-wide text-neutral-500 uppercase"><tr><th class="px-3 py-3">Team member</th><th class="px-3 py-3">Username</th><th class="px-3 py-3">Role</th><th class="px-3 py-3">Contact</th><th class="px-3 py-3">Added</th><th class="px-3 py-3 text-right">Actions</th></tr></thead><tbody><tr v-for="(member, index) in team" :key="member.id" class="border-b border-neutral-100 last:border-0"><td class="px-3 py-4 font-semibold">{{ member.name }}</td><td class="px-3 py-4 font-mono text-xs">{{ member.username }}</td><td class="px-3 py-4"><span class="rounded-full px-2.5 py-1 text-xs font-bold" :class="member.role === 'admin' ? 'bg-blue-100 text-blue-800' : 'bg-violet-100 text-violet-800'">{{ index === 0 && member.role === 'admin' ? 'Main admin' : member.role }}</span></td><td class="px-3 py-4 text-neutral-600">{{ member.email || '—' }}</td><td class="px-3 py-4 text-neutral-600">{{ member.created_at || '—' }}</td><td class="px-3 py-4"><div class="flex justify-end gap-2"><button type="button" class="inline-flex min-h-9 items-center gap-1 rounded-md border border-neutral-300 px-3 text-xs font-bold hover:border-[#e21b23]" @click="beginEdit(member)"><Pencil :size="14" /> Edit</button><button type="button" class="inline-flex min-h-9 items-center gap-1 rounded-md border border-neutral-300 px-3 text-xs font-bold hover:border-blue-500 hover:text-blue-700" @click="beginReset(member)"><KeyRound :size="14" /> Reset</button><button type="button" class="inline-flex min-h-9 items-center gap-1 rounded-md border border-red-200 px-3 text-xs font-bold text-red-700 hover:bg-red-50" :disabled="teamActions.processing" @click="deleteMember(member)"><Trash2 :size="14" /> Delete</button></div></td></tr></tbody></table></div>
                         <p v-else class="mt-5 rounded-md bg-amber-50 px-4 py-3 text-sm text-amber-800">No team members have been added to this subscriber.</p>
+                    </EnCard>
+
+                    <EnCard>
+                        <h2 class="text-lg font-bold">Tenant team controls</h2>
+                        <p class="mt-1 text-sm text-neutral-500">Allow this tenant’s administrator to manage team accounts, credentials, and cashier access from the workspace.</p>
+                        <label class="mt-4 flex min-h-11 items-center gap-3 rounded-md border border-neutral-200 px-4 py-3 text-sm font-semibold text-neutral-800"><input v-model="form.team_management_enabled" type="checkbox" class="rounded border-neutral-300 text-[#e21b23] focus:ring-[#e21b23]" />Allow tenant admin to manage team accounts</label>
                     </EnCard>
 
                     <EnCard>
@@ -269,7 +291,7 @@ const deleteMember = (member: TeamMember): void => {
 
                     <div class="flex justify-end"><button type="submit" class="min-h-11 rounded-md bg-[#e21b23] px-5 py-2 text-sm font-bold text-white hover:bg-[#b9151b] disabled:opacity-60" :disabled="form.processing">Save tenant settings</button></div>
                 </form>
-                <div v-if="editingMember" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/50 p-4" @click.self="editingMember = null"><form class="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl" @submit.prevent="saveMember"><div class="flex items-start justify-between gap-4"><div><h2 class="text-lg font-bold">Edit team member</h2><p class="mt-1 text-sm text-neutral-500">Keep the subscriber-code prefix in the username. If the role changes, use Reset access afterward to set the appropriate credential.</p></div><button type="button" class="text-sm font-semibold text-neutral-500" @click="editingMember = null">Cancel</button></div><div class="mt-5 space-y-4"><EnInput id="team-name" v-model="teamEdit.name" label="Full name" required /><EnInput id="team-username" v-model="teamEdit.username" label="Username" required /><label class="block text-sm font-medium text-neutral-700">Role<select v-model="teamEdit.role" class="mt-1.5 min-h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm"><option value="admin">Administrator — password login</option><option value="cashier">Cashier — POS PIN login</option></select></label><EnInput id="team-email" v-model="teamEdit.email" type="email" label="Email (optional)" /></div><p v-if="teamEdit.errors.username || teamEdit.errors.email || teamEdit.errors.role" class="mt-4 text-sm text-red-700">{{ teamEdit.errors.username || teamEdit.errors.email || teamEdit.errors.role }}</p><div class="mt-6 flex justify-end gap-3"><button type="button" class="rounded-md border border-neutral-300 px-4 py-2 text-sm font-bold" @click="editingMember = null">Cancel</button><button type="submit" class="rounded-md bg-[#171717] px-4 py-2 text-sm font-bold text-white" :disabled="teamEdit.processing">Save member</button></div></form></div>
+                <div v-if="editingMember" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/50 p-4" @click.self="editingMember = null"><form class="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl" @submit.prevent="saveMember"><div class="flex items-start justify-between gap-4"><div><h2 class="text-lg font-bold">Edit team member</h2><p class="mt-1 text-sm text-neutral-500">If the role changes, use Reset access afterward to set the appropriate credential.</p></div><button type="button" class="text-sm font-semibold text-neutral-500" @click="editingMember = null">Cancel</button></div><div class="mt-5 space-y-4"><EnInput id="team-name" v-model="teamEdit.name" label="Full name" required /><div v-if="teamUsernamePrefix"><label for="team-username" class="block text-sm font-medium text-neutral-700">Username</label><div class="mt-1.5 flex min-h-11 overflow-hidden rounded-md border border-neutral-300 bg-white focus-within:border-[#e21b23] focus-within:ring-2 focus-within:ring-[#e21b23]/20"><span class="inline-flex items-center border-r border-neutral-300 bg-neutral-50 px-3 font-mono text-sm text-neutral-700">{{ teamUsernamePrefix }}</span><input id="team-username" v-model="teamUsernameSuffix" type="text" required class="min-w-0 flex-1 border-0 bg-transparent px-3 text-sm text-neutral-900 shadow-none focus:outline-none focus:ring-0" /></div></div><EnInput v-else id="team-username" v-model="teamEdit.username" label="Username" required /><label class="block text-sm font-medium text-neutral-700">Role<select v-model="teamEdit.role" class="mt-1.5 min-h-11 w-full rounded-md border border-neutral-300 bg-white px-3 text-sm"><option value="admin">Administrator — password login</option><option value="cashier">Cashier — POS PIN login</option></select></label><EnInput id="team-email" v-model="teamEdit.email" type="email" label="Email (optional)" /></div><p v-if="teamEdit.errors.username || teamEdit.errors.email || teamEdit.errors.role" class="mt-4 text-sm text-red-700">{{ teamEdit.errors.username || teamEdit.errors.email || teamEdit.errors.role }}</p><div class="mt-6 flex justify-end gap-3"><button type="button" class="rounded-md border border-neutral-300 px-4 py-2 text-sm font-bold" @click="editingMember = null">Cancel</button><button type="submit" class="rounded-md bg-[#171717] px-4 py-2 text-sm font-bold text-white" :disabled="teamEdit.processing">Save member</button></div></form></div>
                 <div v-if="resettingMember" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950/50 p-4" @click.self="resettingMember = null"><form class="w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl" @submit.prevent="saveReset"><div class="flex items-start justify-between gap-4"><div><h2 class="text-lg font-bold">Reset access</h2><p class="mt-1 text-sm text-neutral-500">{{ resettingMember.role === 'cashier' ? `Set a new POS PIN for ${resettingMember.name}.` : `Set a new login password for ${resettingMember.name}.` }}</p></div><button type="button" class="text-sm font-semibold text-neutral-500" @click="resettingMember = null">Cancel</button></div><div class="mt-5"><EnInput v-if="resettingMember.role === 'cashier'" id="cashier-pin" v-model="resetAccess.pin" type="password" inputmode="numeric" label="New POS PIN" minlength="4" maxlength="6" required /><EnInput v-else id="admin-password" v-model="resetAccess.password" type="password" label="New login password" minlength="8" required /></div><p v-if="resetAccess.errors.pin || resetAccess.errors.password" class="mt-4 text-sm text-red-700">{{ resetAccess.errors.pin || resetAccess.errors.password }}</p><div class="mt-6 flex justify-end gap-3"><button type="button" class="rounded-md border border-neutral-300 px-4 py-2 text-sm font-bold" @click="resettingMember = null">Cancel</button><button type="submit" class="rounded-md bg-[#e21b23] px-4 py-2 text-sm font-bold text-white" :disabled="resetAccess.processing">Reset access</button></div></form></div>
             </div>
         </section>

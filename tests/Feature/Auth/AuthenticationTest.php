@@ -5,6 +5,7 @@ namespace Tests\Feature\Auth;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Inertia\Testing\AssertableInertia as Assert;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
@@ -44,6 +45,7 @@ class AuthenticationTest extends TestCase
     {
         DB::table('tenants')->insert([
             'id' => 'royal',
+            'subscriber_code' => 'ES003',
             'name' => 'Royal Supermarket',
             'slug' => 'royal',
             'email' => 'royal@example.test',
@@ -57,10 +59,17 @@ class AuthenticationTest extends TestCase
             'role' => 'admin',
         ]);
 
+        $this->withSession(['url.intended' => '/dashboard/royal'])
+            ->get(route('login'))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Auth/Login')
+                ->where('subscriberCode', 'ES003'));
+
         $this->post('/login', [
             'email' => $admin->email,
             'password' => 'password',
-        ])->assertRedirect('/royal/dashboard');
+        ])->assertRedirect('/dashboard/royal');
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void

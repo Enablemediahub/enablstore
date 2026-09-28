@@ -466,7 +466,8 @@ class FoodStoreSaleCheckoutTest extends TestCase
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page
                 ->component('Tenant/Pos/Unlock')
-                ->where('workspace', 'foodstore'));
+                ->where('workspace', 'foodstore')
+                ->where('subscriberCode', 'ES902'));
     }
 
     public function test_foodstore_access_denial_renders_the_branded_access_dialog(): void
@@ -482,7 +483,7 @@ class FoodStoreSaleCheckoutTest extends TestCase
             'features' => ['pos'],
             'is_active' => true,
         ]);
-        Subscription::query()->create([
+        $subscription = Subscription::query()->create([
             'tenant_id' => $this->tenant->id,
             'plan_id' => $plan->id,
             'provider' => 'internal',
@@ -504,6 +505,17 @@ class FoodStoreSaleCheckoutTest extends TestCase
                 ->where('featureName', 'FoodStore')
                 ->where('tenantName', $this->tenant->name)
                 ->where('dashboardUrl', route('dashboard')));
+
+        $subscription->update([
+            'status' => 'disabled',
+            'metadata' => ['features' => ['restaurant_foodstore']],
+        ]);
+        $this->actingAs($admin)
+            ->get(route('tenant.foodstore.index', ['tenant' => $this->tenant->id]))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->component('Tenant/FeatureDenied')
+                ->where('featureName', 'FoodStore'));
     }
 
     public function test_admin_can_add_a_food_item_with_a_photo_and_package_price(): void

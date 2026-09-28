@@ -3,6 +3,7 @@ import AdminSidePanel from '@/Components/AdminSidePanel.vue';
 import EnButton from '@/Components/EnButton.vue';
 import EnCard from '@/Components/EnCard.vue';
 import EnInput from '@/Components/EnInput.vue';
+import TenantTeamManagement from '@/Components/TenantTeamManagement.vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { ArrowLeft, Image, Trash2 } from '@lucide/vue';
 import { ref } from 'vue';
@@ -29,7 +30,13 @@ type StorefrontConfig = {
     customer_service_message: string;
 };
 
+type TeamUser = { id: number; name: string; username: string; email: string | null; role: 'admin' | 'cashier' };
+
 const props = defineProps<{
+    teamUsers: TeamUser[];
+    subscriberCode: string | null;
+    teamManagementEnabled: boolean;
+    status?: string | null;
     catalogueMode: 'shared' | 'separate_online';
     storefrontHero: StorefrontHero;
     storefrontConfig: StorefrontConfig;
@@ -315,6 +322,7 @@ const removeHeroImage = (): void => {
                             <EnButton type="submit" :loading="form.processing">Save store settings</EnButton>
                         </form>
                     </EnCard>
+                    <TenantTeamManagement :users="teamUsers" :subscriber-code="subscriberCode" :enabled="teamManagementEnabled" :status="status" />
                 </div>
             </section>
         </div>
