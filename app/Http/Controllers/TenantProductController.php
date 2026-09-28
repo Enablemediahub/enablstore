@@ -16,6 +16,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
@@ -26,7 +27,7 @@ class TenantProductController extends Controller
     {
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:120'],
-            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('tenant_id', tenant()->getTenantKey())],
             'stock_status' => ['nullable', 'in:all,in_stock,low_stock,out_of_stock'],
         ]);
         $search = trim((string) ($filters['search'] ?? ''));

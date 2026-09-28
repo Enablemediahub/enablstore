@@ -6,10 +6,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Concerns\BelongsToTenant;
 
 class RestaurantMenuItem extends Model
 {
-    protected $fillable = ['name', 'category', 'description', 'price_minor', 'unit_label', 'image_path', 'is_available', 'option_groups'];
+    use BelongsToTenant;
+
+    protected $fillable = ['tenant_id', 'name', 'category', 'description', 'price_minor', 'unit_label', 'image_path', 'is_available', 'option_groups'];
 
     protected function casts(): array
     {

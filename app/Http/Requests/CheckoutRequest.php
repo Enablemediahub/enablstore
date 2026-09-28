@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CheckoutRequest extends FormRequest
 {
@@ -24,7 +25,7 @@ class CheckoutRequest extends FormRequest
             'customer_name' => ['nullable', 'string', 'max:120'],
             'customer_phone' => ['nullable', 'string', 'max:40'],
             'items' => ['required', 'array', 'min:1'],
-            'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'items.*.product_id' => ['required', 'integer', Rule::exists('products', 'id')->where('tenant_id', tenant()->getTenantKey())],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
             'tenders' => ['sometimes', 'required', 'array', 'min:1', 'max:3'],
             'tenders.*.method' => ['required_with:tenders', 'in:cash,mobile_money,card'],

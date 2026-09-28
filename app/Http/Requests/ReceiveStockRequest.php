@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class ReceiveStockRequest extends FormRequest
 {
@@ -13,8 +14,8 @@ class ReceiveStockRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'supplier_id' => ['required', 'integer', 'exists:suppliers,id'],
-            'product_id' => ['required', 'integer', 'exists:products,id'],
+            'supplier_id' => ['required', 'integer', Rule::exists('suppliers', 'id')->where('tenant_id', tenant()->getTenantKey())],
+            'product_id' => ['required', 'integer', Rule::exists('products', 'id')->where('tenant_id', tenant()->getTenantKey())],
             'quantity' => ['required', 'integer', 'min:1'],
             'unit_cost_minor' => ['required', 'integer', 'min:0'],
             'purchased_at' => ['required', 'date'],

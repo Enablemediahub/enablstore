@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -260,7 +261,7 @@ class RestaurantFoodStoreController extends Controller
             'customer_name' => ['nullable', 'string', 'max:120'],
             'customer_phone' => ['nullable', 'string', 'max:40'],
             'items' => ['required', 'array', 'min:1', 'max:40'],
-            'items.*.menu_item_id' => ['required', 'integer', 'exists:restaurant_menu_items,id'],
+            'items.*.menu_item_id' => ['required', 'integer', Rule::exists('restaurant_menu_items', 'id')->where('tenant_id', tenant()->getTenantKey())],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:100'],
             'items.*.selected_option_ids' => ['sometimes', 'array', 'max:120'],
             'items.*.selected_option_ids.*' => ['string', 'max:64', 'distinct'],
@@ -293,7 +294,7 @@ class RestaurantFoodStoreController extends Controller
             'customer_phone' => ['nullable', 'string', 'max:40'],
             'notes' => ['nullable', 'string', 'max:500'],
             'items' => ['required', 'array', 'min:1', 'max:40'],
-            'items.*.menu_item_id' => ['required', 'integer', 'exists:restaurant_menu_items,id'],
+            'items.*.menu_item_id' => ['required', 'integer', Rule::exists('restaurant_menu_items', 'id')->where('tenant_id', tenant()->getTenantKey())],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:100'],
             'items.*.selected_option_ids' => ['sometimes', 'array', 'max:120'],
             'items.*.selected_option_ids.*' => ['string', 'max:64', 'distinct'],
@@ -312,7 +313,7 @@ class RestaurantFoodStoreController extends Controller
             'customer_phone' => ['required', 'string', 'max:40'],
             'notes' => ['nullable', 'string', 'max:500'],
             'items' => ['required', 'array', 'min:1', 'max:40'],
-            'items.*.menu_item_id' => ['required', 'integer', 'exists:restaurant_menu_items,id'],
+            'items.*.menu_item_id' => ['required', 'integer', Rule::exists('restaurant_menu_items', 'id')->where('tenant_id', tenant()->getTenantKey())],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:100'],
             'items.*.selected_option_ids' => ['sometimes', 'array', 'max:120'],
             'items.*.selected_option_ids.*' => ['string', 'max:64', 'distinct'],

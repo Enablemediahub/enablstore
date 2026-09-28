@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class SyncOfflineSalesRequest extends FormRequest
 {
@@ -30,7 +31,7 @@ class SyncOfflineSalesRequest extends FormRequest
             'sales.*.customer_name' => ['nullable', 'string', 'max:120'],
             'sales.*.customer_phone' => ['nullable', 'string', 'max:40'],
             'sales.*.items' => ['required', 'array', 'min:1'],
-            'sales.*.items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'sales.*.items.*.product_id' => ['required', 'integer', Rule::exists('products', 'id')->where('tenant_id', tenant()->getTenantKey())],
             'sales.*.items.*.quantity' => ['required', 'integer', 'min:1'],
             'sales.*.discount_type' => ['nullable', 'in:fixed,percentage'],
             'sales.*.discount_value' => ['nullable', 'numeric', 'min:0'],

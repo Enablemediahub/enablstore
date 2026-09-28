@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreProductRequest extends FormRequest
 {
@@ -20,8 +21,8 @@ class StoreProductRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:160'],
-            'sku' => ['nullable', 'string', 'max:80'],
-            'barcode' => ['nullable', 'string', 'max:80'],
+            'sku' => ['nullable', 'string', 'max:80', Rule::unique('products', 'sku')->where('tenant_id', tenant()->getTenantKey())],
+            'barcode' => ['nullable', 'string', 'max:80', Rule::unique('products', 'barcode')->where('tenant_id', tenant()->getTenantKey())],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'images' => ['nullable', 'array', 'max:8'],
             'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
@@ -32,7 +33,7 @@ class StoreProductRequest extends FormRequest
             'initial_quantity' => ['required', 'integer', 'min:0'],
             'low_stock_threshold' => ['required', 'integer', 'min:0'],
             'description' => ['nullable', 'string', 'max:2000'],
-            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('tenant_id', tenant()->getTenantKey())],
             'available_in_pos' => ['required', 'boolean'],
             'available_online' => ['required', 'boolean'],
             'is_online_deal' => ['sometimes', 'boolean'],

@@ -25,8 +25,8 @@ class UpdateProductRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:160'],
-            'sku' => ['nullable', 'string', 'max:80', Rule::unique('products', 'sku')->ignore($product->id)],
-            'barcode' => ['nullable', 'string', 'max:80', Rule::unique('products', 'barcode')->ignore($product->id)],
+            'sku' => ['nullable', 'string', 'max:80', Rule::unique('products', 'sku')->where('tenant_id', tenant()->getTenantKey())->ignore($product->id)],
+            'barcode' => ['nullable', 'string', 'max:80', Rule::unique('products', 'barcode')->where('tenant_id', tenant()->getTenantKey())->ignore($product->id)],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'images' => ['nullable', 'array', 'max:8'],
             'images.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
@@ -36,7 +36,7 @@ class UpdateProductRequest extends FormRequest
             'units_per_purchase' => ['required', 'integer', 'min:1'],
             'initial_quantity' => ['required', 'integer', 'min:0'],
             'low_stock_threshold' => ['required', 'integer', 'min:0'],
-            'category_id' => ['nullable', 'integer', 'exists:categories,id'],
+            'category_id' => ['nullable', 'integer', Rule::exists('categories', 'id')->where('tenant_id', tenant()->getTenantKey())],
             'available_in_pos' => ['required', 'boolean'],
             'available_online' => ['required', 'boolean'],
             'is_online_deal' => ['sometimes', 'boolean'],

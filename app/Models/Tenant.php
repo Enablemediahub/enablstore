@@ -14,6 +14,11 @@ class Tenant extends BaseTenant implements TenantWithDatabase
 {
     use HasDatabase;
 
+    public static function getCustomColumns(): array
+    {
+        return array_values(array_unique([...parent::getCustomColumns(), 'subscriber_code']));
+    }
+
     protected $fillable = [
         'id',
         'subscriber_code',

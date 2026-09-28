@@ -6,10 +6,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Concerns\BelongsToTenant;
 
 class Supplier extends Model
 {
-    protected $fillable = ['name', 'contact_name', 'phone', 'email', 'address', 'is_active'];
+    use BelongsToTenant;
+
+    protected $fillable = ['tenant_id', 'name', 'contact_name', 'phone', 'email', 'address', 'is_active'];
 
     protected $casts = ['is_active' => 'boolean'];
 

@@ -27,7 +27,7 @@ class StorefrontCheckoutRequest extends FormRequest
             'delivery_location' => ['required', 'string', Rule::in($locations)],
             'payment_method' => ['required', 'in:card,mobile_money'],
             'items' => ['required', 'array', 'min:1', 'max:100'],
-            'items.*.product_id' => ['required', 'integer', 'exists:products,id'],
+            'items.*.product_id' => ['required', 'integer', Rule::exists('products', 'id')->where('tenant_id', tenant()->getTenantKey())],
             'items.*.quantity' => ['required', 'integer', 'min:1', 'max:100'],
         ];
     }
