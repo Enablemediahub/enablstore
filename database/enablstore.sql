@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 21, 2026 at 10:30 PM
+-- Generation Time: Sep 28, 2026 at 02:11 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -144,7 +144,13 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (15, '2026_09_20_000004_add_pos_pin_to_users_table', 1),
 (16, '2026_09_20_000005_add_username_to_super_admins_table', 1),
 (17, '2026_09_21_180000_make_user_email_nullable', 2),
-(18, '2026_09_21_183000_add_subscriber_codes_to_tenants', 3);
+(18, '2026_09_21_183000_add_subscriber_codes_to_tenants', 3),
+(19, '2026_09_26_000002_create_tenant_paystack_settings_table', 4),
+(20, '2026_09_26_000003_create_tenant_payment_intents_table', 5),
+(21, '2026_09_26_000004_add_test_keys_to_tenant_paystack_settings', 6),
+(22, '2026_09_27_000003_add_amount_minor_to_subscriptions', 7),
+(23, '2026_09_27_000004_add_billing_interval_months_to_plans', 7),
+(24, '2026_09_27_000005_backfill_plan_billing_interval_months', 8);
 
 -- --------------------------------------------------------
 
@@ -203,6 +209,14 @@ CREATE TABLE `payments` (
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `payments`
+--
+
+INSERT INTO `payments` (`id`, `tenant_id`, `subscription_id`, `provider`, `provider_reference`, `amount_minor`, `currency`, `status`, `paid_at`, `metadata`, `created_at`, `updated_at`) VALUES
+(1, 'royal', 2, 'manual', 'manual-ef1a934b-d047-4e76-8109-b28cb57bc77f', 9900, 'GHS', 'paid', '2026-09-27 14:50:25', '{\"source\":\"super_admin_manual_activation\"}', '2026-09-27 14:50:25', '2026-09-27 14:50:25'),
+(2, 'the-meat-box', 3, 'manual', 'manual-38d11e30-da01-4c26-ac44-054419548e3f', 100000, 'GHS', 'paid', '2026-09-27 17:12:17', '{\"source\":\"super_admin_manual_enrollment\"}', '2026-09-27 17:12:17', '2026-09-27 17:12:17');
+
 -- --------------------------------------------------------
 
 --
@@ -231,6 +245,7 @@ CREATE TABLE `plans` (
   `price_minor` bigint(20) UNSIGNED NOT NULL,
   `currency` varchar(3) NOT NULL DEFAULT 'GHS',
   `billing_interval` varchar(20) NOT NULL DEFAULT 'monthly',
+  `billing_interval_months` smallint(5) UNSIGNED NOT NULL DEFAULT 1,
   `features` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`features`)),
   `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `created_at` timestamp NULL DEFAULT NULL,
@@ -241,8 +256,9 @@ CREATE TABLE `plans` (
 -- Dumping data for table `plans`
 --
 
-INSERT INTO `plans` (`id`, `name`, `slug`, `description`, `price_minor`, `currency`, `billing_interval`, `features`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'Starter', 'starter', 'Core tools for a growing retail shop.', 9900, 'GHS', 'monthly', '[\"products\",\"inventory\",\"pos\",\"online_store\"]', 1, '2026-09-20 20:09:02', '2026-09-20 20:09:02');
+INSERT INTO `plans` (`id`, `name`, `slug`, `description`, `price_minor`, `currency`, `billing_interval`, `billing_interval_months`, `features`, `is_active`, `created_at`, `updated_at`) VALUES
+(1, 'Starter', 'starter', 'Core tools for a growing retail shop.', 9900, 'GHS', 'monthly', 1, '[\"products\",\"inventory\",\"pos\",\"online_store\"]', 1, '2026-09-20 20:09:02', '2026-09-20 20:09:02'),
+(2, 'BUSINESS PACKAGE', 'business-package', NULL, 100000, 'GHS', 'yearly', 12, '[\"pos\",\"online_store\",\"restaurant_foodstore\",\"inventory\",\"products\"]', 1, '2026-09-27 16:38:25', '2026-09-27 16:42:29');
 
 -- --------------------------------------------------------
 
@@ -263,8 +279,10 @@ CREATE TABLE `platform_settings` (
 --
 
 INSERT INTO `platform_settings` (`id`, `key`, `value`, `created_at`, `updated_at`) VALUES
-(1, 'login_wallpaper', 'platform/NjlCLZu3XptaSnsAF5oE0hfOTKST70eiIMUvXNlR.jpg', '2026-09-20 20:30:14', '2026-09-20 20:30:14'),
-(2, 'dashboard_wallpaper', 'platform/PpbJS7lFFnrYPJ9yTTmhs9IVIKxDYu2FqtlDXjAl.jpg', '2026-09-21 14:32:29', '2026-09-21 14:32:29');
+(1, 'login_wallpaper', 'platform/4kKgeZYt9gfUaAffIeYhzHJriifJmlpYx7ySuIW6.jpg', '2026-09-20 20:30:14', '2026-09-25 14:46:41'),
+(2, 'dashboard_wallpaper', 'platform/GfGo7jXLhNy1BWSTQRQkcMPkcCMc24jfy1NveeCN.jpg', '2026-09-21 14:32:29', '2026-09-26 21:15:24'),
+(3, 'pos_hero_image', 'platform/Dqf1MULRbJm47wbY5uTw485VHwm3AMR9RmJStBOV.jpg', '2026-09-25 16:07:20', '2026-09-25 16:07:20'),
+(4, 'foodstore_hero_image', 'platform/DmzP5BHLQugsPTv0MpskpioA3QF4tD4ETfAa4pAm.jpg', '2026-09-27 17:42:29', '2026-09-27 17:42:29');
 
 -- --------------------------------------------------------
 
@@ -316,6 +334,7 @@ CREATE TABLE `subscriptions` (
   `id` bigint(20) UNSIGNED NOT NULL,
   `tenant_id` varchar(255) NOT NULL,
   `plan_id` bigint(20) UNSIGNED NOT NULL,
+  `amount_minor` bigint(20) UNSIGNED DEFAULT NULL,
   `provider` varchar(30) NOT NULL DEFAULT 'paystack',
   `provider_reference` varchar(255) DEFAULT NULL,
   `status` varchar(30) NOT NULL DEFAULT 'trialing',
@@ -332,9 +351,10 @@ CREATE TABLE `subscriptions` (
 -- Dumping data for table `subscriptions`
 --
 
-INSERT INTO `subscriptions` (`id`, `tenant_id`, `plan_id`, `provider`, `provider_reference`, `status`, `starts_at`, `renews_at`, `ends_at`, `grace_ends_at`, `metadata`, `created_at`, `updated_at`) VALUES
-(1, 'demo', 1, 'internal', NULL, 'active', '2026-09-20 20:09:02', '2026-10-20 20:09:02', NULL, NULL, NULL, '2026-09-20 20:09:02', '2026-09-20 20:09:02'),
-(2, 'royal', 1, 'internal', NULL, 'active', '2026-09-21 15:49:09', '2026-10-21 15:49:09', NULL, NULL, NULL, '2026-09-21 15:49:09', '2026-09-21 15:49:09');
+INSERT INTO `subscriptions` (`id`, `tenant_id`, `plan_id`, `amount_minor`, `provider`, `provider_reference`, `status`, `starts_at`, `renews_at`, `ends_at`, `grace_ends_at`, `metadata`, `created_at`, `updated_at`) VALUES
+(1, 'demo', 1, NULL, 'internal', NULL, 'active', '2026-09-20 20:09:02', '2026-10-20 20:09:02', NULL, NULL, NULL, '2026-09-20 20:09:02', '2026-09-20 20:09:02'),
+(2, 'royal', 1, NULL, 'internal', NULL, 'active', '2026-09-27 14:50:25', '2026-11-21 15:49:09', NULL, NULL, '{\"features\":[\"pos\",\"online_store\",\"restaurant_foodstore\"]}', '2026-09-21 15:49:09', '2026-09-27 14:50:25'),
+(3, 'the-meat-box', 2, 100000, 'internal', NULL, 'active', '2026-09-27 21:01:13', '2027-09-27 17:12:17', NULL, NULL, '{\"features\":[\"pos\",\"online_store\",\"restaurant_foodstore\",\"foodstore_online\"]}', '2026-09-27 17:12:17', '2026-09-27 21:01:13');
 
 -- --------------------------------------------------------
 
@@ -360,7 +380,7 @@ CREATE TABLE `super_admins` (
 
 INSERT INTO `super_admins` (`id`, `name`, `username`, `email`, `email_verified_at`, `password`, `remember_token`, `created_at`, `updated_at`) VALUES
 (1, 'Enablstore Admin', 'superadmin', 'admin@enablstore.test', NULL, '$2y$12$PTBZ81cpyyuW6izliVoKsuf9gKaPeKESNA.c0QOMXjF/WzLJ93sEu', NULL, '2026-09-20 20:09:02', '2026-09-20 20:09:02'),
-(2, 'Dale Quist', NULL, 'crepindale@gmail.com', NULL, '$2y$12$EJVikWQnDqBiDoWSiR..4.YCYk.nuQ9FOW2tURpMIfqh0zgXQD612', NULL, '2026-09-21 19:02:33', '2026-09-21 19:02:33');
+(2, 'Dale Quist', NULL, 'crepindale@gmail.com', NULL, '$2y$12$9feVzCCgzvliMDymFjP3Vulsg1ZbBBI4hXMNE8gdMWUtvwXxErXvG', NULL, '2026-09-21 19:02:33', '2026-09-26 21:14:49');
 
 -- --------------------------------------------------------
 
@@ -386,8 +406,47 @@ CREATE TABLE `tenants` (
 --
 
 INSERT INTO `tenants` (`id`, `subscriber_code`, `name`, `slug`, `email`, `phone`, `status`, `created_at`, `updated_at`, `data`) VALUES
-('demo', NULL, NULL, NULL, NULL, NULL, 'trial', '2026-09-20 20:09:02', '2026-09-21 16:48:05', '{\"subscriber_code\":\"ES001\",\"name\":\"Demo Market\",\"slug\":\"demo\",\"email\":\"demo@enablstore.test\",\"phone\":null,\"status\":\"active\",\"created_at\":\"2026-09-20 21:09:02\",\"updated_at\":\"2026-09-20 21:09:02\"}'),
-('royal', NULL, NULL, NULL, NULL, NULL, 'trial', '2026-09-21 15:49:06', '2026-09-21 16:48:05', '{\"subscriber_code\":\"ES002\",\"name\":\"Royal Supermarket\",\"slug\":\"royal\",\"email\":\"royal@enablestore.com\",\"phone\":null,\"status\":\"active\",\"created_at\":\"2026-09-21 16:49:06\",\"updated_at\":\"2026-09-21 16:49:06\",\"tenancy_db_name\":\"tenantroyal\"}');
+('demo', 'ES001', NULL, NULL, NULL, NULL, 'trial', '2026-09-20 20:09:02', '2026-09-21 16:48:05', '{\"subscriber_code\":\"ES001\",\"name\":\"Demo Market\",\"slug\":\"demo\",\"email\":\"demo@enablstore.test\",\"phone\":null,\"status\":\"active\",\"created_at\":\"2026-09-20 21:09:02\",\"updated_at\":\"2026-09-20 21:09:02\"}'),
+('royal', 'ES002', NULL, NULL, NULL, NULL, 'trial', '2026-09-21 15:49:06', '2026-09-27 14:50:25', '{\"subscriber_code\":\"ES002\",\"name\":\"Royal Supermarket\",\"slug\":\"royal\",\"email\":\"royal@enablestore.com\",\"phone\":\"0241786330\",\"status\":\"active\",\"created_at\":\"2026-09-21 16:49:06\",\"updated_at\":\"2026-09-21 16:49:06\",\"tenancy_db_name\":\"tenantroyal\"}'),
+('the-meat-box', NULL, NULL, NULL, NULL, NULL, 'trial', '2026-09-27 17:12:16', '2026-09-27 19:02:22', '{\"subscriber_code\":\"ES003\",\"name\":\"THE MEAT BOX\",\"slug\":\"the-meat-box\",\"email\":null,\"phone\":null,\"status\":\"active\",\"created_at\":\"2026-09-27 17:12:16\",\"updated_at\":\"2026-09-27 17:12:16\",\"tenancy_db_name\":\"tenantthe-meat-box\"}');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tenant_payment_intents`
+--
+
+CREATE TABLE `tenant_payment_intents` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tenant_id` varchar(255) NOT NULL,
+  `reference` varchar(255) NOT NULL,
+  `context` varchar(30) NOT NULL,
+  `amount_minor` bigint(20) UNSIGNED NOT NULL,
+  `payload` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin NOT NULL CHECK (json_valid(`payload`)),
+  `status` varchar(30) NOT NULL DEFAULT 'pending',
+  `paid_at` timestamp NULL DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `tenant_paystack_settings`
+--
+
+CREATE TABLE `tenant_paystack_settings` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `tenant_id` varchar(255) NOT NULL,
+  `public_key` varchar(255) DEFAULT NULL,
+  `secret_key` text DEFAULT NULL,
+  `test_public_key` varchar(255) DEFAULT NULL,
+  `test_secret_key` text DEFAULT NULL,
+  `mode` varchar(10) NOT NULL DEFAULT 'live',
+  `enabled` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -418,7 +477,9 @@ INSERT INTO `users` (`id`, `name`, `username`, `email`, `tenant_id`, `role`, `po
 (5, 'Demo Store Owner', 'ES001-admin', 'admin@enablstore.test', 'demo', 'admin', NULL, NULL, '$2y$12$xWGDBVUjcfFtfdw5koPqb.ieQjKpHlVAq5zFVsjRpL.gIKHikcO1i', NULL, '2026-09-20 20:09:03', '2026-09-21 16:48:05'),
 (6, 'demo-dale', 'ES001-dale', 'dale@enablstore.test', 'demo', 'cashier', '$2y$12$fyNpGjZt4acJj4GCdpIIJuUwczk4WIqF93A8o5RXXZGxOfnaj1imC', NULL, '$2y$12$nAcv12AuDsg1ZtpV9WUJ9OfBYIQwfKwlqL1KAnFIwXH64MC30KDOq', NULL, '2026-09-20 20:09:03', '2026-09-21 16:48:05'),
 (7, 'Auntie Christy', 'es002-royal', 'royal@enablestore.com', 'royal', 'admin', NULL, NULL, '$2y$12$6DJMNflrz6M4.q1I0Tb.beYMa/IRIMUXE5hWR8DuUX7TPvN2e8BCq', NULL, '2026-09-21 15:49:09', '2026-09-21 18:09:12'),
-(8, 'Regina', 'ES002-regina', NULL, 'royal', 'cashier', '$2y$12$YS5j29Y06nCzRMk.SowHLuPiQG4SMLgR/RcVFckrRiEFPu7iexPLS', NULL, '$2y$12$pAdl4MBnTngYGG.tAN244OXtcFAFGBjxxB/P7JXAIVmjcfYEbBdCK', NULL, '2026-09-21 16:13:46', '2026-09-21 16:48:05');
+(8, 'Regina', 'ES002-regina', NULL, 'royal', 'cashier', '$2y$12$YS5j29Y06nCzRMk.SowHLuPiQG4SMLgR/RcVFckrRiEFPu7iexPLS', NULL, '$2y$12$pAdl4MBnTngYGG.tAN244OXtcFAFGBjxxB/P7JXAIVmjcfYEbBdCK', NULL, '2026-09-21 16:13:46', '2026-09-21 16:48:05'),
+(10, 'Samuel Kyei-Berko', 'ES003-tmb', NULL, 'the-meat-box', 'admin', NULL, NULL, '$2y$12$qT2aps9NjNPmynIMB7BqEuJ0e/09xB1StfSoJtL0aUQoefxLNJZXa', NULL, '2026-09-27 17:12:18', '2026-09-27 17:12:18'),
+(11, 'Joana', 'ES003-joana', NULL, 'the-meat-box', 'cashier', '$2y$12$fhW/DN5NtcZVdMKAxFLOMuNNPEEbL0XXPAeFzcHOghF/j8BAlxbPq', NULL, '$2y$12$E..ErsFD6IbByS0/9Ciocu7q9UakCJ1dJk0BdGkchIwuWRrlMF0TK', NULL, '2026-09-27 17:19:11', '2026-09-27 17:19:11');
 
 --
 -- Indexes for dumped tables
@@ -568,6 +629,22 @@ ALTER TABLE `tenants`
   ADD UNIQUE KEY `tenants_subscriber_code_unique` (`subscriber_code`);
 
 --
+-- Indexes for table `tenant_payment_intents`
+--
+ALTER TABLE `tenant_payment_intents`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `tenant_payment_intents_reference_unique` (`reference`),
+  ADD KEY `tenant_payment_intents_tenant_id_context_status_index` (`tenant_id`,`context`,`status`),
+  ADD KEY `tenant_payment_intents_tenant_id_index` (`tenant_id`);
+
+--
+-- Indexes for table `tenant_paystack_settings`
+--
+ALTER TABLE `tenant_paystack_settings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `tenant_paystack_settings_tenant_id_unique` (`tenant_id`);
+
+--
 -- Indexes for table `users`
 --
 ALTER TABLE `users`
@@ -602,13 +679,13 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `permissions`
@@ -620,13 +697,13 @@ ALTER TABLE `permissions`
 -- AUTO_INCREMENT for table `plans`
 --
 ALTER TABLE `plans`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `platform_settings`
 --
 ALTER TABLE `platform_settings`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -638,7 +715,7 @@ ALTER TABLE `roles`
 -- AUTO_INCREMENT for table `subscriptions`
 --
 ALTER TABLE `subscriptions`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
 -- AUTO_INCREMENT for table `super_admins`
@@ -647,10 +724,22 @@ ALTER TABLE `super_admins`
   MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
+-- AUTO_INCREMENT for table `tenant_payment_intents`
+--
+ALTER TABLE `tenant_payment_intents`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `tenant_paystack_settings`
+--
+ALTER TABLE `tenant_paystack_settings`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- Constraints for dumped tables
