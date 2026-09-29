@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Filament\SuperAdmin\Pages\SubscriptionPlans;
+use App\Filament\SuperAdmin\Pages\TenantDirectory;
+use App\Filament\SuperAdmin\Pages\TenantManagement;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\SuperAdmin;
 use App\Models\Tenant;
+use App\Models\User;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
+use Livewire\Livewire;
 use Stancl\Tenancy\Tenancy;
 use Tests\TestCase;
 
@@ -21,9 +27,12 @@ class SubscriptionPlanSettingsTest extends TestCase
 
     private ?Tenant $whatsappTenant = null;
 
+    private ?Tenant $filamentEnrolledTenant = null;
+
     protected function tearDown(): void
     {
         app(Tenancy::class)->end();
+        $this->filamentEnrolledTenant?->delete();
         $this->whatsappTenant?->delete();
 
         parent::tearDown();
@@ -35,8 +44,12 @@ class SubscriptionPlanSettingsTest extends TestCase
 
         $this->actingAs($admin, 'super_admin')
             ->get(route('super-admin.subscriptions.settings'))
+            ->assertRedirect(route('filament.super-admin.pages.subscription-plans'));
+
+        $this->actingAs($admin, 'super_admin')
+            ->get(route('filament.super-admin.pages.subscription-plans'))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page->component('SuperAdmin/SubscriptionSettings'));
+            ->assertSee('Create plan');
 
         $this->actingAs($admin, 'super_admin')->post(route('super-admin.subscriptions.plans.store'), [
             'name' => 'Quarterly Retail',
@@ -68,6 +81,99 @@ class SubscriptionPlanSettingsTest extends TestCase
         $this->assertSame(6, $plan->billing_interval_months);
         $this->assertSame(['restaurant_foodstore', 'sales_expenses', 'audit_log', 'whatsapp_orders'], $plan->features);
         $this->assertFalse($plan->is_active);
+    }
+
+    public function test_filament_subscription_page_creates_and_edits_plans(): void
+    {
+        $admin = $this->createSuperAdmin();
+
+        $this->actingAs($admin, 'super_admin')
+            ->get('/super-admin/subscription-plans')
+            ->assertOk()
+            ->assertSee('Create plan');
+        Filament::setCurrentPanel(Filament::getPanel('super-admin'));
+
+        Livewire::test(SubscriptionPlans::class)
+            ->callAction('createPlan', [
+                'name' => 'Filament Quarterly',
+                'description' => 'Three months of service.',
+                'price_ghs' => '180.50',
+                'billing_interval_months' => 3,
+                'features' => ['pos', 'online_store'],
+                'is_active' => true,
+            ]);
+
+        $plan = Plan::query()->where('name', 'Filament Quarterly')->firstOrFail();
+        $this->assertSame(18050, $plan->price_minor);
+        $this->assertSame('quarterly', $plan->billing_interval);
+
+        Livewire::test(SubscriptionPlans::class)
+            ->callTableAction('editPlan', $plan, [
+                'name' => 'Filament Half-year',
+                'description' => null,
+                'price_ghs' => '300.00',
+                'billing_interval_months' => 6,
+                'is_active' => false,
+            ]);
+
+        $plan->refresh();
+        $this->assertSame('Filament Half-year', $plan->name);
+        $this->assertSame(30000, $plan->price_minor);
+        $this->assertSame(6, $plan->billing_interval_months);
+        $this->assertSame(['pos', 'online_store'], $plan->features);
+        $this->assertFalse($plan->is_active);
+    }
+
+    public function test_filament_subscribers_page_enrols_a_workspace_with_plan_and_admin(): void
+    {
+        $admin = $this->createSuperAdmin();
+        $plan = Plan::query()->create([
+            'name' => 'Filament Subscriber Plan',
+            'slug' => 'filament-subscriber-plan',
+            'price_minor' => 18050,
+            'currency' => 'GHS',
+            'billing_interval' => 'quarterly',
+            'billing_interval_months' => 3,
+            'features' => ['pos', 'online_store'],
+            'is_active' => true,
+        ]);
+        $businessName = 'Filament Subscriber '.Str::lower(Str::random(6));
+
+        $this->actingAs($admin, 'super_admin')
+            ->get('/super-admin/tenant-directory')
+            ->assertOk()
+            ->assertSee('Add subscriber');
+        Filament::setCurrentPanel(Filament::getPanel('super-admin'));
+
+        Livewire::test(TenantDirectory::class)
+            ->callAction('addSubscriber', [
+                'business_name' => $businessName,
+                'name' => 'Filament Workspace Admin',
+                'username' => 'workspace-admin',
+                'email' => 'filament-workspace@example.test',
+                'password' => 'correct-password',
+                'plan_id' => $plan->id,
+                'features' => ['pos', 'online_store'],
+            ])
+            ->assertHasNoErrors();
+
+        $this->filamentEnrolledTenant = Tenant::query()->findOrFail(Str::slug($businessName));
+        $subscription = Subscription::query()->where('tenant_id', $this->filamentEnrolledTenant->id)->firstOrFail();
+        $user = $this->filamentEnrolledTenant->users()->where('role', 'admin')->firstOrFail();
+
+        $this->assertSame('ES001', $this->filamentEnrolledTenant->subscriber_code);
+        $this->assertSame($plan->id, $subscription->plan_id);
+        $this->assertSame(18050, $subscription->amount_minor);
+        $this->assertSame(['pos', 'online_store'], $subscription->metadata['features']);
+        $this->assertSame('ES001-workspace-admin', $user->username);
+        $this->assertSame($this->filamentEnrolledTenant->id, $user->tenant_id);
+        $this->assertDatabaseHas('payments', [
+            'tenant_id' => $this->filamentEnrolledTenant->id,
+            'subscription_id' => $subscription->id,
+            'provider' => 'manual',
+            'amount_minor' => 18050,
+            'status' => 'paid',
+        ]);
     }
 
     public function test_registration_uses_the_selected_active_plan_price(): void
@@ -134,10 +240,7 @@ class SubscriptionPlanSettingsTest extends TestCase
 
         $this->actingAs($admin, 'super_admin')
             ->get(route('super-admin.tenants.index'))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('SuperAdmin/Tenants')
-                ->where('status', 'Workspace user created.'));
+            ->assertRedirect(route('filament.super-admin.pages.tenant-directory'));
 
         $tenant = Tenant::query()->findOrFail(Str::slug($businessName));
         $subscription = Subscription::query()->where('tenant_id', $tenant->id)->firstOrFail();
@@ -205,13 +308,45 @@ class SubscriptionPlanSettingsTest extends TestCase
         $this->assertSame(['online_store', 'sales_expenses', 'audit_log', 'whatsapp_orders'], $subscription->fresh()->metadata['features']);
         $this->actingAs($admin, 'super_admin')
             ->get(route('super-admin.tenants.show', ['tenant' => $this->whatsappTenant->id]))
+            ->assertRedirect(TenantManagement::getUrl(['tenant' => $this->whatsappTenant->id], panel: 'super-admin'));
+
+        $this->actingAs($admin, 'super_admin')
+            ->get(TenantManagement::getUrl(['tenant' => $this->whatsappTenant->id], panel: 'super-admin'))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('SuperAdmin/Tenant')
-                ->where('tenant.whatsapp_phone', '+233 20 222 3333')
-                ->where('tenant.team_management_enabled', false)
-                ->where('plans.0.price_minor', 10000)
-                ->where('plans.0.currency', 'GHS'));
+            ->assertSee('Storefront Paystack settings')
+            ->assertSee('Subscriber team');
+
+        Filament::setCurrentPanel(Filament::getPanel('super-admin'));
+        Livewire::test(TenantManagement::class, ['tenant' => $this->whatsappTenant])
+            ->set('data.name', 'Filament Managed WhatsApp Store')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame('Filament Managed WhatsApp Store', $this->whatsappTenant->fresh()->name);
+
+        $cashier = User::query()->create([
+            'name' => 'Filament Cashier',
+            'username' => 'es907-cashier',
+            'email' => 'filament-cashier@example.test',
+            'tenant_id' => $this->whatsappTenant->id,
+            'password' => 'correct-password',
+            'role' => 'cashier',
+        ]);
+
+        Livewire::test(TenantManagement::class, ['tenant' => $this->whatsappTenant])
+            ->callTableAction('editMember', $cashier, [
+                'name' => 'Updated Filament Cashier',
+                'username' => 'ES907-cashier-updated',
+                'email' => 'filament-cashier@example.test',
+                'role' => 'cashier',
+            ]);
+        $cashier->refresh();
+        $this->assertSame('Updated Filament Cashier', $cashier->name);
+        $this->assertSame('es907-cashier-updated', $cashier->username);
+
+        Livewire::test(TenantManagement::class, ['tenant' => $this->whatsappTenant])
+            ->callTableAction('resetAccess', $cashier, ['pin' => '1234']);
+        $this->assertTrue(Hash::check('1234', $cashier->fresh()->pos_pin_hash));
 
     }
 

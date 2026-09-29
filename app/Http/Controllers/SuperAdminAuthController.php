@@ -7,16 +7,9 @@ namespace App\Http\Controllers;
 use App\Http\Requests\SuperAdminLoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use Inertia\Inertia;
-use Inertia\Response;
 
 class SuperAdminAuthController extends Controller
 {
-    public function create(): Response
-    {
-        return Inertia::render('SuperAdmin/Login');
-    }
-
     public function store(SuperAdminLoginRequest $request): RedirectResponse
     {
         $identifier = trim($request->string('username')->toString());
@@ -32,13 +25,13 @@ class SuperAdminAuthController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->route('super-admin.dashboard');
+        return redirect()->route('filament.super-admin.pages.dashboard');
     }
 
     public function destroy(): RedirectResponse
     {
         Auth::guard('super_admin')->logout();
 
-        return redirect()->route('super-admin.login');
+        return redirect()->route('filament.super-admin.auth.login');
     }
 }

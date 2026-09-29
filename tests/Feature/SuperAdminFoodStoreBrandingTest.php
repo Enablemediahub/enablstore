@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Filament\SuperAdmin\Pages\Branding;
 use App\Models\PlatformSetting;
 use App\Models\SuperAdmin;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
-use Inertia\Testing\AssertableInertia as Assert;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 class SuperAdminFoodStoreBrandingTest extends TestCase
@@ -39,9 +41,48 @@ class SuperAdminFoodStoreBrandingTest extends TestCase
 
         $this->actingAs($admin, 'super_admin')
             ->get(route('super-admin.dashboard'))
+            ->assertRedirect(route('filament.super-admin.pages.dashboard'));
+
+        $this->actingAs($admin, 'super_admin')
+            ->get(route('filament.super-admin.pages.branding'))
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('SuperAdmin/Dashboard')
-                ->where('foodStoreHeroImageUrl', fn (mixed $url): bool => is_string($url) && str_ends_with($url, '/storage/'.$path)));
+            ->assertSee('Branding and platform settings');
+    }
+
+    public function test_filament_branding_page_saves_shared_assets_and_storefront_defaults(): void
+    {
+        $admin = SuperAdmin::query()->create([
+            'name' => 'Filament Branding Admin',
+            'email' => 'filament-branding@example.test',
+            'password' => Hash::make('correct-password'),
+        ]);
+        Storage::fake('public');
+
+        $this->actingAs($admin, 'super_admin')
+            ->get('/super-admin/branding')
+            ->assertOk()
+            ->assertSee('Save branding and settings');
+        Filament::setCurrentPanel(Filament::getPanel('super-admin'));
+
+        Livewire::test(Branding::class)
+            ->set('data.foodstore_hero_image', UploadedFile::fake()->image('foodstore-hero.jpg'))
+            ->set('data.tenant_display', [
+                'enabled' => false,
+                'placement' => 'both',
+                'label_prefix' => 'Shop from',
+            ])
+            ->set('data.catalogue_mode_default', 'separate_online')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $path = PlatformSetting::value('foodstore_hero_image');
+        $this->assertIsString($path);
+        Storage::disk('public')->assertExists($path);
+        $this->assertSame([
+            'enabled' => false,
+            'placement' => 'both',
+            'label_prefix' => 'Shop from',
+        ], PlatformSetting::storefrontTenantDisplaySettings());
+        $this->assertSame('separate_online', PlatformSetting::value('catalogue_mode_default'));
     }
 }

@@ -5,15 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Plan;
-use App\Models\Payment;
-use App\Models\Subscription;
-use App\Models\Tenant;
 use App\Models\User;
+use App\Services\SubscriberEnrollmentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -28,7 +24,7 @@ class SuperAdminUserController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, SubscriberEnrollmentService $enrollment): RedirectResponse
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:120'],
@@ -41,77 +37,9 @@ class SuperAdminUserController extends Controller
             'features.*' => ['string', 'in:pos,online_store,restaurant_foodstore,sales_expenses,audit_log,whatsapp_orders'],
         ]);
 
-        $slug = $this->uniqueTenantSlug($data['business_name']);
-        $subscriberCode = $this->nextSubscriberCode();
-        $username = $subscriberCode.'-'.strtolower($data['username']);
-
-        if (User::query()->where('username', $username)->exists()) {
-            return back()->withErrors(['username' => 'This username is already in use for the generated subscriber code.'])->withInput();
-        }
-        $plan = Plan::query()->where('is_active', true)->findOrFail((int) $data['plan_id']);
-        $tenant = Tenant::create([
-                'id' => $slug,
-                'subscriber_code' => $subscriberCode,
-                'name' => $data['business_name'],
-                'slug' => $slug,
-                'email' => $data['email'] ?? null,
-                'status' => 'active',
-        ]);
-
-        DB::transaction(function () use ($data, $tenant, $plan, $username): void {
-            $subscription = $tenant->subscriptions()->create([
-                'plan_id' => $data['plan_id'],
-            'amount_minor' => $plan->price_minor,
-                'provider' => 'internal',
-                'status' => 'active',
-                'starts_at' => now(),
-            'renews_at' => now()->addMonthsNoOverflow(max(1, $plan->billing_interval_months)),
-                'metadata' => ['features' => array_values(array_unique($data['features']))],
-            ]);
-            Payment::query()->create([
-                'tenant_id' => $tenant->id,
-                'subscription_id' => $subscription->id,
-                'provider' => 'manual',
-                'provider_reference' => 'manual-'.Str::uuid(),
-                'amount_minor' => $plan->price_minor,
-                'currency' => $plan->currency,
-                'status' => 'paid',
-                'paid_at' => now(),
-                'metadata' => ['source' => 'super_admin_manual_enrollment'],
-            ]);
-            User::create([
-                'name' => $data['name'],
-                'username' => $username,
-                'email' => $data['email'] ?? null,
-                'tenant_id' => $tenant->id,
-                'password' => $data['password'],
-                'role' => 'admin',
-            ]);
-        });
+        $enrollment->create($data);
 
         return back()->with('status', 'Workspace user created.');
-    }
-
-    private function uniqueTenantSlug(string $businessName): string
-    {
-        $base = Str::slug($businessName);
-        $base = Str::limit($base !== '' ? $base : 'subscriber', 52, '');
-        $slug = $base;
-        $suffix = 2;
-
-        while (Tenant::query()->whereKey($slug)->exists()) {
-            $slug = Str::limit($base, 52 - strlen((string) $suffix), '').'-'.$suffix;
-            $suffix++;
-        }
-
-        return $slug;
-    }
-
-    private function nextSubscriberCode(): string
-    {
-        $number = Tenant::query()->whereNotNull('subscriber_code')->get(['subscriber_code'])->map(fn (Tenant $tenant): int => (int) substr((string) $tenant->subscriber_code, 2))->max() + 1;
-
-        return 'ES'.str_pad((string) $number, 3, '0', STR_PAD_LEFT);
     }
 
     public function update(Request $request, User $user): RedirectResponse

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-class SuperAdmin extends Authenticatable
+class SuperAdmin extends Authenticatable implements FilamentUser
 {
     use Notifiable;
 
@@ -19,4 +21,9 @@ class SuperAdmin extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return $panel->getId() === 'super-admin';
+    }
 }

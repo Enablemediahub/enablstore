@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Models\Plan;
+use App\Services\SubscriptionPlanManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,24 +25,16 @@ class SuperAdminSubscriptionController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(Request $request, SubscriptionPlanManager $plans): RedirectResponse
     {
-        $data = $this->validatedData($request);
-        $slug = Str::slug($data['name']);
-        $baseSlug = $slug !== '' ? $slug : 'subscription';
-        $suffix = 2;
-        while (Plan::query()->where('slug', $slug)->exists()) {
-            $slug = $baseSlug.'-'.$suffix++;
-        }
-
-        Plan::query()->create($this->attributes($data) + ['slug' => $slug]);
+        $plans->create($this->validatedData($request));
 
         return back()->with('status', 'Subscription plan created.');
     }
 
-    public function update(Request $request, Plan $plan): RedirectResponse
+    public function update(Request $request, Plan $plan, SubscriptionPlanManager $plans): RedirectResponse
     {
-        $plan->update($this->attributes($this->validatedData($request)));
+        $plans->update($plan, $this->validatedData($request));
 
         return back()->with('status', 'Subscription plan updated.');
     }
@@ -61,28 +53,4 @@ class SuperAdminSubscriptionController extends Controller
         ]);
     }
 
-    /** @param array<string, mixed> $data
-     *  @return array<string, mixed>
-     */
-    private function attributes(array $data): array
-    {
-        $months = (int) $data['billing_interval_months'];
-
-        return [
-            'name' => trim($data['name']),
-            'description' => filled($data['description'] ?? null) ? trim($data['description']) : null,
-            'price_minor' => (int) round((float) $data['price_ghs'] * 100),
-            'currency' => 'GHS',
-            'billing_interval' => match ($months) {
-                1 => 'monthly',
-                3 => 'quarterly',
-                6 => 'semiannual',
-                12 => 'yearly',
-                default => "every_{$months}_months",
-            },
-            'billing_interval_months' => $months,
-            'features' => array_values(array_unique($data['features'])),
-            'is_active' => (bool) $data['is_active'],
-        ];
-    }
 }

@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Filament\SuperAdmin\Pages\FinancialOverview;
 use App\Models\Payment;
 use App\Models\Plan;
 use App\Models\Subscription;
 use App\Models\SuperAdmin;
 use App\Models\Tenant;
+use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Inertia\Testing\AssertableInertia as Assert;
+use Livewire\Livewire;
 use Stancl\Tenancy\Tenancy;
 use Tests\TestCase;
 
@@ -127,18 +129,37 @@ class SuperAdminFinancialTest extends TestCase
         ]);
 
         $this->actingAs($admin, 'super_admin')
-            ->get(route('super-admin.financial.index'))
+            ->get('/super-admin/financial-overview')
             ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->component('SuperAdmin/Financial')
-                ->where('metrics.revenue_minor', 30000)
-                ->where('metrics.paid_count', 2)
-                ->where('metrics.paystack_minor', 10000)
-                ->where('metrics.manual_minor', 20000)
-                ->where('metrics.pending_count', 1)
-                ->where('metrics.upcoming_renewals_count', 1)
-                ->where('payments.data.0.expires_at', $alphaSubscription->renews_at->toIso8601String())
-                ->has('payments.data', 3));
+            ->assertSee('Subscription revenue')
+            ->assertSee('GHS 300.00')
+            ->assertSee('finance-alpha-paid')
+            ->assertDontSee('finance-pos-sale');
+        Filament::setCurrentPanel(Filament::getPanel('super-admin'));
+
+        Livewire::test(FinancialOverview::class)
+            ->filterTable('provider', 'paystack')
+            ->filterTable('status', 'pending')
+            ->assertSee('finance-alpha-pending')
+            ->assertDontSee('finance-beta-paid');
+
+        Livewire::test(FinancialOverview::class)
+            ->searchTable('Alpha')
+            ->filterTable('provider', 'paystack')
+            ->filterTable('status', 'paid')
+            ->assertSee('finance-alpha-paid')
+            ->assertDontSee('finance-beta-paid')
+            ->assertDontSee('finance-alpha-pending');
+
+        Livewire::test(FinancialOverview::class)
+            ->filterTable('upcoming_renewals', true)
+            ->assertSee('finance-alpha-paid')
+            ->assertSee('finance-alpha-pending')
+            ->assertDontSee('finance-beta-paid');
+
+        $this->actingAs($admin, 'super_admin')
+            ->get(route('super-admin.financial.index'))
+            ->assertRedirect(route('filament.super-admin.pages.financial-overview'));
 
         $this->actingAs($admin, 'super_admin')
             ->get(route('super-admin.financial.index', [
@@ -146,22 +167,16 @@ class SuperAdminFinancialTest extends TestCase
                 'provider' => 'paystack',
                 'status' => 'paid',
             ]))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('filters.search', 'Alpha')
-                ->where('metrics.revenue_minor', 10000)
-                ->where('metrics.paid_count', 1)
-                ->has('payments.data', 1)
-                ->where('payments.data.0.reference', 'finance-alpha-paid'));
+            ->assertRedirect(route('filament.super-admin.pages.financial-overview', [
+                'tableSearch' => 'Alpha',
+                'provider' => 'paystack',
+                'status' => 'paid',
+            ]));
 
         $this->actingAs($admin, 'super_admin')
             ->get(route('super-admin.financial.index', ['renewal_window' => '7_days']))
-            ->assertOk()
-            ->assertInertia(fn (Assert $page) => $page
-                ->where('filters.renewal_window', '7_days')
-                ->where('metrics.upcoming_renewals_count', 1)
-                ->has('payments.data', 2)
-                ->where('payments.data.0.phone', '+233201234567')
-                ->where('payments.data.0.expires_at', $alphaSubscription->renews_at->toIso8601String()));
+            ->assertRedirect(route('filament.super-admin.pages.financial-overview', [
+                'renewal_window' => '7_days',
+            ]));
     }
 }
