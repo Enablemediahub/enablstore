@@ -101,6 +101,16 @@ class SubscriptionPlans extends Page implements HasTable
                     ->requiresConfirmation()
                     ->action(fn (Plan $record) => $record->update(['is_active' => ! $record->is_active]))
                     ->successNotificationTitle('Plan availability updated.'),
+                TableAction::make('deletePlan')
+                    ->label('Delete')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading(fn (Plan $record): string => 'Delete '.$record->name.'?')
+                    ->modalDescription('This permanently deletes the subscription plan. Plans with existing subscriptions cannot be deleted.')
+                    ->visible(fn (Plan $record): bool => $record->subscriptions()->doesntExist())
+                    ->action(fn (Plan $record) => $record->delete())
+                    ->successNotificationTitle('Subscription plan deleted.'),
             ])
             ->defaultSort('is_active', 'desc');
     }

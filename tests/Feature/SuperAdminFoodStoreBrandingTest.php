@@ -7,8 +7,10 @@ namespace Tests\Feature;
 use App\Filament\SuperAdmin\Pages\Branding;
 use App\Models\PlatformSetting;
 use App\Models\SuperAdmin;
+use App\Support\PublicAssetPublisher;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -18,6 +20,18 @@ use Tests\TestCase;
 class SuperAdminFoodStoreBrandingTest extends TestCase
 {
     use RefreshDatabase;
+
+    /** @var list<string> */
+    private array $publishedPaths = [];
+
+    protected function tearDown(): void
+    {
+        foreach ($this->publishedPaths as $path) {
+            PublicAssetPublisher::delete($path);
+        }
+
+        parent::tearDown();
+    }
 
     public function test_superadmin_can_upload_a_shared_foodstore_hero_image_from_branding(): void
     {
@@ -37,7 +51,9 @@ class SuperAdminFoodStoreBrandingTest extends TestCase
 
         $path = PlatformSetting::value('foodstore_hero_image');
         $this->assertIsString($path);
+        $this->publishedPaths[] = $path;
         Storage::disk('public')->assertExists($path);
+        $this->assertFileExists(public_path('storage/'.$path));
 
         $this->actingAs($admin, 'super_admin')
             ->get(route('super-admin.dashboard'))
@@ -77,12 +93,31 @@ class SuperAdminFoodStoreBrandingTest extends TestCase
 
         $path = PlatformSetting::value('foodstore_hero_image');
         $this->assertIsString($path);
+        $this->publishedPaths[] = $path;
         Storage::disk('public')->assertExists($path);
+        $this->assertFileExists(public_path('storage/'.$path));
         $this->assertSame([
             'enabled' => false,
             'placement' => 'both',
             'label_prefix' => 'Shop from',
         ], PlatformSetting::storefrontTenantDisplaySettings());
         $this->assertSame('separate_online', PlatformSetting::value('catalogue_mode_default'));
+    }
+
+    public function test_existing_dashboard_wallpaper_is_published_when_its_url_is_requested(): void
+    {
+        Storage::fake('public');
+        $path = 'platform/existing-dashboard-wallpaper.jpg';
+        Storage::disk('public')->put($path, UploadedFile::fake()->image('wallpaper.jpg')->get());
+        PlatformSetting::query()->create([
+            'key' => 'dashboard_wallpaper',
+            'value' => $path,
+        ]);
+
+        $url = PlatformSetting::dashboardWallpaperUrl(Request::create('https://example.test/dashboard'));
+
+        $this->publishedPaths[] = $path;
+        $this->assertSame('https://example.test/storage/'.$path, $url);
+        $this->assertFileExists(public_path('storage/'.$path));
     }
 }

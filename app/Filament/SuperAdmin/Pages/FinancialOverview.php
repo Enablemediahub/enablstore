@@ -11,6 +11,7 @@ use Filament\Pages\Page;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Actions\Action;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -121,6 +122,17 @@ class FinancialOverview extends Page implements HasTable
                                     ->whereNull('ends_at')
                                     ->whereBetween('renews_at', [$start, $end]))));
                     }),
+            ])
+            ->actions([
+                Action::make('deletePayment')
+                    ->label('Delete payment')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Delete this payment record?')
+                    ->modalDescription('This permanently deletes the selected payment record from the financial history. The associated subscription will not be deleted.')
+                    ->action(fn (Payment $record) => $record->delete())
+                    ->successNotificationTitle('Payment record deleted.'),
             ])
             ->defaultSort('created_at', 'desc');
     }

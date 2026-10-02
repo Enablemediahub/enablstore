@@ -179,4 +179,65 @@ class SuperAdminFinancialTest extends TestCase
                 'renewal_window' => '7_days',
             ]));
     }
+
+    public function test_super_admin_can_delete_payment_records_and_subscribers(): void
+    {
+        $admin = SuperAdmin::query()->create([
+            'name' => 'Delete Admin',
+            'email' => 'delete-admin@example.test',
+            'password' => Hash::make('correct-password'),
+        ]);
+        $plan = Plan::query()->create([
+            'name' => 'Delete Test Plan',
+            'slug' => 'delete-test-plan',
+            'price_minor' => 10000,
+            'currency' => 'GHS',
+            'billing_interval' => 'monthly',
+            'billing_interval_months' => 1,
+            'features' => ['pos'],
+            'is_active' => true,
+        ]);
+        $tenant = Tenant::query()->create([
+            'id' => 'delete-test-'.Str::lower(Str::random(8)),
+            'subscriber_code' => 'ES903',
+            'name' => 'Delete Test Subscriber',
+            'slug' => 'delete-test-subscriber-'.Str::lower(Str::random(8)),
+            'email' => 'delete-subscriber@example.test',
+            'status' => 'active',
+        ]);
+        $this->tenants[] = $tenant;
+        $subscription = Subscription::query()->create([
+            'tenant_id' => $tenant->id,
+            'plan_id' => $plan->id,
+            'status' => 'active',
+            'provider' => 'internal',
+            'starts_at' => now(),
+        ]);
+        $payment = Payment::query()->create([
+            'tenant_id' => $tenant->id,
+            'subscription_id' => $subscription->id,
+            'provider' => 'manual',
+            'provider_reference' => 'delete-test-payment',
+            'amount_minor' => 10000,
+            'currency' => 'GHS',
+            'status' => 'paid',
+            'paid_at' => now(),
+        ]);
+        Filament::setCurrentPanel(Filament::getPanel('super-admin'));
+        $this->actingAs($admin, 'super_admin');
+
+        Livewire::test(FinancialOverview::class)
+            ->callTableAction('deletePayment', $payment)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseMissing('payments', ['id' => $payment->id]);
+        $this->assertDatabaseHas('subscriptions', ['id' => $subscription->id]);
+
+        Livewire::test(\App\Filament\SuperAdmin\Pages\TenantDirectory::class)
+            ->callTableAction('deleteSubscriber', $tenant)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseMissing('tenants', ['id' => $tenant->id]);
+        $this->assertDatabaseMissing('subscriptions', ['id' => $subscription->id]);
+    }
 }

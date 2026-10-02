@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Support\PublicAssetPublisher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -50,6 +51,8 @@ class PlatformSetting extends Model
             return null;
         }
 
+        PublicAssetPublisher::publish($path);
+
         return $request->getSchemeAndHttpHost().'/storage/'.ltrim($path, '/');
     }
 
@@ -58,6 +61,8 @@ class PlatformSetting extends Model
         $path = $tenant?->data['storefront_logo'] ?? static::value('storefront_logo');
 
         if (is_string($path) && $path !== '') {
+            PublicAssetPublisher::publish($path);
+
             return Storage::disk('public')->url(ltrim($path, '/'));
         }
 

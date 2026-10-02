@@ -8,6 +8,7 @@ use App\Models\Payment;
 use App\Models\Tenant;
 use App\Models\TenantPaystackSetting;
 use App\Models\TenantSetting;
+use App\Support\PublicAssetPublisher;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -237,6 +238,7 @@ class TenantManagementService
             ]);
         }
 
+        PublicAssetPublisher::publish($path);
         $data['storefront_logo'] = $path;
         $tenant->update(['data' => $data]);
     }

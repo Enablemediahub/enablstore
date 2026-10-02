@@ -29,11 +29,14 @@ class SubscriptionPlanSettingsTest extends TestCase
 
     private ?Tenant $filamentEnrolledTenant = null;
 
+    private ?Tenant $planSubscriberTenant = null;
+
     protected function tearDown(): void
     {
         app(Tenancy::class)->end();
         $this->filamentEnrolledTenant?->delete();
         $this->whatsappTenant?->delete();
+        $this->planSubscriberTenant?->delete();
 
         parent::tearDown();
     }
@@ -122,6 +125,55 @@ class SubscriptionPlanSettingsTest extends TestCase
         $this->assertSame(6, $plan->billing_interval_months);
         $this->assertSame(['pos', 'online_store'], $plan->features);
         $this->assertFalse($plan->is_active);
+    }
+
+    public function test_filament_subscription_page_deletes_unused_plans_only(): void
+    {
+        $admin = $this->createSuperAdmin();
+        $usedPlan = Plan::query()->create([
+            'name' => 'Plan with subscribers',
+            'slug' => 'plan-with-subscribers',
+            'price_minor' => 10000,
+            'currency' => 'GHS',
+            'billing_interval' => 'monthly',
+            'billing_interval_months' => 1,
+            'features' => ['pos'],
+            'is_active' => true,
+        ]);
+        $unusedPlan = Plan::query()->create([
+            'name' => 'Unused plan',
+            'slug' => 'unused-plan',
+            'price_minor' => 20000,
+            'currency' => 'GHS',
+            'billing_interval' => 'monthly',
+            'billing_interval_months' => 1,
+            'features' => ['pos'],
+            'is_active' => true,
+        ]);
+        $this->planSubscriberTenant = Tenant::query()->create([
+            'id' => 'plan-subscriber-'.Str::lower(Str::random(8)),
+            'subscriber_code' => 'ES904',
+            'name' => 'Plan Subscriber',
+            'slug' => 'plan-subscriber-'.Str::lower(Str::random(8)),
+            'status' => 'active',
+        ]);
+        Subscription::query()->create([
+            'tenant_id' => $this->planSubscriberTenant->id,
+            'plan_id' => $usedPlan->id,
+            'status' => 'active',
+            'provider' => 'internal',
+            'starts_at' => now(),
+        ]);
+        Filament::setCurrentPanel(Filament::getPanel('super-admin'));
+        $this->actingAs($admin, 'super_admin');
+
+        Livewire::test(SubscriptionPlans::class)
+            ->assertTableActionHidden('deletePlan', $usedPlan)
+            ->callTableAction('deletePlan', $unusedPlan)
+            ->assertHasNoErrors();
+
+        $this->assertDatabaseHas('plans', ['id' => $usedPlan->id]);
+        $this->assertDatabaseMissing('plans', ['id' => $unusedPlan->id]);
     }
 
     public function test_filament_subscribers_page_enrols_a_workspace_with_plan_and_admin(): void

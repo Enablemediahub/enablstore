@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\SuperAdmin\Pages;
 
 use App\Models\PlatformSetting;
+use App\Support\PublicAssetPublisher;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Section;
@@ -14,7 +15,6 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Support\Facades\Storage;
 
 class Branding extends Page
 {
@@ -153,13 +153,14 @@ class Branding extends Page
         }
 
         if (filled($newPath)) {
+            PublicAssetPublisher::publish((string) $newPath);
             PlatformSetting::query()->updateOrCreate(['key' => $key], ['value' => $newPath]);
         } else {
             PlatformSetting::query()->where('key', $key)->delete();
         }
 
         if (is_string($previousPath) && $previousPath !== '') {
-            Storage::disk('public')->delete($previousPath);
+            PublicAssetPublisher::delete($previousPath);
         }
     }
 }

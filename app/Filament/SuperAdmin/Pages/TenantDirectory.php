@@ -266,6 +266,29 @@ class TenantDirectory extends Page implements HasTable
                         'status' => $record->status === 'suspended' ? 'active' : 'suspended',
                     ]))
                     ->successNotificationTitle('Tenant status updated.'),
+                Action::make('deleteSubscriber')
+                    ->label('Delete subscriber')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading(fn (Tenant $record): string => 'Delete '.$record->name.'?')
+                    ->modalDescription('This permanently deletes the subscriber, workspace database, users, subscriptions, payments, and associated workspace records. This cannot be undone.')
+                    ->action(function (Tenant $record): void {
+                        $database = $record->database();
+                        $manager = $database->manager();
+                        $databaseName = $database->getName();
+
+                        if ($databaseName !== null && $manager->databaseExists($databaseName) && ! $manager->deleteDatabase($record)) {
+                            throw new \RuntimeException("Unable to delete workspace database [{$databaseName}].");
+                        }
+
+                        $record->delete();
+
+                        if (session('workspace_tenant_id') === $record->id) {
+                            session()->forget('workspace_tenant_id');
+                        }
+                    })
+                    ->successNotificationTitle('Subscriber and workspace deleted.'),
             ])
             ->defaultSort('created_at', 'desc');
     }

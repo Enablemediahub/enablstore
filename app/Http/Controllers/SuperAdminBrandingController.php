@@ -6,9 +6,9 @@ namespace App\Http\Controllers;
 
 use App\Models\PlatformSetting;
 use App\Models\Tenant;
+use App\Support\PublicAssetPublisher;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class SuperAdminBrandingController extends Controller
 {
@@ -20,6 +20,7 @@ class SuperAdminBrandingController extends Controller
 
         $previousPath = PlatformSetting::value('dashboard_wallpaper');
         $path = $request->file('dashboard_wallpaper')->store('platform', 'public');
+        PublicAssetPublisher::publish($path);
 
         PlatformSetting::query()->updateOrCreate(
             ['key' => 'dashboard_wallpaper'],
@@ -27,7 +28,7 @@ class SuperAdminBrandingController extends Controller
         );
 
         if (is_string($previousPath) && $previousPath !== $path) {
-            Storage::disk('public')->delete($previousPath);
+            PublicAssetPublisher::delete($previousPath);
         }
 
         return back()->with('status', 'Dashboard wallpaper updated.');
@@ -41,6 +42,7 @@ class SuperAdminBrandingController extends Controller
 
         $previousPath = PlatformSetting::value('login_wallpaper');
         $path = $request->file('login_wallpaper')->store('platform', 'public');
+        PublicAssetPublisher::publish($path);
 
         PlatformSetting::query()->updateOrCreate(
             ['key' => 'login_wallpaper'],
@@ -48,7 +50,7 @@ class SuperAdminBrandingController extends Controller
         );
 
         if (is_string($previousPath) && $previousPath !== $path) {
-            Storage::disk('public')->delete($previousPath);
+            PublicAssetPublisher::delete($previousPath);
         }
 
         return back()->with('status', 'Login wallpaper updated.');
@@ -62,6 +64,7 @@ class SuperAdminBrandingController extends Controller
 
         $previousPath = PlatformSetting::value('pos_hero_image');
         $path = $request->file('pos_hero_image')->store('platform', 'public');
+        PublicAssetPublisher::publish($path);
 
         PlatformSetting::query()->updateOrCreate(
             ['key' => 'pos_hero_image'],
@@ -69,7 +72,7 @@ class SuperAdminBrandingController extends Controller
         );
 
         if (is_string($previousPath) && $previousPath !== $path) {
-            Storage::disk('public')->delete($previousPath);
+            PublicAssetPublisher::delete($previousPath);
         }
 
         return back()->with('status', 'POS hero image updated.');
@@ -83,6 +86,7 @@ class SuperAdminBrandingController extends Controller
 
         $previousPath = PlatformSetting::value('foodstore_hero_image');
         $path = $request->file('foodstore_hero_image')->store('platform', 'public');
+        PublicAssetPublisher::publish($path);
 
         PlatformSetting::query()->updateOrCreate(
             ['key' => 'foodstore_hero_image'],
@@ -90,7 +94,7 @@ class SuperAdminBrandingController extends Controller
         );
 
         if (is_string($previousPath) && $previousPath !== $path) {
-            Storage::disk('public')->delete($previousPath);
+            PublicAssetPublisher::delete($previousPath);
         }
 
         return back()->with('status', 'FoodStore hero image updated.');
@@ -104,6 +108,7 @@ class SuperAdminBrandingController extends Controller
 
         $previousPath = PlatformSetting::value('storefront_logo');
         $path = $request->file('storefront_logo')->store('platform', 'public');
+        PublicAssetPublisher::publish($path);
 
         PlatformSetting::query()->updateOrCreate(
             ['key' => 'storefront_logo'],
@@ -111,7 +116,7 @@ class SuperAdminBrandingController extends Controller
         );
 
         if (is_string($previousPath) && $previousPath !== $path) {
-            Storage::disk('public')->delete($previousPath);
+            PublicAssetPublisher::delete($previousPath);
         }
 
         return back()->with('status', 'Storefront logo updated.');
@@ -133,11 +138,12 @@ class SuperAdminBrandingController extends Controller
         }
 
         $path = $request->file('storefront_logo')->store('tenants/'.$tenant->getTenantKey().'/branding', 'public');
+        PublicAssetPublisher::publish($path);
         $data['storefront_logo'] = $path;
         $tenant->update(['data' => $data]);
 
         if (is_string($previousPath) && $previousPath !== $path) {
-            Storage::disk('public')->delete($previousPath);
+            PublicAssetPublisher::delete($previousPath);
         }
 
         return back()->with('status', 'Tenant storefront logo updated.');
@@ -150,7 +156,7 @@ class SuperAdminBrandingController extends Controller
         PlatformSetting::query()->where('key', 'storefront_logo')->delete();
 
         if (is_string($previousPath) && $previousPath !== '') {
-            Storage::disk('public')->delete($previousPath);
+            PublicAssetPublisher::delete($previousPath);
         }
 
         return back()->with('status', 'Storefront logo reset to default.');
